@@ -1,0 +1,29 @@
+/* app.scss - Standard CSS Reset */
+
+page {
+    background-color: #f8fafc;
+    /* Slate-50 equivalent */
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica,
+        Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei',
+        sans-serif;
+    color: #1e293b;
+    /* Slate-800 */
+    line-height: 1.5;
+}
+
+view,
+text,
+scroll-view,
+input,
+button {
+    box-sizing: border-box;
+}
+
+/* Global Utilities mimic */
+.shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.rounded-full {
+    border-radius: 9999px;
+}

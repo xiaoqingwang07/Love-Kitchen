@@ -1,0 +1,240 @@
+.index-page {
+  min-height: 100vh;
+  padding-bottom: 80px;
+  position: relative;
+}
+
+.header-title {
+  padding: 56px 24px 24px;
+  /* pt-14 pb-6 px-6 */
+  font-size: 30px;
+  /* text-3xl */
+  font-weight: 700;
+  color: #0f172a;
+  /* slate-900 */
+}
+
+/* Search Bar */
+.search-container {
+  padding: 0 24px 40px;
+  /* px-6 mb-10 */
+}
+
+.search-capsule {
+  background: #ffffff;
+  border-radius: 9999px;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 10px 15px -3px rgba(226, 232, 240, 0.5);
+  /* shadow-slate-200/50 */
+  border: 1px solid #f8fafc;
+}
+
+.search-icon {
+  font-size: 20px;
+  margin-right: 12px;
+  opacity: 0.6;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 18px;
+  color: #1e293b;
+}
+
+.search-actions {
+  display: flex;
+  gap: 16px;
+  margin-left: 8px;
+  padding-left: 12px;
+  border-left: 1px solid #f1f5f9;
+}
+
+.action-icon {
+  font-size: 20px;
+  opacity: 0.4;
+}
+
+/* Runner Card */
+.runner-section {
+  padding: 0 24px 40px;
+}
+
+.runner-card {
+  background-color: #2563eb;
+  /* blue-600 */
+  border-radius: 24px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(191, 219, 254, 1);
+  /* shadow-blue-200 */
+}
+
+.runner-content {
+  position: relative;
+  z-index: 10;
+  color: white;
+}
+
+.runner-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.runner-icon-bg {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px;
+  border-radius: 9999px;
+}
+
+.runner-title {
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.runner-desc {
+  font-size: 14px;
+  opacity: 0.9;
+  line-height: 1.6;
+  max-width: 85%;
+}
+
+.runner-highlight {
+  display: block;
+  margin-top: 4px;
+  font-weight: 600;
+  color: #fde047;
+  /* yellow-300 */
+}
+
+.runner-deco {
+  position: absolute;
+  right: -24px;
+  bottom: -24px;
+  width: 128px;
+  height: 128px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  filter: blur(24px);
+}
+
+/* Recipes */
+.recipe-section {
+  margin-bottom: 32px;
+}
+
+.section-title {
+  padding: 0 24px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.recipe-scroll {
+  width: 100%;
+  white-space: nowrap;
+  padding-left: 24px;
+}
+
+.recipe-list {
+  display: flex;
+  padding: 16px 8px;
+  /* py-4 px-2 */
+}
+
+.recipe-card {
+  display: inline-block;
+  min-width: 280px;
+  height: 192px;
+  /* h-48 */
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  margin-right: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  /* Gradient backgrounds manually defined */
+}
+
+.card-bg-orange {
+  background: linear-gradient(to bottom right, #fb923c, #f87171);
+}
+
+.card-bg-blue {
+  background: linear-gradient(to bottom right, #60a5fa, #818cf8);
+}
+
+.card-bg-green {
+  background: linear-gradient(to bottom right, #4ade80, #34d399);
+}
+
+.card-bg-yellow {
+  background: linear-gradient(to bottom right, #facc15, #fb923c);
+}
+
+.recipe-image-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.3;
+}
+
+.recipe-emoji {
+  font-size: 80px;
+}
+
+.recipe-overlay {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  color: white;
+}
+
+.recipe-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.recipe-title {
+  font-size: 18px;
+  font-weight: 700;
+  display: block;
+}
+
+.recipe-tag {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.recipe-cal {
+  font-size: 14px;
+  font-weight: 500;
+  color: #fde047;
+}
+
+.top-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.badge-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+}

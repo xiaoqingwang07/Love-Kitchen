@@ -1,0 +1,48 @@
+{
+  "name": "taste-lab-mvp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Taste Lab WeChat Mini Program MVP",
+  "templateInfo": {
+    "name": "default",
+    "typescript": true,
+    "css": "sass"
+  },
+  "scripts": {
+    "dev:webapp": "taro build --type h5 --watch",
+    "build:webapp": "taro build --type h5",
+    "dev:h5": "taro build --type h5 --watch",
+    "build:h5": "taro build --type h5"
+  },
+  "browserslist": [
+    "last 3 versions",
+    "Android >= 4.1",
+    "ios >= 8"
+  ],
+  "author": "",
+  "dependencies": {
+    "@babel/runtime": "^7.20.0",
+    "@tarojs/components": "3.6.15",
+    "@tarojs/plugin-framework-react": "3.6.15",
+    "@tarojs/react": "3.6.15",
+    "@tarojs/router": "3.6.15",
+    "@tarojs/runtime": "3.6.15",
+    "@tarojs/taro": "3.6.15",
+    "@tarojs/taro-h5": "3.6.15",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.8.0",
+    "@pmmmwh/react-refresh-webpack-plugin": "^0.6.2",
+    "@tarojs/cli": "3.6.15",
+    "@tarojs/plugin-platform-h5": "3.6.15",
+    "@tarojs/webpack5-runner": "3.6.15",
+    "@types/react": "^18.0.0",
+    "@types/webpack": "^5.0.0",
+    "babel-preset-taro": "3.6.15",
+    "react-refresh": "^0.18.0",
+    "typescript": "^4.1.0",
+    "webpack-chain": "^6.5.1"
+  }
+}
