@@ -1,4 +1,4 @@
-import { View, Text, Input, ScrollView } from '@tarojs/components'
+import { View, Text, Input, ScrollView, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
 import './index.scss'
@@ -17,10 +17,38 @@ export default function Index() {
     })
 
     const recommendedRecipes = [
-        { id: 1, title: '增肌鸡胸沙拉', calories: '450kcal', tag: '跑者首选', image: '🥗', styleClass: 'card-bg-orange' },
-        { id: 2, title: '深海三文鱼排', calories: '520kcal', tag: '优质蛋白', image: '🐟', styleClass: 'card-bg-blue' },
-        { id: 3, title: '全麦牛油果塔', calories: '300kcal', tag: '低卡饱腹', image: '🥑', styleClass: 'card-bg-green' },
-        { id: 4, title: '能量香蕉奶昔', calories: '200kcal', tag: '快速补给', image: '🍌', styleClass: 'card-bg-yellow' },
+        { 
+            id: 1, 
+            title: '增肌鸡胸沙拉', 
+            calories: '450', 
+            tag: '跑者首选', 
+            image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80',
+            color: 'from-orange-300 to-rose-400'
+        },
+        { 
+            id: 2, 
+            title: '香煎三文鱼', 
+            calories: '520', 
+            tag: '优质蛋白', 
+            image: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&q=80',
+            color: 'from-blue-300 to-indigo-400'
+        },
+        { 
+            id: 3, 
+            title: '牛油果吐司', 
+            calories: '300', 
+            tag: '低卡饱腹', 
+            image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=400&q=80',
+            color: 'from-emerald-300 to-teal-400'
+        },
+        { 
+            id: 4, 
+            title: '香蕉奶昔', 
+            calories: '200', 
+            tag: '快速补给', 
+            image: 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=400&q=80',
+            color: 'from-yellow-300 to-amber-400'
+        },
     ]
 
     const handleGenerate = async () => {
@@ -38,7 +66,7 @@ export default function Index() {
                 method: 'POST',
                 header: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer sk-12106abd00cc4fe185b1c3abd30be51e'
+                    'Authorization': 'Bearer ' + Taro.getStorageSync('DEEPSEEK_API_KEY')
                 },
                 data: {
                     model: "deepseek-chat",
@@ -80,59 +108,68 @@ export default function Index() {
         }
     }
 
+    const handleCardClick = (item) => {
+        Taro.setStorageSync('selectedRecipe', item)
+        Taro.navigateTo({
+            url: `/pages/detail/index?id=${item.id}`
+        })
+    }
+
     return (
         <View className='index-page'>
             {/* Header */}
-            <View className='header-title'>
-                <Text>爱心厨房</Text>
+            <View className='header'>
+                <Text className='greeting'>你好 👋</Text>
+                <Text className='subtitle'>今天想吃点啥？</Text>
             </View>
 
-            {/* Capsular Search Bar */}
-            <View className='search-container'>
-                <View className='search-capsule'>
+            {/* Search Bar */}
+            <View className='search-section'>
+                <View className='search-bar'>
                     <Text className='search-icon'>🔍</Text>
                     <Input
                         className='search-input'
-                        placeholder='今天想吃点什么？'
-                        placeholderClass='text-slate-300'
+                        placeholder='冰箱里有啥？'
+                        placeholderClass='placeholder'
                         value={inputValue}
                         onInput={(e) => setInputValue(e.detail.value)}
                         confirmType='search'
                         onConfirm={handleGenerate}
                     />
-                    <View className='search-actions'>
-                        <View className='action-icon'>
-                            <Text>🎤</Text>
-                        </View>
-                        <View className='action-icon'>
-                            <Text>📷</Text>
-                        </View>
+                    <View className='mic-btn'>
+                        <Text>🎤</Text>
                     </View>
                 </View>
             </View>
 
-            {/* Runner Card */}
+            {/* Runner Section */}
             <View className='runner-section'>
                 <View className='runner-card'>
-                    <View className='runner-content'>
-                        <View className='runner-header'>
-                            <View className='runner-icon-bg'>
-                                <Text>🏃‍♂️</Text>
-                            </View>
-                            <Text className='runner-title'>跑者恢复指南</Text>
+                    <View className='runner-info'>
+                        <View className='runner-tag'>
+                            <Text>🏃 跑者专属</Text>
                         </View>
-                        <Text className='runner-desc'>
-                            黄金30分钟：推荐 3:1 碳水蛋白比。
-                            <Text className='runner-highlight'>✨ 推荐：鸡胸肉沙拉</Text>
-                        </Text>
+                        <Text className='runner-title'>黄金30分钟</Text>
+                        <Text className='runner-desc'>训练后补充 3:1 碳水蛋白比，推荐鸡胸肉沙拉</Text>
+                        <View className='runner-arrow'>
+                            <Text>→</Text>
+                        </View>
                     </View>
-                    <View className='runner-deco'></View>
+                    <View className='runner-visual'>
+                        <View className='circle c1'></View>
+                        <View className='circle c2'></View>
+                        <View className='circle c3'></View>
+                    </View>
                 </View>
             </View>
 
-            {/* Horizontal Scroll Recipes */}
-            <View className='recipe-section'>
-                <Text className='section-title'>推荐食谱</Text>
+            {/* Recipes Section */}
+            <View className='recipes-section'>
+                <View className='section-header'>
+                    <Text className='section-title'>为你推荐</Text>
+                    <Text className='section-more'>查看全部 →</Text>
+                </View>
+                
                 <ScrollView
                     scrollX={true}
                     className='recipe-scroll'
@@ -141,35 +178,43 @@ export default function Index() {
                 >
                     <View className='recipe-list'>
                         {recommendedRecipes.map((item) => (
-                            <View
-                                key={item.id}
-                                className={`recipe-card ${item.styleClass}`}
-                                onClick={() => Taro.showToast({ title: `选中: ${item.title}`, icon: 'none' })}
+                            <View 
+                                key={item.id} 
+                                className={`recipe-card ${item.color}`}
+                                onClick={() => handleCardClick(item)}
                             >
-                                {/* Image Placeholder */}
-                                <View className='recipe-image-placeholder'>
-                                    <Text className='recipe-emoji'>{item.image}</Text>
-                                </View>
-
-                                {/* Overlay */}
-                                <View className='recipe-overlay'>
-                                    <View className='recipe-info'>
-                                        <View>
-                                            <Text className='recipe-title'>{item.title}</Text>
-                                            <Text className='recipe-tag'>{item.tag}</Text>
-                                        </View>
-                                        <Text className='recipe-cal'>{item.calories}</Text>
+                                <Image 
+                                    className='recipe-img' 
+                                    src={item.image} 
+                                    mode='aspectFill'
+                                />
+                                <View className='recipe-content'>
+                                    <Text className='recipe-title'>{item.title}</Text>
+                                    <View className='recipe-meta'>
+                                        <Text className='recipe-tag'>{item.tag}</Text>
+                                        <Text className='recipe-cal'>{item.calories} kcal</Text>
                                     </View>
-                                </View>
-
-                                {/* Badge */}
-                                <View className='top-badge'>
-                                    <Text className='badge-text'>TOP {item.id}</Text>
                                 </View>
                             </View>
                         ))}
                     </View>
                 </ScrollView>
+            </View>
+
+            {/* Quick Actions */}
+            <View className='actions-section'>
+                <View className='action-item'>
+                    <Text className='action-emoji'>📷</Text>
+                    <Text className='action-text'>清冰箱</Text>
+                </View>
+                <View className='action-item'>
+                    <Text className='action-emoji'>🎲</Text>
+                    <Text className='action-text'>随机</Text>
+                </View>
+                <View className='action-item'>
+                    <Text className='action-emoji'>❤️</Text>
+                    <Text className='action-text'>收藏</Text>
+                </View>
             </View>
         </View>
     )
