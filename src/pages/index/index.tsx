@@ -1,7 +1,10 @@
 import { View, Text, Input, ScrollView, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import './index.scss'
+
+// 收藏 storage key
+const FAVORITES_KEY = 'favoriteRecipes'
 
 export default function Index() {
     const [inputValue, setInputValue] = useState('')
@@ -16,13 +19,14 @@ export default function Index() {
         }
     })
 
-    const recommendedRecipes = [
+    // 推荐的固定菜谱卡片
+    const recommendedRecipes = useMemo(() => [
         { 
             id: 1, 
             title: '增肌鸡胸沙拉', 
             calories: '450', 
             tag: '跑者首选', 
-            image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80',
+            emoji: '🥗',
             color: 'from-orange-300 to-rose-400'
         },
         { 
@@ -30,7 +34,7 @@ export default function Index() {
             title: '香煎三文鱼', 
             calories: '520', 
             tag: '优质蛋白', 
-            image: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&q=80',
+            emoji: '🐟',
             color: 'from-blue-300 to-indigo-400'
         },
         { 
@@ -38,7 +42,7 @@ export default function Index() {
             title: '牛油果吐司', 
             calories: '300', 
             tag: '低卡饱腹', 
-            image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=400&q=80',
+            emoji: '🥑',
             color: 'from-emerald-300 to-teal-400'
         },
         { 
@@ -46,14 +50,45 @@ export default function Index() {
             title: '香蕉奶昔', 
             calories: '200', 
             tag: '快速补给', 
-            image: 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=400&q=80',
+            emoji: '🥛',
             color: 'from-yellow-300 to-amber-400'
         },
-    ]
+    ], [])
+
+    // 获取 API Key
+    const getApiKey = (): string => {
+        return Taro.getStorageSync('DEEPSEEK_API_KEY') || '';
+    }
+
+    // 安全的 JSON 解析
+    const safeParseJSON = (str: string): any => {
+        try {
+            const match = str.match(/\{[\s\S]*\}/);
+            if (match) {
+                return JSON.parse(match[0]);
+            }
+            return JSON.parse(str);
+        } catch (e) {
+            console.error('JSON parse failed:', e);
+            return null;
+        }
+    }
 
     const handleGenerate = async () => {
-        if (!inputValue) {
+        if (!inputValue.trim()) {
             Taro.showToast({ title: '先告诉我冰箱里有什么呀~', icon: 'none' })
+            return
+        }
+
+        const apiKey = getApiKey()
+        
+        if (!apiKey) {
+            Taro.showModal({
+                title: '需要 API Key',
+                content: '请先在微信小程序右上角设置中配置 DeepSeek API Key',
+                confirmText: '知道了',
+                showCancel: false
+            })
             return
         }
 
@@ -66,7 +101,7 @@ export default function Index() {
                 method: 'POST',
                 header: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + Taro.getStorageSync('DEEPSEEK_API_KEY')
+                    'Authorization': `Bearer ${apiKey}`
                 },
                 data: {
                     model: "deepseek-chat",
@@ -80,27 +115,47 @@ export default function Index() {
                             content: `食材：${inputValue}。特别注意：用户是刚结束训练的跑者，急需补充糖原和蛋白质。`
                         }
                     ],
-                    temperature: 1.3
+                    temperature: 1.0,
+                    max_tokens: 800
                 }
             })
 
-            const aiContent = response.data.choices[0].message.content
+            if (response.statusCode !== 200) {
+                throw new Error(`API 错误: ${response.statusCode}`)
+            }
+
+            const aiContent = response.data.choices?.[0]?.message?.content
+            
+            if (!aiContent) {
+                throw new Error('API 返回为空')
+            }
+
             const cleanJson = aiContent.replace(/```json/g, '').replace(/```/g, '').trim()
-            const recipeData = JSON.parse(cleanJson)
+            const recipeData = safeParseJSON(cleanJson)
+
+            if (!recipeData) {
+                throw new Error('无法解析菜谱数据')
+            }
 
             Taro.setStorageSync('currentRecipe', recipeData)
             Taro.hideLoading()
 
             Taro.navigateTo({
-                url: `/pages/result/index?from=ai`
+                url: `/pages/result/index?from=ai&ingredients=${encodeURIComponent(inputValue)}`
             })
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('API Error:', error)
             Taro.hideLoading()
+            
+            let errMsg = 'AI 厨师可能累了，请重试或检查网络'
+            if (error.errMsg) {
+                errMsg += '\n' + error.errMsg
+            }
+            
             Taro.showModal({
                 title: '生成失败',
-                content: 'AI 厨师可能累了，请重试或检查网络。\n' + ((error as any).errMsg || ''),
+                content: errMsg,
                 showCancel: false
             })
         } finally {
@@ -108,10 +163,41 @@ export default function Index() {
         }
     }
 
-    const handleCardClick = (item) => {
-        Taro.setStorageSync('selectedRecipe', item)
+    // 随机推荐
+    const handleRandom = () => {
         Taro.navigateTo({
-            url: `/pages/detail/index?id=${item.id}`
+            url: '/pages/result/index?from=random'
+        })
+    }
+
+    // 清冰箱
+    const handleClearFridge = () => {
+        Taro.navigateTo({
+            url: '/pages/fridge/index'
+        })
+    }
+
+    // 收藏页面
+    const handleFavorites = () => {
+        Taro.showToast({ title: '功能开发中~', icon: 'none' })
+    }
+
+    const handleCardClick = (item: any) => {
+        Taro.setStorageSync('selectedRecipe', item)
+        // 跳转到 result 页面（传入固定菜谱的 ID）
+        Taro.navigateTo({
+            url: `/pages/result/index?from=preset&id=${item.id}`
+        })
+    }
+
+    // 点击跑者卡片
+    const handleRunnerClick = () => {
+        // 引导用户输入食材
+        Taro.showModal({
+            title: '🏃 黄金30分钟',
+            content: '输入你冰箱里的食材，我帮你搭配最适合跑后恢复的餐！',
+            confirmText: '好的',
+            showCancel: false
         })
     }
 
@@ -135,16 +221,22 @@ export default function Index() {
                         onInput={(e) => setInputValue(e.detail.value)}
                         confirmType='search'
                         onConfirm={handleGenerate}
+                        disabled={isLoading}
                     />
-                    <View className='mic-btn'>
+                    <View 
+                        className='mic-btn'
+                        onClick={() => {
+                            Taro.showToast({ title: '语音功能开发中~', icon: 'none' })
+                        }}
+                    >
                         <Text>🎤</Text>
                     </View>
                 </View>
             </View>
 
-            {/* Runner Section */}
+            {/* Runner Section - Clickable */}
             <View className='runner-section'>
-                <View className='runner-card'>
+                <View className='runner-card' onClick={handleRunnerClick}>
                     <View className='runner-info'>
                         <View className='runner-tag'>
                             <Text>🏃 跑者专属</Text>
@@ -167,7 +259,7 @@ export default function Index() {
             <View className='recipes-section'>
                 <View className='section-header'>
                     <Text className='section-title'>为你推荐</Text>
-                    <Text className='section-more'>查看全部 →</Text>
+                    <Text className='section-more' onClick={handleRandom}>换一批 →</Text>
                 </View>
                 
                 <ScrollView
@@ -183,11 +275,9 @@ export default function Index() {
                                 className={`recipe-card ${item.color}`}
                                 onClick={() => handleCardClick(item)}
                             >
-                                <Image 
-                                    className='recipe-img' 
-                                    src={item.image} 
-                                    mode='aspectFill'
-                                />
+                                <View className='recipe-emoji-bg'>
+                                    <Text className='recipe-emoji'>{item.emoji}</Text>
+                                </View>
                                 <View className='recipe-content'>
                                     <Text className='recipe-title'>{item.title}</Text>
                                     <View className='recipe-meta'>
@@ -203,16 +293,16 @@ export default function Index() {
 
             {/* Quick Actions */}
             <View className='actions-section'>
-                <View className='action-item'>
-                    <Text className='action-emoji'>📷</Text>
+                <View className='action-item' onClick={handleClearFridge}>
+                    <View className='action-emoji'>📷</View>
                     <Text className='action-text'>清冰箱</Text>
                 </View>
-                <View className='action-item'>
-                    <Text className='action-emoji'>🎲</Text>
+                <View className='action-item' onClick={handleRandom}>
+                    <View className='action-emoji'>🎲</View>
                     <Text className='action-text'>随机</Text>
                 </View>
-                <View className='action-item'>
-                    <Text className='action-emoji'>❤️</Text>
+                <View className='action-item' onClick={handleFavorites}>
+                    <View className='action-emoji'>❤️</View>
                     <Text className='action-text'>收藏</Text>
                 </View>
             </View>

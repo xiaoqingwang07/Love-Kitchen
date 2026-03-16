@@ -3,7 +3,8 @@ export default defineAppConfig({
     'pages/index/index',
     'pages/fridge/index',
     'pages/result/index',
-    'pages/detail/index'
+    'pages/detail/index',
+    'pages/favorites/index'
   ],
   window: {
     backgroundTextStyle: 'light',
@@ -23,7 +24,11 @@ export default defineAppConfig({
       },
       {
         pagePath: 'pages/fridge/index',
-        text: '冰箱库存'
+        text: '清冰箱'
+      },
+      {
+        pagePath: 'pages/favorites/index',
+        text: '收藏'
       }
     ]
   }

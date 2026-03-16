@@ -30,9 +30,21 @@ const CATEGORIES = [
     }
 ]
 
+// Quick select common ingredients
+const QUICK_SELECT = ['鸡蛋', '西红柿', '鸡胸肉', '土豆', '洋葱', '大蒜', '辣椒', '胡萝卜']
+
 export default function Fridge() {
     const [selected, setSelected] = useState<string[]>([])
     const [inputValue, setInputValue] = useState('')
+    const [showQuick, setShowQuick] = useState(true)
+
+    // Load saved ingredients on mount
+    // useDidShow(() => {
+    //     const saved = Taro.getStorageSync('savedIngredients')
+    //     if (saved && Array.isArray(saved)) {
+    //         setSelected(saved)
+    //     }
+    // })
 
     // Mock Weight Logic
     const totalWeight = useMemo(() => {
@@ -56,20 +68,35 @@ export default function Fridge() {
         }
     }
 
+    const handleQuickSelect = (item: string) => {
+        toggleSelect(item)
+    }
+
     const handleMatch = () => {
-        if (selected.length === 0) return
+        if (selected.length === 0) {
+            Taro.showToast({ title: '先选些食材吧~', icon: 'none' })
+            return
+        }
+        // Save to storage for potential recovery
+        Taro.setStorageSync('savedIngredients', selected)
+        
         const params = selected.join(',')
         Taro.navigateTo({
             url: `/pages/result/index?auto=true&ingredients=${encodeURIComponent(params)}`
         })
     }
 
+    const handleClear = () => {
+        setSelected([])
+        Taro.removeStorageSync('savedIngredients')
+    }
+
     // --- STYLES ---
     const S = {
         container: {
             minHeight: '100vh',
-            backgroundColor: '#fff',
-            paddingBottom: '100px',
+            backgroundColor: '#fafafa',
+            paddingBottom: '120px',
             boxSizing: 'border-box'
         } as React.CSSProperties,
 
@@ -77,10 +104,10 @@ export default function Fridge() {
         stickyHeader: {
             position: 'sticky',
             top: 0,
-            backgroundColor: 'rgba(255,255,255,0.98)',
+            backgroundColor: 'rgba(250, 250, 250, 0.98)',
             zIndex: 999,
-            padding: '12px 16px 16px',
-            borderBottom: '1px solid #f5f5f5'
+            padding: '16px 20px 20px',
+            borderBottom: '1px solid rgba(0, 0, 0, 0.04)'
         } as React.CSSProperties,
 
         // Stats Bar
@@ -88,40 +115,76 @@ export default function Fridge() {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '10px'
+            marginBottom: '12px'
         } as React.CSSProperties,
 
         pageTitle: {
-            fontSize: '18px',
-            fontWeight: '800',
-            color: '#1a1a1a'
+            fontSize: '20px',
+            fontWeight: '700',
+            color: '#1a1a2e'
         } as React.CSSProperties,
 
         weightText: {
-            fontSize: '12px',
-            color: '#666',
+            fontSize: '13px',
+            color: '#8e8e93',
             fontWeight: '500'
         } as React.CSSProperties,
 
         barTrack: {
             width: '100%',
-            height: '6px',
+            height: '4px',
             backgroundColor: '#f0f0f0',
-            borderRadius: '3px',
+            borderRadius: '2px',
             overflow: 'hidden',
             marginBottom: '16px',
             display: 'flex'
         } as React.CSSProperties,
 
-        // Input
-        input: {
-            backgroundColor: '#f7f7f7',
-            borderRadius: '99px',
-            padding: '10px 20px',
-            fontSize: '14px',
-            width: '100%',
-            boxSizing: 'border-box',
+        // Input Row
+        inputRow: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
             marginBottom: '12px'
+        } as React.CSSProperties,
+
+        input: {
+            flex: 1,
+            backgroundColor: '#ffffff',
+            borderRadius: '24px',
+            padding: '12px 18px',
+            fontSize: '15px',
+            color: '#1a1a2e',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+            border: '1px solid rgba(0, 0, 0, 0.04)'
+        } as React.CSSProperties,
+
+        clearBtn: {
+            padding: '10px 16px',
+            fontSize: '13px',
+            color: '#8e8e93',
+            backgroundColor: '#f5f5f5',
+            borderRadius: '20px',
+            border: 'none'
+        } as React.CSSProperties,
+
+        // Quick Select
+        quickRow: {
+            display: 'flex',
+            gap: '8px',
+            overflowX: 'auto' as const,
+            whiteSpace: 'nowrap' as const,
+            paddingBottom: '8px',
+            marginBottom: '8px'
+        } as React.CSSProperties,
+
+        quickItem: {
+            padding: '6px 14px',
+            fontSize: '13px',
+            backgroundColor: '#fff',
+            border: '1px solid #e5e5e5',
+            borderRadius: '16px',
+            color: '#666'
         } as React.CSSProperties,
 
         // Selected Area
@@ -133,66 +196,76 @@ export default function Fridge() {
         selectedChip: {
             display: 'inline-flex',
             alignItems: 'center',
-            backgroundColor: '#f3f4f6',
-            padding: '6px 12px',
+            backgroundColor: '#fff7ed',
+            padding: '8px 14px',
             borderRadius: '20px',
             marginRight: '8px',
-            fontSize: '12px',
-            color: '#333'
+            marginBottom: '8px',
+            fontSize: '14px',
+            color: '#ea580c',
+            border: '1px solid rgba(234, 88, 12, 0.2)'
         } as React.CSSProperties,
 
         closeIcon: {
-            marginLeft: '6px',
-            color: '#999',
+            marginLeft: '8px',
+            color: '#ea580c',
             fontWeight: 'bold',
-            fontSize: '14px'
+            fontSize: '16px',
+            opacity: 0.7
+        } as React.CSSProperties,
+
+        emptySelected: {
+            fontSize: '14px',
+            color: '#aeaeb2',
+            padding: '12px 0',
+            textAlign: 'center' as const
         } as React.CSSProperties,
 
         // Main Grid Area
         gridSection: {
-            padding: '24px 16px'
+            padding: '20px'
         } as React.CSSProperties,
 
         catTitle: {
             fontSize: '15px',
-            fontWeight: 'bold',
-            color: '#333',
+            fontWeight: '600',
+            color: '#1a1a2e',
             marginBottom: '16px',
             display: 'block',
-            textAlign: 'center'
+            textAlign: 'center' as const
         } as React.CSSProperties,
 
         tagContainer: {
             display: 'flex',
             flexWrap: 'wrap',
-            gap: '8px',
+            gap: '10px',
             marginBottom: '32px',
             justifyContent: 'center'
         } as React.CSSProperties,
 
         tag: {
-            padding: '8px 16px',
+            padding: '10px 18px',
             borderRadius: '24px',
-            fontSize: '13px',
-            backgroundColor: '#fff',
-            border: '1px solid #eee',
-            color: '#333',
+            fontSize: '14px',
+            backgroundColor: '#ffffff',
+            border: '1px solid #f0f0f0',
+            color: '#4a4a4a',
             transition: 'all 0.2s ease',
-            minWidth: '60px',
-            textAlign: 'center'
+            minWidth: '56px',
+            textAlign: 'center' as const
         } as React.CSSProperties,
 
         tagActive: {
-            backgroundColor: '#ea580c', // Orange-600
-            borderColor: '#ea580c',
-            color: '#fff',
-            boxShadow: '0 2px 8px rgba(234, 88, 12, 0.2)'
+            backgroundColor: '#ff9a56',
+            borderColor: '#ff9a56',
+            color: '#ffffff',
+            boxShadow: '0 4px 12px rgba(255, 154, 86, 0.3)'
         } as React.CSSProperties,
 
         // Button
         btnContainer: {
             position: 'fixed',
-            bottom: '24px',
+            bottom: '28px',
             left: 0,
             right: 0,
             display: 'flex',
@@ -201,18 +274,18 @@ export default function Fridge() {
         } as React.CSSProperties,
 
         matchBtn: {
-            width: '80%',
-            height: '48px',
-            borderRadius: '99px',
-            backgroundColor: '#fff7ed', // Orange-50
-            color: '#ea580c',          // Orange-600
-            fontWeight: 'bold',
-            fontSize: '16px',
+            width: '85%',
+            height: '52px',
+            borderRadius: '26px',
+            backgroundColor: '#ff9a56',
+            color: '#ffffff',
+            fontWeight: '600',
+            fontSize: '17px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 8px 20px rgba(234, 88, 12, 0.15)',
-            border: '1px solid rgba(234, 88, 12, 0.1)'
+            boxShadow: '0 8px 24px rgba(255, 154, 86, 0.35)',
+            border: 'none'
         } as React.CSSProperties
     }
 
@@ -221,28 +294,55 @@ export default function Fridge() {
             {/* Sticky Header */}
             <View style={S.stickyHeader}>
                 <View style={S.statsRow}>
-                    <Text style={S.pageTitle}>选菜匹配</Text>
+                    <Text style={S.pageTitle}>清冰箱</Text>
                     <Text style={S.weightText}>剩余 {totalWeight}kg</Text>
                 </View>
 
                 <View style={S.barTrack}>
-                    <View style={{ width: '60%', height: '100%', backgroundColor: '#60a5fa' }} />
-                    <View style={{ width: '25%', height: '100%', backgroundColor: '#a78bfa' }} />
+                    <View style={{ width: '60%', height: '100%', backgroundColor: '#7cb3f3' }} />
+                    <View style={{ width: '25%', height: '100%', backgroundColor: '#8ae6c8' }} />
                 </View>
 
-                <Input
-                    style={S.input}
-                    placeholder='输入其他食材...'
-                    placeholderStyle='color:#bbb'
-                    value={inputValue}
-                    onInput={e => setInputValue(e.detail.value)}
-                    onConfirm={handleInputConfirm}
-                />
+                {/* Input + Quick Select */}
+                <View style={S.inputRow}>
+                    <Input
+                        style={S.input}
+                        placeholder='添加其他食材...'
+                        placeholderStyle='color:#aeaeb2'
+                        value={inputValue}
+                        onInput={e => setInputValue(e.detail.value)}
+                        onConfirm={handleInputConfirm}
+                    />
+                    {selected.length > 0 && (
+                        <Button style={S.clearBtn} onClick={handleClear}>清空</Button>
+                    )}
+                </View>
+
+                {/* Quick Select Pills */}
+                {showQuick && (
+                    <ScrollView scrollX style={S.quickRow} showScrollbar={false}>
+                        {QUICK_SELECT.map(item => {
+                            const isActive = selected.includes(item)
+                            return (
+                                <View
+                                    key={item}
+                                    style={{
+                                        ...S.quickItem,
+                                        ...(isActive ? { backgroundColor: '#fff7ed', borderColor: '#ff9a56', color: '#ff9a56' } : {})
+                                    }}
+                                    onClick={() => handleQuickSelect(item)}
+                                >
+                                    {item}
+                                </View>
+                            )
+                        })}
+                    </ScrollView>
+                )}
 
                 {/* Selected Chips */}
-                {selected.length > 0 && (
-                    <ScrollView scrollX style={S.selectedScroll}>
-                        <View style={{ display: 'flex' }}>
+                {selected.length > 0 ? (
+                    <ScrollView scrollX style={S.selectedScroll} showScrollbar={false}>
+                        <View style={{ display: 'flex', flexWrap: 'wrap' }}>
                             {selected.map(item => (
                                 <View key={item} style={S.selectedChip} onClick={() => toggleSelect(item)}>
                                     <Text>{item}</Text>
@@ -251,6 +351,10 @@ export default function Fridge() {
                             ))}
                         </View>
                     </ScrollView>
+                ) : (
+                    <View style={S.emptySelected}>
+                        <Text>点击上方食材或输入添加</Text>
+                    </View>
                 )}
             </View>
 
@@ -281,7 +385,7 @@ export default function Fridge() {
             {selected.length > 0 && (
                 <View style={S.btnContainer}>
                     <View style={S.matchBtn} onClick={handleMatch}>
-                        匹配菜谱 ({selected.length})
+                        帮我搭配 ({selected.length} 种食材)
                     </View>
                 </View>
             )}

@@ -1,0 +1,195 @@
+// result 页面样式
+$bg-page: #fafafa;
+$bg-card: #ffffff;
+$text-primary: #1a1a2e;
+$text-secondary: #6b7280;
+$text-muted: #aeaeb2;
+$accent-orange: #ff9a56;
+
+$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.02);
+$shadow-md: 0 2px 12px rgba(0, 0, 0, 0.04);
+
+$radius-sm: 14px;
+$radius-md: 18px;
+
+.result-page {
+  min-height: 100vh;
+  background: $bg-page;
+  padding: 20px;
+  padding-bottom: 100px;
+  box-sizing: border-box;
+}
+
+.header {
+  margin-bottom: 20px;
+  
+  .title {
+    font-size: 22px;
+    font-weight: 700;
+    color: $text-primary;
+    display: block;
+    margin-bottom: 4px;
+  }
+  
+  .subtitle {
+    font-size: 14px;
+    color: $text-muted;
+  }
+}
+
+.error-box {
+  background: rgba(255, 154, 86, 0.1);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border-left: 3px solid $accent-orange;
+  
+  .error-text {
+    font-size: 14px;
+    color: $accent-orange;
+  }
+}
+
+.list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 40px;
+}
+
+.recipe-card {
+  background: $bg-card;
+  border-radius: $radius-md;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: $shadow-md;
+  border: 1px solid rgba(0, 0, 0, 0.02);
+  
+  &:active {
+    background: #fafafa;
+  }
+  
+  .img-box {
+    width: 72px;
+    height: 72px;
+    background: #fff7ed;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    flex-shrink: 0;
+  }
+  
+  .info-box {
+    flex: 1;
+    min-width: 0;
+    
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: $text-primary;
+      margin-bottom: 4px;
+      display: block;
+    }
+    
+    .quote {
+      font-size: 13px;
+      color: $accent-orange;
+      font-style: italic;
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    .meta-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      
+      .rating-badge {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        background: #fffbeb;
+        padding: 2px 8px;
+        border-radius: 6px;
+        
+        .star {
+          font-size: 12px;
+          color: #fbbf24;
+        }
+        
+        .rate-val {
+          font-size: 12px;
+          font-weight: 600;
+          color: #d97706;
+        }
+      }
+      
+      .count-text {
+        font-size: 12px;
+        color: $text-muted;
+      }
+    }
+  }
+  
+  .fav-btn {
+    padding: 8px;
+    font-size: 20px;
+    background: transparent;
+    border: none;
+    line-height: 1;
+  }
+}
+
+// Loading
+.loading-box {
+  height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  
+  .loading-emoji {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+  
+  .loading-text {
+    color: $text-muted;
+    font-size: 15px;
+    font-weight: 500;
+  }
+}
+
+// Empty
+.empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 100px;
+  
+  .empty-emoji {
+    font-size: 64px;
+    margin-bottom: 20px;
+  }
+  
+  .empty-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: $text-primary;
+    margin-bottom: 8px;
+  }
+  
+  .empty-desc {
+    font-size: 14px;
+    color: $text-muted;
+    text-align: center;
+  }
+}
