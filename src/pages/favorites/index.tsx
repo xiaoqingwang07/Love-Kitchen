@@ -1,8 +1,8 @@
 import { View, Text } from '@tarojs/components'
-import Taro from '@tarojs/taro'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { getFavoriteDetails, toggleFavorite } from '../../store'
 import type { Recipe } from '../../types/recipe'
+import * as S from '../../styles/common'
 
 export default function Favorites() {
   const [favorites, setFavorites] = useState<Recipe[]>([])
@@ -38,39 +38,31 @@ export default function Favorites() {
   }
 
   return (
-    <View style={{ minHeight: '100vh', backgroundColor: '#fafafa', padding: '20px', paddingBottom: '40px' }}>
-      <View style={{ marginBottom: '24px' }}>
-        <Text style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a2e' }}>我的收藏</Text>
+    <View style={S.pageStyle}>
+      <View style={S.headerLargeStyle}>
+        <Text style={S.titleLargeStyle}>我的收藏</Text>
       </View>
 
       {isEmpty ? (
-        <View style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: '100px' }}>
-          <Text style={{ fontSize: '64px', marginBottom: '20px' }}>💔</Text>
-          <Text style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a2e', marginBottom: '8px' }}>还没有收藏</Text>
-          <Text style={{ fontSize: '14px', color: '#aeaeb2', textAlign: 'center' }}>看到喜欢的菜谱就收藏起来吧~</Text>
+        <View style={S.emptyStyle}>
+          <Text style={S.emptyEmojiStyle}>💔</Text>
+          <Text style={S.emptyTitleStyle}>还没有收藏</Text>
+          <Text style={S.emptyDescStyle}>看到喜欢的菜谱就收藏起来吧~</Text>
         </View>
       ) : (
-        <View style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <View style={S.listStyle}>
           {favorites.map((item: Recipe, idx: number) => (
             <View 
               key={item.id || idx} 
-              style={{
-                backgroundColor: '#ffffff',
-                borderRadius: '18px',
-                padding: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '14px',
-                boxShadow: '0 2px 12px rgba(0, 0, 0, 0.04)'
-              }}
+              style={S.cardRowStyle}
               onClick={() => goToDetail(item)}
             >
-              <View style={{ width: '64px', height: '64px', backgroundColor: '#fff7ed', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>
+              <View style={S.emojiBoxSmallStyle}>
                 <Text>{item.emoji || '🥘'}</Text>
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a2e', marginBottom: '4px', display: 'block' }}>{item.title}</Text>
-                <Text style={{ fontSize: '13px', color: '#8e8e93', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.quote || item.nutritionAnalysis || '点击查看详情'}</Text>
+                <Text style={S.titleStyle}>{item.title}</Text>
+                <Text style={S.textMutedStyle} numberOfLines={1}>{item.quote || item.nutritionAnalysis || '点击查看详情'}</Text>
               </View>
               <View 
                 onClick={(e) => {
