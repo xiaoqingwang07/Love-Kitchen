@@ -1,4 +1,4 @@
-# 🍳 Antigravity 反重力厨房
+# 🍳 Love-Kitchen 爱心厨房
 
 > AI 菜谱推荐小程序 - 帮你解决"今天吃什么"的世纪难题
 
