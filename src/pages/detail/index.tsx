@@ -10,6 +10,28 @@ import { StepFigure } from '../../components/StepFigure'
 import type { Recipe, Step } from '../../types/recipe'
 
 const SHARE_SNAPSHOT_KEY = 'sharedRecipeSnapshot'
+const SHARE_PAYLOAD_LIMIT = 1500
+
+function buildSharePayload(recipe: Recipe): string | null {
+  try {
+    const compact: Recipe = {
+      id: recipe.id,
+      title: recipe.title,
+      source: recipe.source,
+      quote: recipe.quote,
+      emoji: recipe.emoji,
+      time: recipe.time,
+      difficulty: recipe.difficulty,
+      nutritionAnalysis: recipe.nutritionAnalysis,
+      ingredients: recipe.ingredients?.map((ing) => ({ name: ing.name, amount: ing.amount })) || [],
+      steps: recipe.steps?.map((step) => ({ content: step.content, time: step.time, tip: step.tip })) || [],
+    }
+    const encoded = encodeURIComponent(JSON.stringify(compact))
+    return encoded.length <= SHARE_PAYLOAD_LIMIT ? encoded : null
+  } catch {
+    return null
+  }
+}
 
 export default function Detail() {
   const router = useRouter()
@@ -18,6 +40,7 @@ export default function Detail() {
 
   useShareAppMessage(() => {
     if (!recipe) return { title: '爱心厨房 - 今天吃什么？', path: '/pages/index/index' }
+    const payload = buildSharePayload(recipe)
     try {
       Taro.setStorageSync(SHARE_SNAPSHOT_KEY, recipe)
     } catch (e) {
@@ -25,7 +48,7 @@ export default function Detail() {
     }
     return {
       title: `今晚吃这个 👉【${recipe.title}】`,
-      path: `/pages/detail/index?shareId=${recipe.id}`,
+      path: payload ? `/pages/detail/index?payload=${payload}` : `/pages/detail/index?shareId=${recipe.id}`,
       imageUrl: recipe.image || '',
     }
   })
@@ -42,6 +65,17 @@ export default function Detail() {
   const [timerRunning, setTimerRunning] = useState(false)
 
   useEffect(() => {
+    const payload = router.params.payload
+    if (payload) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(payload)) as Recipe
+        setRecipe(enrichRecipeMedia(parsed))
+        setShareMiss(false)
+        return
+      } catch (e) {
+        console.warn('share payload parse failed', e)
+      }
+    }
     const shareId = router.params.shareId
     if (shareId) {
       const preset = DEFAULT_RECIPES.find(r => String(r.id) === String(shareId))
@@ -68,7 +102,7 @@ export default function Detail() {
     const data = Taro.getStorageSync('selectedRecipeDetail') as Recipe | null
     if (data) setRecipe(enrichRecipeMedia(data))
     else setRecipe(null)
-  }, [router.params.shareId])
+  }, [router.params.shareId, router.params.payload])
 
   // 计时器
   useEffect(() => {
@@ -234,7 +268,16 @@ export default function Detail() {
         </View>
       )
     }
-    return <View style={{ padding: 40 }}><Text>加载中…</Text></View>
+    return (
+      <View style={{ padding: 40, minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, backgroundColor: D.bg }}>
+        <Text style={{ fontSize: 16, color: D.labelSecondary, textAlign: 'center', lineHeight: 1.55 }}>
+          这道菜还没有准备好展示。你可以回首页重新搜索，或从推荐/收藏里重新进入详情。
+        </Text>
+        <Button style={{ backgroundColor: D.accent, color: '#fff', borderRadius: 999, border: 'none' }} onClick={() => Taro.switchTab({ url: '/pages/index/index' })}>
+          回首页
+        </Button>
+      </View>
+    )
   }
 
   const steps = recipe.steps as Step[] || []

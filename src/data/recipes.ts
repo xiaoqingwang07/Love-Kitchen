@@ -8,8 +8,8 @@ import { enrichRecipeMedia } from '../utils/enrichRecipeMedia'
 const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 1,
-    title: '增肌鸡胸肉沙拉',
-    quote: '低脂高蛋白，全家都爱吃',
+    title: '鸡胸肉轻食沙拉',
+    quote: '清爽不腻，工作日晚餐很合适',
     rating: 4.8,
     count: 1204,
     emoji: '🥗',

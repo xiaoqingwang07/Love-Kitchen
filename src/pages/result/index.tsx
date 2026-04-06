@@ -2,7 +2,7 @@ import { View, Text, Image } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import { useEffect, useState, useMemo, useRef, type CSSProperties } from 'react'
 import { DEFAULT_RECIPES } from '../../data/recipes'
-import { fetchRecipes, getStoredScene } from '../../api/recipe'
+import { fetchRecipes, getLlmApiKey, getStoredScene, usesLlmProxy } from '../../api/recipe'
 import { getFavoriteIds, toggleFavorite, generateCacheKey, getCachedRecipe, setCachedRecipe, removeCachedRecipe } from '../../store'
 import { matchRecipesSimple } from '../../utils/recipeMatch'
 import { shuffleWithSeed, daySeed } from '../../utils/shuffleSeed'
@@ -13,6 +13,21 @@ import type { Recipe, SceneType } from '../../types/recipe'
 function parseScene(s: string | undefined): SceneType {
   if (s === 'runner' || s === 'quick' || s === 'muscle' || s === 'normal') return s
   return getStoredScene()
+}
+
+function hasUsableLlm(): boolean {
+  return usesLlmProxy() || getLlmApiKey().trim().length > 0
+}
+
+function getFallbackMessage(raw: string | undefined, hasIngredientMatch: boolean): string {
+  if (hasIngredientMatch) return '已优先为你展示本地匹配菜谱；联网智能生成可稍后再试。'
+  if (!raw) return '当前先为你展示本地推荐菜谱，稍后再试试联网智能生成。'
+  if (raw.includes('超时') || raw.includes('网络')) return '联网有点不稳定，先为你展示本地推荐菜谱。'
+  if (raw.includes('频繁')) return '请求有点多，先看看本地推荐菜谱。'
+  if (raw.includes('Key') || raw.includes('LLM') || raw.includes('MiniMax') || raw.includes('配置')) {
+    return '当前先为你展示本地推荐菜谱，联网智能生成稍后开放。'
+  }
+  return '当前先为你展示本地推荐菜谱，稍后再试试联网智能生成。'
 }
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -82,11 +97,13 @@ export default function Result() {
       } catch (err: any) {
         if (cancelled) return
         console.error('AI Error:', err)
-        setError(err.message || '网络异常，已展示本地热门菜谱')
-        const seed = daySeed()
-        const shuffled = shuffleWithSeed([...DEFAULT_RECIPES], seed).slice(0, 6)
+        const localMatched = matchRecipesSimple(ingredients, 6)
+        setError(getFallbackMessage(err?.message, localMatched.length > 0))
+        const fallback = localMatched.length > 0
+          ? localMatched
+          : shuffleWithSeed([...DEFAULT_RECIPES], daySeed()).slice(0, 6)
         setRecipes(
-          shuffled.map((r) => ({
+          fallback.map((r) => ({
             ...r,
             source: 'local' as const,
             isFavorite: checkFavorite(r.id),
@@ -120,7 +137,21 @@ export default function Result() {
     } else if ((from === 'ai' || auto === 'true') && decodedIngredients) {
       const skip = skipCacheOnceRef.current
       skipCacheOnceRef.current = false
-      void fetchAI(decodedIngredients.split(/[,、]/).filter(Boolean), scene, skip)
+      const list = decodedIngredients.split(/[,、]/).filter(Boolean)
+      if (!hasUsableLlm()) {
+        const localMatched = matchRecipesSimple(list, 6)
+        if (cancelled) return
+        setError(getFallbackMessage('LLM unavailable', localMatched.length > 0))
+        setRecipes(
+          (localMatched.length > 0 ? localMatched : shuffleWithSeed([...DEFAULT_RECIPES], daySeed()).slice(0, 6)).map((r) => ({
+            ...r,
+            source: 'local' as const,
+            isFavorite: checkFavorite(r.id),
+          }))
+        )
+      } else {
+        void fetchAI(list, scene, skip)
+      }
     } else if (from === 'random') {
       if (cancelled) return
       const shuffled = shuffleWithSeed([...DEFAULT_RECIPES], daySeed()).slice(0, 6)
@@ -317,7 +348,7 @@ export default function Result() {
       <View style={{ ...S.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <View style={S.loadingBox}>
           <Text style={S.loadingEmoji}>🍳</Text>
-          <Text style={S.loadingText}>正在生成菜谱…</Text>
+          <Text style={S.loadingText}>正在为你搭配菜谱…</Text>
         </View>
       </View>
     )
@@ -328,7 +359,7 @@ export default function Result() {
       <View style={S.header}>
         <Text style={S.title}>推荐</Text>
         <Text style={S.subtitle}>
-          {recipes.length} 道 · 角标为来源 · 左侧为菜谱封面（步骤图见详情，与文案可能仅为氛围参考）
+          {recipes.length} 道 · 先挑顺眼的，再进详情看做法和用料
         </Text>
         {showAiRegen ? (
           <Text

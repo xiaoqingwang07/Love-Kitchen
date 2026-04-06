@@ -198,15 +198,15 @@ const SCENE_BLOCKS: Record<SceneType, string> = {
 要求：做法务实、调料常见；不必强调极限运动或专业数据，像给家人做饭一样自然。`,
   quick: `用户时间紧张，需要快手菜。
 要求：总耗时尽量控制在 15 分钟内、步骤不超过 5 步、调料常见。`,
-  muscle: `用户目标是增肌与力量训练饮食。
-要求：高蛋白、烹饪方式简单（蒸/煮/快炒为主），份量说明要合理。`,
+  muscle: `用户想吃得更高蛋白，但仍然是家常饮食场景。
+要求：高蛋白、烹饪方式简单（蒸/煮/快炒为主），口味自然，份量说明要合理。`,
 }
 
 const SCENE_USER_TAIL: Record<SceneType, string> = {
   normal: '请推荐家常菜。',
   runner: '请推荐适合运动后加餐的家常菜。',
   quick: '请推荐快手菜。',
-  muscle: '请推荐高蛋白增肌餐。',
+  muscle: '请推荐高蛋白家常菜。',
 }
 
 const DEFAULT_TAGS: Record<SceneType, string[]> = {

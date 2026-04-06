@@ -69,9 +69,9 @@ function Profile() {
 
   const SCENE_OPTIONS: { key: SceneType; label: string }[] = [
     { key: 'normal', label: '日常' },
-    { key: 'runner', label: '跑后' },
+    { key: 'runner', label: '运动后' },
     { key: 'quick', label: '快手' },
-    { key: 'muscle', label: '增肌' },
+    { key: 'muscle', label: '高蛋白' },
   ]
 
   const applyScene = (k: SceneType) => {
@@ -360,7 +360,7 @@ function Profile() {
           <Text style={{ fontSize: '24px' }}>{usesLlmProxy() ? '🛡️' : '🔑'}</Text>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: '16px', fontWeight: '600', color: D.label, display: 'block' }}>
-              {usesLlmProxy() ? 'LLM 服务端代理' : 'MiniMax API Key'}
+              {usesLlmProxy() ? '智能推荐服务' : '开发调试'}
             </Text>
             <Text style={{ fontSize: '13px', color: usesLlmProxy() ? (apiKeyValid === false ? D.red : D.green) : (apiKey.trim() || apiKeyFromBuild) ? (apiKeyValid === false ? D.red : D.green) : D.labelTertiary }}>
               {usesLlmProxy()
@@ -370,10 +370,10 @@ function Profile() {
                     ? '已启用：密钥在服务器，客户端不携带 Key'
                     : '正在检测…'
                 : apiKey.trim()
-                  ? (apiKeyValid === false ? 'Key 无效' : `已配置 (${apiKey.slice(0, 8)}…)`)
+                  ? (apiKeyValid === false ? '本地调试 Key 无效' : `本地调试 Key 已配置 (${apiKey.slice(0, 8)}…)`)
                   : apiKeyFromBuild
-                    ? (apiKeyValid === false ? '本地配置的 Key 无效' : '已通过 .env.local 注入 MiniMax Key')
-                    : '未配置'}
+                    ? (apiKeyValid === false ? '本地配置的 Key 无效' : '已通过 .env.local 注入本地调试 Key')
+                    : '正式使用建议直接部署服务端中转'}
             </Text>
           </View>
           {!usesLlmProxy() && <Text style={{ fontSize: '16px', color: D.labelTertiary }}>{showApiKeyInput ? '▾' : '›'}</Text>}

@@ -1,22 +1,25 @@
 import { View, Text, Input, ScrollView, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState, useMemo, useRef } from 'react'
+import { observer } from 'mobx-react-lite'
 import { getSearchHistory, addSearchHistory, clearSearchHistory } from '../../store'
 import { getStoredScene, setStoredScene } from '../../api/recipe'
 import { fetchLiveWeather, getMockWeather, type WeatherData } from '../../api/weather'
 import { getWeatherRecommendationsForWeather } from '../../utils/recommend'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
+import { usePantryStore } from '../../store/context'
 import type { Recipe, SceneType } from '../../types/recipe'
 import * as S from './styles'
 
 const SCENES: { key: SceneType; label: string }[] = [
   { key: 'normal', label: '日常' },
-  { key: 'runner', label: '跑后' },
+  { key: 'runner', label: '运动后' },
   { key: 'quick', label: '快手' },
-  { key: 'muscle', label: '增肌' },
+  { key: 'muscle', label: '高蛋白' },
 ]
 
-export default function Index() {
+function Index() {
+  const pantryStore = usePantryStore()
   const [inputValue, setInputValue] = useState('')
   const [scene, setScene] = useState<SceneType>(() => getStoredScene())
   const [searchHistory, setSearchHistory] = useState<string[]>([])
@@ -168,6 +171,37 @@ export default function Index() {
         </View>
       </View>
 
+      {pantryStore.totalCount === 0 ? (
+        <View
+          style={{
+            margin: `0 20px 14px`,
+            padding: '14px 16px',
+            borderRadius: 18,
+            backgroundColor: 'rgba(255, 149, 0, 0.1)',
+            border: '0.5px solid rgba(255, 149, 0, 0.28)',
+          }}
+        >
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#12110F' }}>第一次用，先从这两步开始</Text>
+          <Text style={{ fontSize: 12, color: 'rgba(18,17,15,0.72)', lineHeight: 1.5, marginTop: 6 }}>
+            你可以直接搜索家里现有食材；如果想让推荐更懂你的冰箱，也可以先去录入库存。
+          </Text>
+          <View style={{ display: 'flex', flexDirection: 'row', gap: 10, marginTop: 12 }}>
+            <View
+              style={{ flex: 1, height: 38, borderRadius: 999, backgroundColor: '#5C4D3F', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              onClick={() => Taro.switchTab({ url: '/pages/pantry/index' })}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#fff' }}>去填冰箱</Text>
+            </View>
+            <View
+              style={{ flex: 1, height: 38, borderRadius: 999, backgroundColor: '#fff', border: '0.5px solid rgba(18,17,15,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              onClick={handleRandom}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#12110F' }}>先看推荐</Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
       <View style={S.sceneRowStyle}>
         <ScrollView scrollX showScrollbar={false} style={S.sceneScrollStyle}>
           {SCENES.map(({ key, label }) => (
@@ -265,3 +299,5 @@ export default function Index() {
     </View>
   )
 }
+
+export default observer(Index)
