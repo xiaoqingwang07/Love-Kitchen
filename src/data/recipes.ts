@@ -1,6 +1,6 @@
 /**
  * 默认菜谱库 - 扩充到15道
- * 覆盖各种场景：早餐、快手、跑后恢复、减脂等
+ * 覆盖各种场景：早餐、快手、运动加餐、家常减脂等
  */
 import type { Recipe } from '../types/recipe'
 import { enrichRecipeMedia } from '../utils/enrichRecipeMedia'
@@ -9,13 +9,13 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 1,
     title: '增肌鸡胸肉沙拉',
-    quote: '低脂高蛋白，跑完来一碗！',
+    quote: '低脂高蛋白，全家都爱吃',
     rating: 4.8,
     count: 1204,
     emoji: '🥗',
     difficulty: '简单',
     time: 15,
-    tags: ['🏃 跑者首选', '💪 增肌'],
+    tags: ['💪 高蛋白', '🥗 轻食'],
     ingredients: [
       { name: '鸡胸肉', amount: '200g' },
       { name: '生菜', amount: '100g' },
@@ -28,7 +28,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
       { content: '生菜洗净撕成小块，西红柿切片', time: 2 },
       { content: '加入橄榄油、黑胡椒拌匀', time: 1, tip: '可加少许柠檬汁提味' }
     ],
-    nutritionAnalysis: '高蛋白低卡，非常适合跑后修复肌肉纤维。碳水与蛋白比例约3:1，是跑后黄金30分钟的最佳补充。'
+    nutritionAnalysis: '高蛋白、做法简单，适合想控制油脂又需要饱腹的一餐。'
   },
   {
     id: 2,
@@ -39,7 +39,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
     emoji: '🍝',
     difficulty: '中等',
     time: 25,
-    tags: ['🏃 跑者首选', '🍝 主食'],
+    tags: ['🍝 主食', '🏠 家常'],
     ingredients: [
       { name: '牛排', amount: '150g' },
       { name: '意面', amount: '100g' },
@@ -52,7 +52,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
       { content: '热锅下蒜末炒香，加入牛肉翻炒', time: 4 },
       { content: '加入意面翻炒均匀，调味即可', time: 3 }
     ],
-    nutritionAnalysis: '提供优质碳水和蛋白，为下一次长距离训练储备糖原。'
+    nutritionAnalysis: '碳水与蛋白质搭配均衡，适合作为正餐主菜。'
   },
   {
     id: 3,
@@ -75,7 +75,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
       { content: '转小火，慢慢倒入蛋液', time: 2, tip: '边倒边搅动，蛋花更漂亮' },
       { content: '加盐调味，撒上葱花', time: 1 }
     ],
-    nutritionAnalysis: '易消化吸收，补水又补电解质。跑后喝一碗热汤，舒服！'
+    nutritionAnalysis: '易消化、暖胃，适合天气凉或想吃得清淡时。'
   },
   {
     id: 4,
@@ -110,7 +110,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
     emoji: '🥛',
     difficulty: '简单',
     time: 5,
-    tags: ['🌅 早餐', '⚡ 快手菜', '🏃 跑前补给'],
+    tags: ['🌅 早餐', '⚡ 快手菜', '⚡ 能量饮品'],
     ingredients: [
       { name: '香蕉', amount: '1根' },
       { name: '牛奶', amount: '250ml' },
@@ -121,7 +121,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
       { content: '所有材料放入料理机搅拌', time: 1 },
       { content: '搅拌30秒即可', time: 0.5 }
     ],
-    nutritionAnalysis: '跑前30分钟喝一杯，快速补充能量。碳水+蛋白+优质脂肪组合。'
+    nutritionAnalysis: '快速补充能量，早餐或加餐都适合。'
   },
   {
     id: 6,
@@ -167,7 +167,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
       { content: '加蒜末炒香，放入青椒', time: 2 },
       { content: '加生抽老抽调味，翻炒均匀', time: 3 }
     ],
-    nutritionAnalysis: '经典下饭菜，五花肉的油脂让青椒更香。运动后吃胃口大开。'
+    nutritionAnalysis: '经典下饭菜，五花肉的油脂让青椒更香，配米饭很过瘾。'
   },
   {
     id: 8,
@@ -225,7 +225,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
     emoji: '🐟',
     difficulty: '中等',
     time: 20,
-    tags: ['🏃 跑者首选', '🐟 海鲜'],
+    tags: ['🐟 海鲜', '🏠 家常'],
     ingredients: [
       { name: '三文鱼排', amount: '200g' },
       { name: '柠檬', amount: '半个' },
@@ -239,7 +239,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
       { content: '翻面再煎2分钟，撒上迷迭香', time: 2 },
       { content: '挤上柠檬汁', time: 1 }
     ],
-    nutritionAnalysis: '三文鱼富含Omega-3脂肪酸，对跑步后的肌肉恢复特别有帮助。'
+    nutritionAnalysis: '三文鱼富含优质蛋白与 Omega-3，家常煎制少油也很适合全家。'
   },
   {
     id: 11,
@@ -264,7 +264,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
       { content: '蒸锅水开后放入，蒸10分钟', time: 10 },
       { content: '出锅淋生抽和香油', time: 1 }
     ],
-    nutritionAnalysis: '高蛋白低脂肪，鸡蛋的蛋白质吸收率98%，是健身首选。'
+    nutritionAnalysis: '高蛋白、口感滑嫩，老人小孩都容易接受。'
   },
   {
     id: 12,
@@ -339,7 +339,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
       { content: '加生抽老抽八角桂皮，加水没过肉', time: 2 },
       { content: '小火炖50分钟，大火收汁', time: 50 }
     ],
-    nutritionAnalysis: '红烧肉是经典的能量炸弹，跑后补充碳水首选。'
+    nutritionAnalysis: '经典大菜，碳水与脂肪充足，适合想「吃顿扎实的」时。'
   },
   {
     id: 15,

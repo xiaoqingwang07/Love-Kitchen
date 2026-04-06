@@ -194,8 +194,8 @@ image 与 steps[].image 可省略；省略时客户端会用图库兜底。`
 const SCENE_BLOCKS: Record<SceneType, string> = {
   normal: `你是专业中餐与家庭营养主厨。
 要求：营养均衡、做法家常、用料贴近中国家庭厨房。`,
-  runner: `用户刚完成跑步训练，需要跑后恢复餐。
-要求：优先补充糖原与优质蛋白（可参考约 3:1 碳水蛋白比思路）、易消化、避免过于油腻；步骤切实可行。`,
+  runner: `用户可能刚做完运动，需要一餐家常、易消化、能补充能量与蛋白质的加餐。
+要求：做法务实、调料常见；不必强调极限运动或专业数据，像给家人做饭一样自然。`,
   quick: `用户时间紧张，需要快手菜。
 要求：总耗时尽量控制在 15 分钟内、步骤不超过 5 步、调料常见。`,
   muscle: `用户目标是增肌与力量训练饮食。
@@ -204,14 +204,14 @@ const SCENE_BLOCKS: Record<SceneType, string> = {
 
 const SCENE_USER_TAIL: Record<SceneType, string> = {
   normal: '请推荐家常菜。',
-  runner: '请推荐适合跑后补充能量的菜。',
+  runner: '请推荐适合运动后加餐的家常菜。',
   quick: '请推荐快手菜。',
   muscle: '请推荐高蛋白增肌餐。',
 }
 
 const DEFAULT_TAGS: Record<SceneType, string[]> = {
   normal: ['家常'],
-  runner: ['跑后恢复'],
+  runner: ['运动加餐'],
   quick: ['快手'],
   muscle: ['高蛋白'],
 }

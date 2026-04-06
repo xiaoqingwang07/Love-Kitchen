@@ -15,6 +15,7 @@ type HighlightMode = 'all' | 'expiring' | 'expired'
 
 const pad = D.pagePadH
 const FRIDGE_TIP_KEY = 'pantry_fridge_tip_dismissed'
+const EMPTY_FRIDGE_BANNER_KEY = 'pantry_empty_banner_dismissed'
 
 /** 每层最小高度；左右成对行等高，食材名完整换行 */
 const SLOT_PULL_MIN = 56
@@ -41,6 +42,13 @@ function FridgePantry() {
   const [showFridgeTip, setShowFridgeTip] = useState(() => {
     try {
       return !Taro.getStorageSync(FRIDGE_TIP_KEY)
+    } catch {
+      return true
+    }
+  })
+  const [showEmptyBanner, setShowEmptyBanner] = useState(() => {
+    try {
+      return !Taro.getStorageSync(EMPTY_FRIDGE_BANNER_KEY)
     } catch {
       return true
     }
@@ -272,9 +280,47 @@ function FridgePantry() {
         <View style={{ padding: `${28}px ${pad}px 12px` }}>
           <Text style={{ fontSize: 32, fontWeight: '600', color: D.label, letterSpacing: '-0.04em' }}>冰箱</Text>
           <Text style={{ fontSize: D.footnote, color: D.labelSecondary, marginTop: 8, lineHeight: 1.5, maxWidth: 340 }}>
-            双开门仿真视图：左冷冻、右冷藏，与「选菜」库存同步。格内可直接看到食材名；点格可添加或删除。小票可先粘贴清单。
+            爱心厨房 · 左冷冻、右冷藏，与「选菜」联动。点格子添加/管理；底部「购物清单」粘贴后请先核对再入库。
           </Text>
         </View>
+
+        {store.totalCount === 0 && showEmptyBanner ? (
+          <View
+            style={{
+              margin: `0 ${pad}px 14px`,
+              padding: '14px 16px',
+              backgroundColor: D.accentMuted,
+              borderRadius: D.radiusM,
+              border: `0.5px solid ${D.accentLine}`,
+            }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: D.label, marginBottom: 6 }}>先把冰箱填起来</Text>
+            <Text style={{ fontSize: 12, color: D.labelSecondary, lineHeight: 1.5, marginBottom: 10 }}>
+              点下面任意一格输入名称与数量即可录入。没有食材时，「选菜」里的临期提醒不会出现——也可直接去首页用搜索做推荐。
+            </Text>
+            <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View
+                style={{ flex: 1, height: 38, borderRadius: 999, backgroundColor: D.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                onClick={() => Taro.switchTab({ url: '/pages/index/index' })}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#fff' }}>去首页搜索</Text>
+              </View>
+              <Text
+                style={{ fontSize: 12, fontWeight: '600', color: D.labelTertiary, flexShrink: 0 }}
+                onClick={() => {
+                  try {
+                    Taro.setStorageSync(EMPTY_FRIDGE_BANNER_KEY, 1)
+                  } catch {
+                    /* ignore */
+                  }
+                  setShowEmptyBanner(false)
+                }}
+              >
+                不再提示
+              </Text>
+            </View>
+          </View>
+        ) : null}
 
         {showFridgeTip ? (
           <View
@@ -498,9 +544,9 @@ function FridgePantry() {
       {showReceipt ? (
         <View style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(29,29,31,0.4)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: pad }}>
           <View style={{ width: '100%', maxWidth: 400, backgroundColor: D.bgElevated, borderRadius: D.radiusXL, padding: 22, maxHeight: '85%' }}>
-            <Text style={{ fontSize: 18, fontWeight: '600', color: D.label }}>购物清单</Text>
+            <Text style={{ fontSize: 18, fontWeight: '600', color: D.label }}>购物清单 · 确认后入库</Text>
             <Text style={{ fontSize: 12, color: D.labelTertiary, marginTop: 6, lineHeight: 1.45 }}>
-              每行一件，例：西红柿 500g 或 牛奶、1L
+              解析后请核对列表与推荐格子，无误再点「确认入库」。每行一件，例：西红柿 500g
             </Text>
             {!receiptPreview ? (
               <Textarea
@@ -532,7 +578,7 @@ function FridgePantry() {
                     取消
                   </Button>
                   <Button style={{ flex: 1, height: 48, borderRadius: 999, backgroundColor: D.label, color: '#fff', border: 'none', fontSize: D.footnote, fontWeight: '600' }} onClick={handleParseReceipt}>
-                    解析并推荐
+                    解析并预览
                   </Button>
                 </>
               ) : (

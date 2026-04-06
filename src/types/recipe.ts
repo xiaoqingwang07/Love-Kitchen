@@ -37,7 +37,7 @@ export interface Recipe {
   isFavorite?: boolean
   difficulty?: '简单' | '中等' | '复杂'
   time?: number       // 烹饪时间（分钟）
-  tags?: string[]     // 标签：跑者首选、快速补给等
+  tags?: string[]     // 标签：家常、快手、运动加餐等
   /** 收藏入库时间戳（仅本地存储用） */
   savedAt?: number
 }
@@ -78,15 +78,14 @@ export interface ScenePrompt {
 }
 
 export const SCENE_PROMPTS = {
-  // 跑者恢复
+  // 跑后加餐（可选场景；主产品定位仍为家庭日常）
   runner: {
-    system: `你是一个国家级运动营养师。用户是月跑量200-300km的马拉松爱好者，刚刚完成训练。
+    system: `你是家庭营养方向的烹饪顾问。用户可能刚做完中等强度运动，需要一餐易消化、补充能量与蛋白质的餐食。
 要求：
-- 重点补充糖原和蛋白质，3:1碳水蛋白比
-- 训练后30分钟内进食效果好
-- 避免高脂肪食物影响消化
-- 回答简洁专业，不超过50字`,
-    userTemplate: `食材：{ingredients}。请推荐1道适合跑步后补充能量的菜。`
+- 糖原与优质蛋白搭配合理即可，不必堆砌专业术语
+- 做法适合中国家庭厨房，步骤清晰
+- 语气亲切，像在给家人建议`,
+    userTemplate: `食材：{ingredients}。请推荐1道适合运动后加餐的家常菜。`
   },
   // 快手菜
   quick: {

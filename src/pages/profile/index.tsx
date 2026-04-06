@@ -379,6 +379,12 @@ function Profile() {
           {!usesLlmProxy() && <Text style={{ fontSize: '16px', color: D.labelTertiary }}>{showApiKeyInput ? '▾' : '›'}</Text>}
         </View>
 
+        {!usesLlmProxy() && (
+          <Text style={{ fontSize: 11, color: D.labelTertiary, marginBottom: 10, lineHeight: 1.45, paddingLeft: 2, paddingRight: 2 }}>
+            正式给亲友用时，建议部署服务端中转，家人无需自己申请 AI 密钥。
+          </Text>
+        )}
+
         {usesLlmProxy() && (
           <View style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '16px', marginBottom: '12px', marginTop: '-4px', border: `0.5px solid ${D.separatorLight}` }}>
             <Text style={{ fontSize: 12, color: D.labelTertiary, marginBottom: 10, lineHeight: 1.45 }}>

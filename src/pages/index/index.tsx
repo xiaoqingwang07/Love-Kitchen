@@ -44,15 +44,7 @@ export default function Index() {
     }
     setScene(getStoredScene())
     loadSearchHistory()
-    void fetchLiveWeather().then((live) => {
-      if (live) {
-        setWeatherBase(live)
-        setWeatherSource('live')
-      } else {
-        setWeatherBase(getMockWeather())
-        setWeatherSource('mock')
-      }
-    })
+    // 测评建议：定位/天气需用户授权，不在进入首页时静默请求；默认参考天气，用户点「刷新天气」再拉实时
   })
 
   const loadSearchHistory = () => {
@@ -117,7 +109,7 @@ export default function Index() {
   const weatherMeta =
     weatherSource === 'live'
       ? `${weather.temperature}°C · 实时天气（Open-Meteo）`
-      : `${weather.temperature}°C · 参考天气（定位/网络不可用时）`
+      : `${weather.temperature}°C · 参考天气（点「刷新天气」可尝试获取定位实时天气）`
 
   return (
     <View style={S.pageStyle}>
@@ -125,7 +117,7 @@ export default function Index() {
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={S.titleStyle}>今天想吃点什么？</Text>
           <Text style={S.titleHintStyle}>
-            先选场景；输入食材后点「搜索」或键盘搜索/回车即出菜谱
+            爱心厨房 · 先选场景；有食材可搜索，没有也能点「更多」看推荐
           </Text>
         </View>
         <Text

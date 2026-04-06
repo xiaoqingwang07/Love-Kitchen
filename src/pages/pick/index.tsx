@@ -96,21 +96,79 @@ function Pick() {
   const handleImportPantry = () => {
     const names = pantryStore.items.map((i) => i.name)
     if (names.length === 0) {
-      Taro.showToast({ title: '冰箱还是空的', icon: 'none' })
+      Taro.showModal({
+        title: '冰箱暂无食材',
+        content: '请到「冰箱」Tab 点格子添加，或使用底部「小票入库」。也可在本页直接勾选食材。',
+        confirmText: '去冰箱',
+        cancelText: '知道了',
+        success: (res) => {
+          if (res.confirm) Taro.switchTab({ url: '/pages/pantry/index' })
+        },
+      })
       return
     }
     setSelected((prev) => Array.from(new Set([...prev, ...names])))
     Taro.showToast({ title: `已合并冰箱 ${names.length} 项`, icon: 'success' })
   }
 
+  const pantryEmpty = pantryStore.totalCount === 0
+
   return (
     <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: '120px' }}>
       <View style={{ padding: '24px 22px 8px' }}>
         <Text style={{ fontSize: 28, fontWeight: '700', color: D.label, display: 'block', marginBottom: 6, letterSpacing: '-0.03em' }}>选菜</Text>
         <Text style={{ fontSize: D.footnote, color: D.labelSecondary, lineHeight: 1.45 }}>
-          从列表点选、输入添加或与临期食材一并勾选，再匹配菜谱
+          爱心厨房：优先消耗临期食材；也可直接勾选常见菜，再智能匹配菜谱
         </Text>
       </View>
+
+      {pantryEmpty ? (
+        <View
+          style={{
+            margin: '0 22px 14px',
+            padding: '14px 16px',
+            backgroundColor: D.accentWarmMuted,
+            borderRadius: D.radiusM,
+            border: `0.5px solid ${D.accentLine}`,
+          }}
+        >
+          <Text style={{ fontSize: 14, fontWeight: '600', color: D.label, marginBottom: 6 }}>冰箱还是空的</Text>
+          <Text style={{ fontSize: 12, color: D.labelSecondary, lineHeight: 1.5, marginBottom: 12 }}>
+            先去「冰箱」录入食材，临期会在这里高亮；或在本页直接勾选/输入食材也能匹配。首页搜索不依赖冰箱。
+          </Text>
+          <View style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
+            <View
+              style={{
+                flex: 1,
+                height: 40,
+                borderRadius: 999,
+                backgroundColor: D.accent,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onClick={() => Taro.switchTab({ url: '/pages/pantry/index' })}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>去录入食材</Text>
+            </View>
+            <View
+              style={{
+                flex: 1,
+                height: 40,
+                borderRadius: 999,
+                backgroundColor: D.bgElevated,
+                border: `0.5px solid ${D.separator}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onClick={() => Taro.switchTab({ url: '/pages/index/index' })}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '600', color: D.label }}>回首页搜索</Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
 
       {/* 临期 + 手动添加：同一选择面板 */}
       <View style={{ margin: '12px 22px 16px', padding: '18px 18px', backgroundColor: D.bgElevated, borderRadius: D.radiusM, border: `0.5px solid ${D.separatorLight}`, boxShadow: D.shadowCard }}>
