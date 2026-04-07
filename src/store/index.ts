@@ -86,11 +86,28 @@ export const deleteSearchHistory = (index: number): void => {
 }
 
 // ============ 做过的菜 ============
+const MAX_COOKED = 20
+
 export const getCookedRecipes = (): (Recipe & { cookedAt: number })[] => {
   try {
     const cooked = Taro.getStorageSync(COOKED_RECIPES_KEY)
     return Array.isArray(cooked) ? cooked : []
   } catch { return [] }
+}
+
+/** 记入「做过的菜」：按 id 去重（字符串比较，兼容数字 id 与 AI 字符串 id），最多保留 MAX_COOKED 条（最新在前）。 */
+export const markAsCooked = (recipe: Recipe): boolean => {
+  try {
+    const cooked = getCookedRecipes()
+    const id = String(recipe.id)
+    if (cooked.some((c) => String(c.id) === id)) return true
+    const next = [{ ...recipe, cookedAt: Date.now() }, ...cooked].slice(0, MAX_COOKED)
+    Taro.setStorageSync(COOKED_RECIPES_KEY, next)
+    return true
+  } catch (e) {
+    console.error('Mark as cooked failed:', e)
+    return false
+  }
 }
 
 // ============ 缓存相关 ============

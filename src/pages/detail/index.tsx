@@ -7,6 +7,7 @@ import { D } from '../../theme/designTokens'
 import { DEFAULT_RECIPES } from '../../data/recipes'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
 import { StepFigure } from '../../components/StepFigure'
+import { markAsCooked } from '../../store'
 import type { Recipe, Step } from '../../types/recipe'
 
 const SHARE_SNAPSHOT_KEY = 'sharedRecipeSnapshot'
@@ -167,17 +168,8 @@ export default function Detail() {
 
   const handleMarkCooked = () => {
     if (!recipe) return
-    try {
-      const cooked = Taro.getStorageSync('cookedRecipes') || []
-      if (!cooked.find((c: any) => c.id === recipe.id)) {
-        cooked.unshift({ ...recipe, cookedAt: Date.now() })
-        if (cooked.length > 20) cooked.pop()
-        Taro.setStorageSync('cookedRecipes', cooked)
-      }
-      Taro.showToast({ title: '做过啦！💪', icon: 'success' })
-    } catch (e) {
-      console.error('Mark cooked failed:', e)
-    }
+    const ok = markAsCooked(recipe)
+    if (ok) Taro.showToast({ title: '做过啦！💪', icon: 'success' })
   }
 
   // ============ 烹饪模式 ============
