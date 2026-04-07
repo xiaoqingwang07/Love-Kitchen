@@ -20,6 +20,13 @@ export const D = {
   blue: '#5A6570',
   green: '#4A7C6A',
   red: '#B54A3C',
+  /** 次要标签文字 / 辅助灰（原 tagStyle、loading 等） */
+  tagMutedFg: '#8e8e93',
+  tagMutedBg: '#f3f4f6',
+  /** 错误提示块：浅橙底 + 左边强调 + 正文色（原 errorBox / errorText） */
+  errorBg: '#fff7ed',
+  errorAccent: '#ff9a56',
+  errorFg: '#ea580c',
   radiusL: 24,
   radiusM: 18,
   radiusS: 14,

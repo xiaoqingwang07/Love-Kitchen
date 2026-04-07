@@ -77,8 +77,8 @@ export const textMutedStyle: CSSProperties = {
 // ============ 标签样式 ============
 export const tagStyle: CSSProperties = {
   fontSize: '12px',
-  color: '#8e8e93',
-  backgroundColor: '#f3f4f6',
+  color: D.tagMutedFg,
+  backgroundColor: D.tagMutedBg,
   padding: '2px 8px',
   borderRadius: '4px'
 }
@@ -154,16 +154,16 @@ export const loadingTextStyle: CSSProperties = {
 
 // ============ 错误提示 ============
 export const errorBoxStyle: CSSProperties = {
-  backgroundColor: '#fff7ed',
+  backgroundColor: D.errorBg,
   borderRadius: '12px',
   padding: '14px 16px',
   marginBottom: '16px',
-  borderLeft: '3px solid #ff9a56'
+  borderLeft: `3px solid ${D.errorAccent}`
 }
 
 export const errorTextStyle: CSSProperties = {
   fontSize: '14px',
-  color: '#ea580c'
+  color: D.errorFg
 }
 
 // ============ 列表样式 ============
