@@ -8,7 +8,7 @@ import {
   getFavoriteDetails,
   getCookedRecipes,
   toggleFavorite,
-} from '../../store'
+} from '../../store/storageUtils'
 import { STORAGE_KEYS } from '../../store/storageKeys'
 import { checkApiKey, getLlmApiKey, getStoredScene, setStoredScene, usesLlmProxy } from '../../api/recipe'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'

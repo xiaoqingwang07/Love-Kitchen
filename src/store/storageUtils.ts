@@ -1,5 +1,7 @@
 /**
- * 状态管理 - 收藏夹 & 历史记录
+ * 本文件为 Taro Storage 读写封装，非状态管理层。
+ * 收藏、搜索历史、做过的菜、菜谱缓存等均通过同步 Storage API 持久化。
+ * 运行时全局状态请使用 MobX（如 pantryStore + StoreContext）。
  */
 import Taro from '@tarojs/taro'
 import type { Recipe } from '../types/recipe'

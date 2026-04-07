@@ -7,7 +7,7 @@ import { D } from '../../theme/designTokens'
 import { DEFAULT_RECIPES } from '../../data/recipes'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
 import { StepFigure } from '../../components/StepFigure'
-import { markAsCooked } from '../../store'
+import { markAsCooked } from '../../store/storageUtils'
 import { STORAGE_KEYS } from '../../store/storageKeys'
 import type { Recipe, Step } from '../../types/recipe'
 
