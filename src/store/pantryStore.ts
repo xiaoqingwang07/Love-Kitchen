@@ -6,6 +6,7 @@ import { getFreshnessStatus, getDaysLeft } from '../types/pantry'
 import { getShelfLifeDays, getCategoryForName } from '../data/shelfLife'
 import { findPantryItemForRecipeIngredient } from '../utils/ingredientMatch'
 import { suggestPlacementWithBalance } from '../utils/fridgePlacement'
+import { STORAGE_KEYS } from './storageKeys'
 
 const FOOD_CATEGORIES: FoodCategory[] = [
   'vegetable', 'meat', 'seafood', 'fruit', 'dairy', 'egg', 'grain', 'seasoning', 'other',
@@ -47,8 +48,6 @@ function sanitizeStoredItems(raw: unknown): PantryItem[] | null {
   if (partials.length === 0) return null
   return normalizeToPantryItems(partials)
 }
-
-const STORAGE_KEY = 'pantryItems'
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
@@ -111,7 +110,7 @@ export class PantryStore {
 
     autorun(() => {
       try {
-        Taro.setStorageSync(STORAGE_KEY, JSON.stringify(this.items))
+        Taro.setStorageSync(STORAGE_KEYS.pantryItems, JSON.stringify(this.items))
       } catch (e) {
         console.error('PantryStore persist failed:', e)
       }
@@ -120,7 +119,7 @@ export class PantryStore {
 
   private loadFromStorage() {
     try {
-      const raw = Taro.getStorageSync(STORAGE_KEY)
+      const raw = Taro.getStorageSync(STORAGE_KEYS.pantryItems)
       if (raw) {
         const parsed = JSON.parse(raw) as unknown
         const sanitized = sanitizeStoredItems(parsed)

@@ -8,9 +8,9 @@ import { DEFAULT_RECIPES } from '../../data/recipes'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
 import { StepFigure } from '../../components/StepFigure'
 import { markAsCooked } from '../../store'
+import { STORAGE_KEYS } from '../../store/storageKeys'
 import type { Recipe, Step } from '../../types/recipe'
 
-const SHARE_SNAPSHOT_KEY = 'sharedRecipeSnapshot'
 const SHARE_PAYLOAD_LIMIT = 1500
 
 function buildSharePayload(recipe: Recipe): string | null {
@@ -43,7 +43,7 @@ export default function Detail() {
     if (!recipe) return { title: '爱心厨房 - 今天吃什么？', path: '/pages/index/index' }
     const payload = buildSharePayload(recipe)
     try {
-      Taro.setStorageSync(SHARE_SNAPSHOT_KEY, recipe)
+      Taro.setStorageSync(STORAGE_KEYS.sharedRecipeSnapshot, recipe)
     } catch (e) {
       console.warn('share snapshot save failed', e)
     }
@@ -86,7 +86,7 @@ export default function Detail() {
         return
       }
       try {
-        const snap = Taro.getStorageSync(SHARE_SNAPSHOT_KEY) as Recipe | null
+        const snap = Taro.getStorageSync(STORAGE_KEYS.sharedRecipeSnapshot) as Recipe | null
         if (snap && String(snap.id) === String(shareId)) {
           setRecipe(enrichRecipeMedia(snap))
           setShareMiss(false)
@@ -100,7 +100,7 @@ export default function Detail() {
       return
     }
     setShareMiss(false)
-    const data = Taro.getStorageSync('selectedRecipeDetail') as Recipe | null
+    const data = Taro.getStorageSync(STORAGE_KEYS.selectedRecipeDetail) as Recipe | null
     if (data) setRecipe(enrichRecipeMedia(data))
     else setRecipe(null)
   }, [router.params.shareId, router.params.payload])

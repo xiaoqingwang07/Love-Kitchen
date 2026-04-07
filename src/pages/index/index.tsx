@@ -8,6 +8,7 @@ import { fetchLiveWeather, getMockWeather, type WeatherData } from '../../api/we
 import { getWeatherRecommendationsForWeather } from '../../utils/recommend'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
 import { usePantryStore } from '../../store/context'
+import { STORAGE_KEYS } from '../../store/storageKeys'
 import type { Recipe, SceneType } from '../../types/recipe'
 import * as S from './styles'
 
@@ -40,10 +41,10 @@ function Index() {
   const weather = recommendBundle.weather
 
   useDidShow(() => {
-    const autoSearch = Taro.getStorageSync('autoSearchIngredient')
+    const autoSearch = Taro.getStorageSync(STORAGE_KEYS.autoSearchIngredient)
     if (autoSearch) {
       setInputValue(autoSearch)
-      Taro.removeStorageSync('autoSearchIngredient')
+      Taro.removeStorageSync(STORAGE_KEYS.autoSearchIngredient)
     }
     setScene(getStoredScene())
     loadSearchHistory()
@@ -82,7 +83,7 @@ function Index() {
     Taro.navigateTo({ url: `/pages/result/index?from=random&scene=${scene}` })
 
   const handleCardClick = (item: Recipe) => {
-    Taro.setStorageSync('selectedRecipeDetail', { ...item, source: item.source ?? 'local' })
+    Taro.setStorageSync(STORAGE_KEYS.selectedRecipeDetail, { ...item, source: item.source ?? 'local' })
     Taro.navigateTo({ url: '/pages/detail/index' })
   }
 
@@ -127,7 +128,7 @@ function Index() {
           style={S.headerLinkStyle}
           onClick={() => {
             try {
-              Taro.setStorageSync('profileOpenFavorites', '1')
+              Taro.setStorageSync(STORAGE_KEYS.profileOpenFavorites, '1')
             } catch {
               /* ignore */
             }

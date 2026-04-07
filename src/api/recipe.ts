@@ -7,25 +7,24 @@ import Taro from '@tarojs/taro'
 import type { Recipe, SceneType } from '../types/recipe'
 import { enrichRecipeMedia } from '../utils/enrichRecipeMedia'
 import { parseLlmRecipeArray } from '../schemas/recipeLlm'
+import { LLM_STORAGE_KEYS, STORAGE_KEYS } from '../store/storageKeys'
 
 /** OpenAI 兼容 Base URL（中国大陆：api.minimaxi.com，勿使用 api.minimax.io） */
 const API_BASE_URL = 'https://api.minimaxi.com/v1'
 const DEFAULT_MODEL = 'MiniMax-M2.7'
 
-const SCENE_STORAGE = 'recipeScene'
-
 export function getStoredScene(): SceneType {
-  const s = Taro.getStorageSync(SCENE_STORAGE) as SceneType | ''
+  const s = Taro.getStorageSync(STORAGE_KEYS.recipeScene) as SceneType | ''
   if (s === 'runner' || s === 'quick' || s === 'muscle' || s === 'normal') return s
   return 'normal'
 }
 
 export function setStoredScene(scene: SceneType): void {
-  Taro.setStorageSync(SCENE_STORAGE, scene)
+  Taro.setStorageSync(STORAGE_KEYS.recipeScene, scene)
 }
 
 function getDiners(): number {
-  const n = Number(Taro.getStorageSync('defaultDinersCount'))
+  const n = Number(Taro.getStorageSync(STORAGE_KEYS.defaultDinersCount))
   if (Number.isFinite(n) && n >= 1 && n <= 10) return n
   return 2
 }
@@ -65,8 +64,6 @@ export interface FetchRecipesOptions extends RequestConfig {
 const DEFAULT_RETRY = 2
 const DEFAULT_TIMEOUT_MS = 60000
 const DEFAULT_CONFIG: RequestConfig = { retry: DEFAULT_RETRY, timeout: DEFAULT_TIMEOUT_MS }
-
-const LLM_STORAGE_KEYS = ['LLM_API_KEY', 'DEEPSEEK_API_KEY'] as const
 
 /**
  * 优先「我的」里保存的 Key；否则 .env.local / 环境变量注入的 TARO_APP_MINIMAX_API_KEY（其次兼容 TARO_APP_DEEPSEEK_API_KEY 占位读取，接口仍为 MiniMax）。

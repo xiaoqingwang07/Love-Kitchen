@@ -9,14 +9,13 @@ import {
   getCookedRecipes,
   toggleFavorite,
 } from '../../store'
+import { STORAGE_KEYS } from '../../store/storageKeys'
 import { checkApiKey, getLlmApiKey, getStoredScene, setStoredScene, usesLlmProxy } from '../../api/recipe'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
 import { D } from '../../theme/designTokens'
 import * as Com from '../../styles/common'
 import type { SceneType } from '../../types/recipe'
 import type { Recipe } from '../../types/recipe'
-
-const PROFILE_OPEN_FAVORITES = 'profileOpenFavorites'
 
 function Profile() {
   const pantryStore = usePantryStore()
@@ -39,8 +38,8 @@ function Profile() {
   useDidShow(() => {
     loadFavoriteItems()
     try {
-      if (Taro.getStorageSync(PROFILE_OPEN_FAVORITES)) {
-        Taro.removeStorageSync(PROFILE_OPEN_FAVORITES)
+      if (Taro.getStorageSync(STORAGE_KEYS.profileOpenFavorites)) {
+        Taro.removeStorageSync(STORAGE_KEYS.profileOpenFavorites)
         setShowFavorites(true)
       }
     } catch {
@@ -50,9 +49,9 @@ function Profile() {
 
   useEffect(() => {
     const stored =
-      Taro.getStorageSync('LLM_API_KEY') || Taro.getStorageSync('DEEPSEEK_API_KEY') || ''
+      Taro.getStorageSync(STORAGE_KEYS.llmApiKey) || Taro.getStorageSync(STORAGE_KEYS.deepseekApiKey) || ''
     setApiKey(stored)
-    const count = Taro.getStorageSync('defaultDinersCount') || 2
+    const count = Taro.getStorageSync(STORAGE_KEYS.defaultDinersCount) || 2
     setDinersCount(count)
     setRecipeScene(getStoredScene())
     if (usesLlmProxy()) {
@@ -102,8 +101,8 @@ function Profile() {
       return
     }
     const v = apiKey.trim()
-    Taro.setStorageSync('LLM_API_KEY', v)
-    Taro.setStorageSync('DEEPSEEK_API_KEY', v)
+    Taro.setStorageSync(STORAGE_KEYS.llmApiKey, v)
+    Taro.setStorageSync(STORAGE_KEYS.deepseekApiKey, v)
     Taro.showLoading({ title: '验证中...' })
     const result = await checkApiKey()
     Taro.hideLoading()
@@ -119,7 +118,7 @@ function Profile() {
   const handleDinersChange = (delta: number) => {
     const next = Math.max(1, Math.min(10, dinersCount + delta))
     setDinersCount(next)
-    Taro.setStorageSync('defaultDinersCount', next)
+    Taro.setStorageSync(STORAGE_KEYS.defaultDinersCount, next)
   }
 
   const favCount = getFavoriteCount()
@@ -200,7 +199,7 @@ function Profile() {
                   key={String(r.id ?? idx)}
                   style={{ ...Com.cardRowStyle, marginBottom: 10 }}
                   onClick={() => {
-                    Taro.setStorageSync('selectedRecipeDetail', r)
+                    Taro.setStorageSync(STORAGE_KEYS.selectedRecipeDetail, r)
                     Taro.navigateTo({ url: '/pages/detail/index' })
                   }}
                 >
@@ -262,7 +261,7 @@ function Profile() {
                 key={idx}
                 style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '14px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '12px', border: `0.5px solid ${D.separatorLight}`, boxShadow: D.shadowCard }}
                 onClick={() => {
-                  Taro.setStorageSync('selectedRecipeDetail', item)
+                  Taro.setStorageSync(STORAGE_KEYS.selectedRecipeDetail, item)
                   Taro.navigateTo({ url: '/pages/detail/index' })
                 }}
               >

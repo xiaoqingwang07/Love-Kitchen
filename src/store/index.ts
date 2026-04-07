@@ -3,17 +3,12 @@
  */
 import Taro from '@tarojs/taro'
 import type { Recipe } from '../types/recipe'
-
-// ============ Storage Keys ============
-const FAVORITES_KEY = 'favoriteRecipes'
-const FAVORITE_DETAILS_KEY = 'favoriteRecipeDetails'
-const SEARCH_HISTORY_KEY = 'searchHistory'
-const COOKED_RECIPES_KEY = 'cookedRecipes'
+import { STORAGE_KEYS } from './storageKeys'
 
 // ============ 收藏相关（ID 统一为字符串，兼容 AI 字符串 id 与历史数字 id） ============
 export const getFavoriteIds = (): string[] => {
   try {
-    const fav = Taro.getStorageSync(FAVORITES_KEY)
+    const fav = Taro.getStorageSync(STORAGE_KEYS.favoriteRecipes)
     if (!Array.isArray(fav)) return []
     return fav.map((x: unknown) => String(x))
   } catch { return [] }
@@ -21,7 +16,7 @@ export const getFavoriteIds = (): string[] => {
 
 export const getFavoriteDetails = (): Recipe[] => {
   try {
-    const details = Taro.getStorageSync(FAVORITE_DETAILS_KEY)
+    const details = Taro.getStorageSync(STORAGE_KEYS.favoriteRecipeDetails)
     return Array.isArray(details) ? details : []
   } catch { return [] }
 }
@@ -37,15 +32,15 @@ export const toggleFavorite = (recipe: Recipe): boolean => {
 
   if (favs.includes(id)) {
     const newFavs = favs.filter((fid) => fid !== id)
-    Taro.setStorageSync(FAVORITES_KEY, newFavs)
+    Taro.setStorageSync(STORAGE_KEYS.favoriteRecipes, newFavs)
     details = details.filter((d) => String(d.id) !== id)
-    Taro.setStorageSync(FAVORITE_DETAILS_KEY, details)
+    Taro.setStorageSync(STORAGE_KEYS.favoriteRecipeDetails, details)
     return false
   }
   const newFavs = [...favs, id]
-  Taro.setStorageSync(FAVORITES_KEY, newFavs)
+  Taro.setStorageSync(STORAGE_KEYS.favoriteRecipes, newFavs)
   details = [...details, { ...recipe, savedAt: Date.now() }]
-  Taro.setStorageSync(FAVORITE_DETAILS_KEY, details)
+  Taro.setStorageSync(STORAGE_KEYS.favoriteRecipeDetails, details)
   return true
 }
 
@@ -61,7 +56,7 @@ export interface SearchHistoryItem {
 
 export const getSearchHistory = (): SearchHistoryItem[] => {
   try {
-    const history = Taro.getStorageSync(SEARCH_HISTORY_KEY)
+    const history = Taro.getStorageSync(STORAGE_KEYS.searchHistory)
     return Array.isArray(history) ? history : []
   } catch { return [] }
 }
@@ -72,17 +67,17 @@ export const addSearchHistory = (keywords: string): void => {
   history = history.filter(item => item.keywords !== keywords)
   history.unshift({ keywords: keywords.trim(), timestamp: Date.now() })
   if (history.length > MAX_HISTORY) history = history.slice(0, MAX_HISTORY)
-  Taro.setStorageSync(SEARCH_HISTORY_KEY, history)
+  Taro.setStorageSync(STORAGE_KEYS.searchHistory, history)
 }
 
 export const clearSearchHistory = (): void => {
-  Taro.removeStorageSync(SEARCH_HISTORY_KEY)
+  Taro.removeStorageSync(STORAGE_KEYS.searchHistory)
 }
 
 export const deleteSearchHistory = (index: number): void => {
   const history = getSearchHistory()
   history.splice(index, 1)
-  Taro.setStorageSync(SEARCH_HISTORY_KEY, history)
+  Taro.setStorageSync(STORAGE_KEYS.searchHistory, history)
 }
 
 // ============ 做过的菜 ============
@@ -90,7 +85,7 @@ const MAX_COOKED = 20
 
 export const getCookedRecipes = (): (Recipe & { cookedAt: number })[] => {
   try {
-    const cooked = Taro.getStorageSync(COOKED_RECIPES_KEY)
+    const cooked = Taro.getStorageSync(STORAGE_KEYS.cookedRecipes)
     return Array.isArray(cooked) ? cooked : []
   } catch { return [] }
 }
@@ -102,7 +97,7 @@ export const markAsCooked = (recipe: Recipe): boolean => {
     const id = String(recipe.id)
     if (cooked.some((c) => String(c.id) === id)) return true
     const next = [{ ...recipe, cookedAt: Date.now() }, ...cooked].slice(0, MAX_COOKED)
-    Taro.setStorageSync(COOKED_RECIPES_KEY, next)
+    Taro.setStorageSync(STORAGE_KEYS.cookedRecipes, next)
     return true
   } catch (e) {
     console.error('Mark as cooked failed:', e)
@@ -111,7 +106,6 @@ export const markAsCooked = (recipe: Recipe): boolean => {
 }
 
 // ============ 缓存相关 ============
-const RECIPE_CACHE_KEY = 'recipeCache'
 const CACHE_EXPIRE = 24 * 60 * 60 * 1000 // 24小时
 const MAX_CACHE_SIZE = 50 // 最多缓存50条
 
@@ -122,12 +116,12 @@ interface CacheItem {
 
 export const getCachedRecipe = (key: string): Recipe | Recipe[] | null => {
   try {
-    const cache = Taro.getStorageSync(RECIPE_CACHE_KEY) as Record<string, CacheItem> | null
+    const cache = Taro.getStorageSync(STORAGE_KEYS.recipeCache) as Record<string, CacheItem> | null
     if (!cache || !cache[key]) return null
     const item = cache[key]
     if (Date.now() - item.timestamp > CACHE_EXPIRE) {
       delete cache[key]
-      Taro.setStorageSync(RECIPE_CACHE_KEY, cache)
+      Taro.setStorageSync(STORAGE_KEYS.recipeCache, cache)
       return null
     }
     return item.data
@@ -136,7 +130,7 @@ export const getCachedRecipe = (key: string): Recipe | Recipe[] | null => {
 
 export const setCachedRecipe = (key: string, data: Recipe | Recipe[]): void => {
   try {
-    let cache = (Taro.getStorageSync(RECIPE_CACHE_KEY) as Record<string, CacheItem>) || {}
+    let cache = (Taro.getStorageSync(STORAGE_KEYS.recipeCache) as Record<string, CacheItem>) || {}
     
     // 超过容量限制时，删除最老的缓存
     if (Object.keys(cache).length >= MAX_CACHE_SIZE) {
@@ -146,16 +140,16 @@ export const setCachedRecipe = (key: string, data: Recipe | Recipe[]): void => {
     }
     
     cache[key] = { data, timestamp: Date.now() }
-    Taro.setStorageSync(RECIPE_CACHE_KEY, cache)
+    Taro.setStorageSync(STORAGE_KEYS.recipeCache, cache)
   } catch (e) { console.error('Cache set failed:', e) }
 }
 
 export const removeCachedRecipe = (key: string): void => {
   try {
-    const cache = (Taro.getStorageSync(RECIPE_CACHE_KEY) as Record<string, CacheItem>) || {}
+    const cache = (Taro.getStorageSync(STORAGE_KEYS.recipeCache) as Record<string, CacheItem>) || {}
     if (!cache[key]) return
     delete cache[key]
-    Taro.setStorageSync(RECIPE_CACHE_KEY, cache)
+    Taro.setStorageSync(STORAGE_KEYS.recipeCache, cache)
   } catch (e) { console.error('Cache remove failed:', e) }
 }
 

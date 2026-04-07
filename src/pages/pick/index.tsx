@@ -7,6 +7,7 @@ import { addSearchHistory } from '../../store'
 import { getDaysLeft } from '../../types/pantry'
 import type { PantryItem } from '../../types/pantry'
 import { getStoredScene } from '../../api/recipe'
+import { STORAGE_KEYS } from '../../store/storageKeys'
 import { D } from '../../theme/designTokens'
 
 const CATEGORIES = [
@@ -83,7 +84,7 @@ function Pick() {
       Taro.showToast({ title: '先选些食材吧~', icon: 'none' })
       return
     }
-    Taro.setStorageSync('savedIngredients', selected)
+    Taro.setStorageSync(STORAGE_KEYS.savedIngredients, selected)
     addSearchHistory(selected.join('、'))
     const scene = getStoredScene()
     Taro.navigateTo({

@@ -7,6 +7,7 @@ import { getFavoriteIds, toggleFavorite, generateCacheKey, getCachedRecipe, setC
 import { matchRecipesSimple } from '../../utils/recipeMatch'
 import { shuffleWithSeed, daySeed } from '../../utils/shuffleSeed'
 import { D } from '../../theme/designTokens'
+import { STORAGE_KEYS } from '../../store/storageKeys'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
 import type { Recipe, SceneType } from '../../types/recipe'
 
@@ -207,7 +208,7 @@ export default function Result() {
   }
 
   const goToDetail = (item: Recipe) => {
-    Taro.setStorageSync('selectedRecipeDetail', item)
+    Taro.setStorageSync(STORAGE_KEYS.selectedRecipeDetail, item)
     Taro.navigateTo({ url: '/pages/detail/index' })
   }
 

@@ -10,12 +10,11 @@ import type { FridgeSide } from '../../types/fridge'
 import { slotKind, slotTitle } from '../../types/fridge'
 import { parseShoppingLines, suggestPlacementWithBalance } from '../../utils/fridgePlacement'
 import { D } from '../../theme/designTokens'
+import { STORAGE_KEYS } from '../../store/storageKeys'
 
 type HighlightMode = 'all' | 'expiring' | 'expired'
 
 const pad = D.pagePadH
-const FRIDGE_TIP_KEY = 'pantry_fridge_tip_dismissed'
-const EMPTY_FRIDGE_BANNER_KEY = 'pantry_empty_banner_dismissed'
 
 /** 每层最小高度；左右成对行等高，食材名完整换行 */
 const SLOT_PULL_MIN = 56
@@ -41,14 +40,14 @@ function FridgePantry() {
   >(null)
   const [showFridgeTip, setShowFridgeTip] = useState(() => {
     try {
-      return !Taro.getStorageSync(FRIDGE_TIP_KEY)
+      return !Taro.getStorageSync(STORAGE_KEYS.pantryFridgeTipDismissed)
     } catch {
       return true
     }
   })
   const [showEmptyBanner, setShowEmptyBanner] = useState(() => {
     try {
-      return !Taro.getStorageSync(EMPTY_FRIDGE_BANNER_KEY)
+      return !Taro.getStorageSync(STORAGE_KEYS.pantryEmptyBannerDismissed)
     } catch {
       return true
     }
@@ -309,7 +308,7 @@ function FridgePantry() {
                 style={{ fontSize: 12, fontWeight: '600', color: D.labelTertiary, flexShrink: 0 }}
                 onClick={() => {
                   try {
-                    Taro.setStorageSync(EMPTY_FRIDGE_BANNER_KEY, 1)
+                    Taro.setStorageSync(STORAGE_KEYS.pantryEmptyBannerDismissed, 1)
                   } catch {
                     /* ignore */
                   }
@@ -343,7 +342,7 @@ function FridgePantry() {
               style={{ fontSize: 12, fontWeight: '700', color: D.accent, flexShrink: 0 }}
               onClick={() => {
                 try {
-                  Taro.setStorageSync(FRIDGE_TIP_KEY, 1)
+                  Taro.setStorageSync(STORAGE_KEYS.pantryFridgeTipDismissed, 1)
                 } catch { /* ignore */ }
                 setShowFridgeTip(false)
               }}
