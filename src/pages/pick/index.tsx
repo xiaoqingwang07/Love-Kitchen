@@ -42,7 +42,6 @@ function Pick() {
   const pantryStore = usePantryStore()
   const [selected, setSelected] = useState<string[]>([])
   const [inputValue, setInputValue] = useState('')
-  const [initialized, setInitialized] = useState(false)
   const [ingredientFilter, setIngredientFilter] = useState('')
 
   const expiringNames = useMemo(() => {
@@ -58,11 +57,10 @@ function Pick() {
     )
   }, [ingredientFilter])
 
+  /** 每次进入选菜页：按当前冰箱临期重新默认勾选 1～2 项（无临期则清空勾选） */
   useDidShow(() => {
-    if (!initialized && expiringNames.length > 0) {
-      setSelected(expiringNames.slice(0, 2))
-      setInitialized(true)
-    }
+    const names = pantryStore.expiringItems.map((i) => i.name)
+    setSelected(names.slice(0, 2))
   })
 
   const toggleSelect = (name: string) => {
