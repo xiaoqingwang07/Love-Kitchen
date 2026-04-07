@@ -8,6 +8,20 @@ import { findPantryItemForRecipeIngredient } from '../utils/ingredientMatch'
 import { suggestPlacementWithBalance } from '../utils/fridgePlacement'
 import { STORAGE_KEYS } from './storageKeys'
 
+/** 连续改库存时合并为单次写入，避免频繁 JSON + Storage 同步 */
+const PANTRY_PERSIST_DEBOUNCE_MS = 400
+
+function debounce(fn: () => void, ms: number): () => void {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  return () => {
+    if (timer !== undefined) clearTimeout(timer)
+    timer = setTimeout(() => {
+      timer = undefined
+      fn()
+    }, ms)
+  }
+}
+
 const FOOD_CATEGORIES: FoodCategory[] = [
   'vegetable', 'meat', 'seafood', 'fruit', 'dairy', 'egg', 'grain', 'seasoning', 'other',
 ]
@@ -108,12 +122,17 @@ export class PantryStore {
     makeAutoObservable(this)
     this.loadFromStorage()
 
-    autorun(() => {
+    const schedulePersist = debounce(() => {
       try {
         Taro.setStorageSync(STORAGE_KEYS.pantryItems, JSON.stringify(this.items))
       } catch (e) {
         console.error('PantryStore persist failed:', e)
       }
+    }, PANTRY_PERSIST_DEBOUNCE_MS)
+
+    autorun(() => {
+      void this.items.length
+      schedulePersist()
     })
   }
 
