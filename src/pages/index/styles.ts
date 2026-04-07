@@ -232,68 +232,6 @@ export const recipeListStyle: CSSProperties = {
   gap: 12,
 }
 
-/** 扑克牌叠放：三张推荐，点按最上层或露出的边即可进详情 */
-export const deckWrapStyle: CSSProperties = {
-  position: 'relative',
-  width: '100%',
-  height: 212,
-  marginTop: 4,
-}
-
-export const deckCardStyle = (index: number): CSSProperties => {
-  const rotations = [-5, 2, 7]
-  const tops = [0, 14, 28]
-  const z = 30 - index * 10
-  return {
-    position: 'absolute',
-    left: '50%',
-    width: '88%',
-    marginLeft: '-44%',
-    top: tops[index] ?? 0,
-    zIndex: z,
-    transform: `rotate(${rotations[index] ?? 0}deg)`,
-    borderRadius: D.radiusM,
-    overflow: 'hidden',
-    backgroundColor: D.bgElevated,
-    border: `0.5px solid ${D.separatorLight}`,
-    boxShadow: '0 10px 28px rgba(18, 22, 28, 0.12)',
-    display: 'flex',
-    flexDirection: 'row',
-    minHeight: 118,
-  }
-}
-
-export const deckThumbWrapStyle: CSSProperties = {
-  width: 100,
-  height: 100,
-  flexShrink: 0,
-  backgroundColor: D.bg,
-}
-
-export const deckBodyStyle: CSSProperties = {
-  flex: 1,
-  padding: '12px 14px',
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'center',
-  minWidth: 0,
-}
-
-export const deckTitleStyle: CSSProperties = {
-  fontSize: 15,
-  fontWeight: '600',
-  color: D.label,
-  lineHeight: 1.35,
-  letterSpacing: '-0.02em',
-}
-
-export const deckTagStyle: CSSProperties = {
-  fontSize: D.caption,
-  color: D.labelTertiary,
-  fontWeight: '500',
-  marginTop: 6,
-}
-
 export const moreStripTitleStyle: CSSProperties = {
   fontSize: 12,
   fontWeight: '600',

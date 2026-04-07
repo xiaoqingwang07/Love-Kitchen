@@ -87,9 +87,6 @@ export function getLlmApiKey(): string {
   return ''
 }
 
-/** @deprecated 使用 getLlmApiKey；保留别名避免大范围改名 */
-export const getDeepseekApiKey = getLlmApiKey
-
 const getApiKey = getLlmApiKey
 
 function proxyUrl(): string {

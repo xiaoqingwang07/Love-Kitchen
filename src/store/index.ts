@@ -86,17 +86,6 @@ export const deleteSearchHistory = (index: number): void => {
 }
 
 // ============ 做过的菜 ============
-export const markAsCooked = (recipe: Recipe): void => {
-  try {
-    const cooked = getCookedRecipes()
-    if (!cooked.find(c => c.id === recipe.id)) {
-      cooked.unshift({ ...recipe, cookedAt: Date.now() })
-      if (cooked.length > 20) cooked.pop()
-      Taro.setStorageSync(COOKED_RECIPES_KEY, cooked)
-    }
-  } catch (e) { console.error('Mark as cooked failed:', e) }
-}
-
 export const getCookedRecipes = (): (Recipe & { cookedAt: number })[] => {
   try {
     const cooked = Taro.getStorageSync(COOKED_RECIPES_KEY)
