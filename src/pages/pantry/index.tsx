@@ -11,6 +11,7 @@ import { slotKind, slotTitle } from '../../types/fridge'
 import { parseShoppingLines, suggestPlacementWithBalance } from '../../utils/fridgePlacement'
 import { D } from '../../theme/designTokens'
 import { STORAGE_KEYS } from '../../store/storageKeys'
+import { slotShortLabel } from '../../utils/slotLabel'
 
 type HighlightMode = 'all' | 'expiring' | 'expired'
 
@@ -21,11 +22,6 @@ const SLOT_PULL_MIN = 56
 const SLOT_DRAWER_MIN = 62
 const SLOT_STACK_GAP = 5
 const SLOT_INDICES = [0, 1, 2, 3, 4, 5, 6] as const
-
-function slotShortLabel(side: FridgeSide, index: number): string {
-  const z = side === 'freezer' ? '冻' : '藏'
-  return index < 5 ? `${z}·${index + 1}层` : index === 5 ? `${z}·上抽` : `${z}·下抽`
-}
 
 function FridgePantry() {
   const store = usePantryStore()

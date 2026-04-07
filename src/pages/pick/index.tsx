@@ -5,10 +5,10 @@ import { observer } from 'mobx-react-lite'
 import { usePantryStore } from '../../store/context'
 import { addSearchHistory } from '../../store'
 import { getDaysLeft } from '../../types/pantry'
-import type { PantryItem } from '../../types/pantry'
 import { getStoredScene } from '../../api/recipe'
 import { STORAGE_KEYS } from '../../store/storageKeys'
 import { D } from '../../theme/designTokens'
+import { slotHint } from '../../utils/slotLabel'
 
 const CATEGORIES = [
   {
@@ -32,11 +32,6 @@ const CATEGORIES = [
     items: ['米饭', '面条', '意面', '吐司', '馒头', '饺子皮', '粉条', '粉丝', '年糕']
   }
 ]
-
-function slotHint(p: PantryItem): string {
-  const z = p.side === 'freezer' ? '冻' : '藏'
-  return p.slotIndex < 5 ? `${z}${p.slotIndex + 1}层` : p.slotIndex === 5 ? `${z}上抽` : `${z}下抽`
-}
 
 function Pick() {
   const pantryStore = usePantryStore()
