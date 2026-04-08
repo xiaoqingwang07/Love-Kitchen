@@ -150,7 +150,7 @@ export class PantryStore {
     } catch (e) {
       console.error('PantryStore load failed:', e)
     }
-    this.items = createMockData()
+    this.items = []
   }
 
   itemsInSlot(side: FridgeSide, slotIndex: number): PantryItem[] {

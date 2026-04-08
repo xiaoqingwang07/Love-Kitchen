@@ -30,7 +30,7 @@ export type FreshnessStatus = 'fresh' | 'expiring' | 'expired'
 export function getFreshnessStatus(item: PantryItem): FreshnessStatus {
   const now = Date.now()
   if (now >= item.expiresAt) return 'expired'
-  const daysLeft = (item.expiresAt - now) / (1000 * 60 * 60 * 24)
+  const daysLeft = Math.ceil((item.expiresAt - now) / (1000 * 60 * 60 * 24))
   if (daysLeft <= 3) return 'expiring'
   return 'fresh'
 }

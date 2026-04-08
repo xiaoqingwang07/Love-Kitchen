@@ -1,6 +1,7 @@
 import { View, Text, Button, Image } from '@tarojs/components'
 import Taro, { useRouter, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { useState, useEffect } from 'react'
+import { observer } from 'mobx-react-lite'
 import { usePantryStore } from '../../store/context'
 import { findPantryItemForRecipeIngredient } from '../../utils/ingredientMatch'
 import { D } from '../../theme/designTokens'
@@ -34,7 +35,7 @@ function buildSharePayload(recipe: Recipe): string | null {
   }
 }
 
-export default function Detail() {
+function Detail() {
   const router = useRouter()
   const pantryStore = usePantryStore()
   const [recipe, setRecipe] = useState<Recipe | null>(null)
@@ -366,3 +367,5 @@ export default function Detail() {
     </View>
   )
 }
+
+export default observer(Detail)

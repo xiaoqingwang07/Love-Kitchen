@@ -263,7 +263,7 @@ function Profile() {
               解决「今天吃什么、怎么做」以及食材浪费问题。通过极简管理、智能决策、高效执行，让每一餐都有爱。
             </Text>
             <Text style={{ fontSize: '13px', color: D.labelTertiary, display: 'block', marginTop: '16px' }}>
-              技术栈：Taro + React + TypeScript + MobX + MiniMax（MiniMax-M2.7）。实时天气来自 Open-Meteo（需在小程序后台配置 request 合法域名）。
+              爱心厨房 — 让每一餐都有爱。
             </Text>
           </View>
         </View>
@@ -333,9 +333,6 @@ function Profile() {
         </View>
 
         <View style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '16px', marginBottom: '12px', marginTop: '-4px', border: `0.5px solid ${D.separatorLight}` }}>
-          <Text style={{ fontSize: 12, color: D.labelTertiary, marginBottom: 10, lineHeight: 1.45 }}>
-            构建时已注入 TARO_APP_LLM_PROXY_URL。请在微信公众平台将中转域名加入 request 合法域名；MiniMax 域名无需再配。
-          </Text>
           <Button
             style={{ height: '40px', backgroundColor: D.accent, color: '#fff', borderRadius: '20px', fontSize: '14px', border: 'none' }}
             onClick={handleTestLlmProxy}

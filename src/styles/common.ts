@@ -147,7 +147,7 @@ export const loadingEmojiStyle: CSSProperties = {
 }
 
 export const loadingTextStyle: CSSProperties = {
-  color: '#8e8e93',
+  color: D.labelTertiary,
   fontSize: '15px',
   fontWeight: '500'
 }

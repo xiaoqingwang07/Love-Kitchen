@@ -1,7 +1,7 @@
 {
   "miniprogramRoot": "dist/",
-  "projectname": "taste-lab-mvp",
-  "description": "Taste Lab WeChat Mini Program MVP",
+  "projectname": "love-kitchen",
+  "description": "Love Kitchen WeChat Mini Program",
   "appid": "wx3bd5040d682e957f",
   "setting": {
     "urlCheck": true,
