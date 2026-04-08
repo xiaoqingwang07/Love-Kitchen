@@ -1,4 +1,4 @@
-import { View, Text, Input, Button, ScrollView, Image } from '@tarojs/components'
+import { View, Text, Button, ScrollView, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState, useEffect, useCallback } from 'react'
 import { observer } from 'mobx-react-lite'
@@ -10,7 +10,7 @@ import {
   toggleFavorite,
 } from '../../store/storageUtils'
 import { STORAGE_KEYS } from '../../store/storageKeys'
-import { checkApiKey, getLlmApiKey, getStoredScene, setStoredScene, usesLlmProxy } from '../../api/recipe'
+import { checkApiKey, getStoredScene, setStoredScene, usesLlmProxy } from '../../api/recipe'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
 import { D } from '../../theme/designTokens'
 import * as Com from '../../styles/common'
@@ -19,15 +19,12 @@ import type { Recipe } from '../../types/recipe'
 
 function Profile() {
   const pantryStore = usePantryStore()
-  const [apiKey, setApiKey] = useState('')
   const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null)
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
   const [cookedRecipes, setCookedRecipes] = useState<(Recipe & { cookedAt: number })[]>([])
   const [dinersCount, setDinersCount] = useState(2)
   const [recipeScene, setRecipeScene] = useState<SceneType>(() => getStoredScene())
-  const [apiKeyFromBuild, setApiKeyFromBuild] = useState(false)
   const [showFavorites, setShowFavorites] = useState(false)
   const [favoriteItems, setFavoriteItems] = useState<Recipe[]>([])
 
@@ -48,20 +45,10 @@ function Profile() {
   })
 
   useEffect(() => {
-    const stored =
-      Taro.getStorageSync(STORAGE_KEYS.llmApiKey) || Taro.getStorageSync(STORAGE_KEYS.deepseekApiKey) || ''
-    setApiKey(stored)
     const count = Taro.getStorageSync(STORAGE_KEYS.defaultDinersCount) || 2
     setDinersCount(count)
     setRecipeScene(getStoredScene())
     if (usesLlmProxy()) {
-      setApiKeyFromBuild(false)
-      void checkApiKey().then((r) => setApiKeyValid(r.valid))
-      return
-    }
-    const injected = !stored && getLlmApiKey().length > 0
-    setApiKeyFromBuild(injected)
-    if (injected) {
       void checkApiKey().then((r) => setApiKeyValid(r.valid))
     }
   }, [])
@@ -88,30 +75,6 @@ function Profile() {
       Taro.showToast({ title: '中转可用', icon: 'success' })
     } else {
       Taro.showModal({ title: '检测失败', content: result.error || '请检查 Vercel 环境与小程序 request 域名', showCancel: false })
-    }
-  }
-
-  const handleSaveApiKey = async () => {
-    if (usesLlmProxy()) {
-      Taro.showToast({ title: '已启用服务端代理，无需在客户端保存 Key', icon: 'none' })
-      return
-    }
-    if (!apiKey.trim()) {
-      Taro.showToast({ title: '请输入 API Key', icon: 'none' })
-      return
-    }
-    const v = apiKey.trim()
-    Taro.setStorageSync(STORAGE_KEYS.llmApiKey, v)
-    Taro.setStorageSync(STORAGE_KEYS.deepseekApiKey, v)
-    Taro.showLoading({ title: '验证中...' })
-    const result = await checkApiKey()
-    Taro.hideLoading()
-    setApiKeyValid(result.valid)
-    if (result.valid) {
-      Taro.showToast({ title: 'API Key 有效', icon: 'success' })
-      setShowApiKeyInput(false)
-    } else {
-      Taro.showModal({ title: '验证失败', content: result.error || 'Key 无效', showCancel: false })
     }
   }
 
@@ -351,69 +314,33 @@ function Profile() {
             ))}
           </View>
         </View>
-        {/* LLM：服务端代理（推荐）或客户端 Key（仅开发） */}
         <View
           style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '16px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '14px', border: `0.5px solid ${D.separatorLight}`, boxShadow: D.shadowCard }}
-          onClick={() => !usesLlmProxy() && setShowApiKeyInput(!showApiKeyInput)}
         >
-          <Text style={{ fontSize: '24px' }}>{usesLlmProxy() ? '🛡️' : '🔑'}</Text>
+          <Text style={{ fontSize: '24px' }}>🛡️</Text>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: '16px', fontWeight: '600', color: D.label, display: 'block' }}>
-              {usesLlmProxy() ? '智能推荐服务' : '开发调试'}
+              智能推荐服务
             </Text>
-            <Text style={{ fontSize: '13px', color: usesLlmProxy() ? (apiKeyValid === false ? D.red : D.green) : (apiKey.trim() || apiKeyFromBuild) ? (apiKeyValid === false ? D.red : D.green) : D.labelTertiary }}>
-              {usesLlmProxy()
-                ? apiKeyValid === false
-                  ? '中转不可用，请检查部署与合法域名'
-                  : apiKeyValid === true
-                    ? '已启用：密钥在服务器，客户端不携带 Key'
-                    : '正在检测…'
-                : apiKey.trim()
-                  ? (apiKeyValid === false ? '本地调试 Key 无效' : `本地调试 Key 已配置 (${apiKey.slice(0, 8)}…)`)
-                  : apiKeyFromBuild
-                    ? (apiKeyValid === false ? '本地配置的 Key 无效' : '已通过 .env.local 注入本地调试 Key')
-                    : '正式使用建议直接部署服务端中转'}
+            <Text style={{ fontSize: '13px', color: apiKeyValid === false ? D.red : apiKeyValid === true ? D.green : D.labelTertiary }}>
+              {apiKeyValid === false
+                ? '中转不可用，请检查部署与合法域名'
+                : apiKeyValid === true
+                  ? '已启用：密钥在服务器，客户端不携带 Key'
+                  : '正在检测…'}
             </Text>
           </View>
-          {!usesLlmProxy() && <Text style={{ fontSize: '16px', color: D.labelTertiary }}>{showApiKeyInput ? '▾' : '›'}</Text>}
         </View>
 
-        {!usesLlmProxy() && (
-          <Text style={{ fontSize: 11, color: D.labelTertiary, marginBottom: 10, lineHeight: 1.45, paddingLeft: 2, paddingRight: 2 }}>
-            正式给亲友用时，建议部署服务端中转，家人无需自己申请 AI 密钥。
+        <View style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '16px', marginBottom: '12px', marginTop: '-4px', border: `0.5px solid ${D.separatorLight}` }}>
+          <Text style={{ fontSize: 12, color: D.labelTertiary, marginBottom: 10, lineHeight: 1.45 }}>
+            构建时已注入 TARO_APP_LLM_PROXY_URL。请在微信公众平台将中转域名加入 request 合法域名；MiniMax 域名无需再配。
           </Text>
-        )}
-
-        {usesLlmProxy() && (
-          <View style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '16px', marginBottom: '12px', marginTop: '-4px', border: `0.5px solid ${D.separatorLight}` }}>
-            <Text style={{ fontSize: 12, color: D.labelTertiary, marginBottom: 10, lineHeight: 1.45 }}>
-              构建时已注入 TARO_APP_LLM_PROXY_URL。请在微信公众平台将中转域名加入 request 合法域名；MiniMax 域名无需再配。
-            </Text>
-            <Button
-              style={{ height: '40px', backgroundColor: D.accent, color: '#fff', borderRadius: '20px', fontSize: '14px', border: 'none' }}
-              onClick={handleTestLlmProxy}
-            >检测中转连通性</Button>
-          </View>
-        )}
-
-        {!usesLlmProxy() && showApiKeyInput && (
-          <View style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '16px', marginBottom: '12px', marginTop: '-4px', border: `0.5px solid ${D.separatorLight}` }}>
-            <Text style={{ fontSize: 12, color: D.labelTertiary, marginBottom: 8, lineHeight: 1.45 }}>
-              上线前请部署服务端中转（见仓库 api/llm-proxy.js），并在 .env.local 中配置 TARO_APP_LLM_PROXY_URL。仅中转模式可用，前端不再支持直连 LLM。
-            </Text>
-            <Input
-              style={{ height: '44px', backgroundColor: D.bg, borderRadius: '12px', padding: '0 16px', fontSize: '14px', marginBottom: '12px', border: `0.5px solid ${D.separatorLight}` }}
-              placeholder='MiniMax API Key（可选，已用 .env.local 可留空）'
-              value={apiKey}
-              onInput={e => setApiKey(e.detail.value)}
-              password
-            />
-            <Button
-              style={{ height: '40px', backgroundColor: D.accent, color: '#fff', borderRadius: '20px', fontSize: '14px', border: 'none' }}
-              onClick={handleSaveApiKey}
-            >保存并验证</Button>
-          </View>
-        )}
+          <Button
+            style={{ height: '40px', backgroundColor: D.accent, color: '#fff', borderRadius: '20px', fontSize: '14px', border: 'none' }}
+            onClick={handleTestLlmProxy}
+          >检测中转连通性</Button>
+        </View>
 
         {/* Diners Count */}
         <View style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '16px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '14px', border: `0.5px solid ${D.separatorLight}`, boxShadow: D.shadowCard }}>
