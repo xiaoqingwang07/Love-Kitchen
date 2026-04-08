@@ -161,6 +161,10 @@ module.exports = async function llmProxy(req, res) {
       },
       body: JSON.stringify(sanitized),
     })
+    if (!r.ok) {
+      return res.status(r.status).json({ error: 'Upstream request failed' })
+    }
+
     const text = await r.text()
     res.setHeader('Content-Type', 'application/json; charset=utf-8')
     res.status(r.status).send(text)
