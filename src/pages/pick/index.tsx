@@ -109,8 +109,8 @@ function Pick() {
 
   return (
     <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: '120px' }}>
-      <View style={{ padding: '24px 22px 8px' }}>
-        <Text style={{ fontSize: 28, fontWeight: '700', color: D.label, display: 'block', marginBottom: 6, letterSpacing: '-0.03em' }}>选菜</Text>
+      <View style={{ padding: '44px 22px 8px' }}>
+        <Text style={{ fontSize: D.titleLarge, fontWeight: D.weightBold, color: D.label, display: 'block', marginBottom: 6, letterSpacing: '-0.04em' }}>选菜</Text>
         <Text style={{ fontSize: D.footnote, color: D.labelSecondary, lineHeight: 1.45 }}>
           爱心厨房：优先消耗临期食材；也可直接勾选常见菜，再智能匹配菜谱
         </Text>
@@ -143,7 +143,7 @@ function Pick() {
               }}
               onClick={() => Taro.switchTab({ url: '/pages/pantry/index' })}
             >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>去录入食材</Text>
+              <Text style={{ fontSize: D.body, fontWeight: D.weightSemibold, color: D.bgElevated }}>去录入食材</Text>
             </View>
             <View
               style={{
@@ -197,13 +197,13 @@ function Pick() {
                     }}
                     onClick={() => toggleSelect(item.name)}
                   >
-                    <Text style={{ color: isSelected ? '#fff' : D.label, fontSize: '13px' }}>
+                    <Text style={{ color: isSelected ? D.bgElevated : D.label, fontSize: D.footnote, fontWeight: D.weightMedium }}>
                       {item.name}
                     </Text>
-                    <Text style={{ color: isSelected ? 'rgba(255,255,255,0.85)' : D.accentWarm, fontSize: '11px' }}>
+                    <Text style={{ color: isSelected ? 'rgba(255,255,255,0.75)' : D.accentWarm, fontSize: D.caption }}>
                       {slotHint(item)} · {days <= 0 ? '今天' : `${days}天`}
                     </Text>
-                    {isSelected ? <Text style={{ color: '#fff', fontSize: '12px' }}> ✓</Text> : null}
+                    {isSelected ? <Text style={{ color: D.bgElevated, fontSize: D.footnote }}> ✓</Text> : null}
                   </View>
                 )
               })}
@@ -278,21 +278,21 @@ function Pick() {
                   <View
                     key={item}
                     style={{
-                      padding: '8px 14px', borderRadius: 12, fontSize: 14,
+                      padding: '8px 14px', borderRadius: D.radiusS, fontSize: D.footnote,
                       ...(isSelected
-                        ? { backgroundColor: D.label, border: `0.5px solid ${D.label}`, color: '#fff' }
+                        ? { backgroundColor: D.accent, border: `0.5px solid ${D.accent}`, color: D.bgElevated }
                         : isExpiring
-                          ? { backgroundColor: D.accentWarmMuted, border: `0.5px solid rgba(255,149,0,0.35)`, color: D.label }
+                          ? { backgroundColor: D.accentWarmMuted, border: `0.5px solid ${D.accentLine}`, color: D.label }
                           : { backgroundColor: D.bgElevated, border: `0.5px solid ${D.separator}`, color: D.label }
                       )
                     }}
                     onClick={() => toggleSelect(item)}
                   >
-                    <Text style={{ fontSize: 14 }}>{item}</Text>
+                    <Text style={{ fontSize: D.footnote, fontWeight: D.weightMedium, color: isSelected ? D.bgElevated : D.label }}>{item}</Text>
                     {pin ? (
-                      <Text style={{ fontSize: 10, color: isSelected ? 'rgba(255,255,255,0.75)' : D.labelTertiary, marginTop: 2 }}>{slotHint(pin)}</Text>
+                      <Text style={{ fontSize: D.caption2, color: isSelected ? 'rgba(255,255,255,0.75)' : D.labelTertiary, marginTop: 2 }}>{slotHint(pin)}</Text>
                     ) : null}
-                    {isSelected ? <Text> ✓</Text> : null}
+                    {isSelected ? <Text style={{ color: D.bgElevated }}> ✓</Text> : null}
                   </View>
                 )
               })}
@@ -304,8 +304,8 @@ function Pick() {
 
       {/* Bottom Bar */}
       <View style={{
-        position: 'fixed', bottom: 0, left: 0, width: '100%', backgroundColor: D.bgElevated,
-        padding: '16px 20px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
+        position: 'fixed', bottom: 0, left: 0, width: '100%', backgroundColor: D.bgGlassHeavy,
+        backdropFilter: 'blur(20px)', padding: '16px 20px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
         boxShadow: '0 -4px 24px rgba(18,17,15,0.06)', display: 'flex', gap: '12px', boxSizing: 'border-box',
         borderTop: `0.5px solid ${D.separatorLight}`,
       }}>
@@ -322,9 +322,9 @@ function Pick() {
         )}
         <Button
           style={{
-            flex: 1, height: '50px', backgroundColor: selected.length > 0 ? D.accent : 'rgba(18,17,15,0.12)',
+            flex: 1, height: 52, backgroundColor: selected.length > 0 ? D.accent : D.separatorLight,
             borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontSize: '16px', fontWeight: '600', border: 'none'
+            color: selected.length > 0 ? D.bgElevated : D.labelTertiary, fontSize: D.body, fontWeight: D.weightSemibold, border: 'none'
           }}
           onClick={handleMatch}
           disabled={selected.length === 0}

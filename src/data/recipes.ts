@@ -9,7 +9,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 1,
     title: '鸡胸肉轻食沙拉',
-    quote: '清爽不腻，工作日晚餐很合适',
+    quote: '鸡胸肉是健身人群的最爱，每100g含约31g蛋白质，热量却只有165大卡',
     rating: 4.8,
     count: 1204,
     emoji: '🥗',
@@ -33,7 +33,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 2,
     title: '快手牛肉炒意面',
-    quote: '碳水与肉的完美结合',
+    quote: '意面源自意大利中部，有记载的历史超过700年，罗马人已经开始食用面食',
     rating: 4.9,
     count: 850,
     emoji: '🍝',
@@ -57,7 +57,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 3,
     title: '番茄鸡蛋汤',
-    quote: '简单快手，暖胃首选',
+    quote: '番茄炒蛋是中国国民菜，据统计中国家庭平均每周要做2.3次',
     rating: 4.7,
     count: 2100,
     emoji: '🍅',
@@ -80,7 +80,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 4,
     title: '牛油果吐司',
-    quote: '低卡饱腹，元气满满',
+    quote: '牛油果原产于墨西哥和中美洲，古代阿兹特克人称其为「睾丸树」，16世纪才传入世界',
     rating: 4.6,
     count: 980,
     emoji: '🥑',
@@ -104,7 +104,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 5,
     title: '香蕉奶昔',
-    quote: '快速补给，能量炸弹',
+    quote: '香蕉是全球第四大主食作物，仅次于大米、小麦和玉米，运动后补充钾元素效果显著',
     rating: 4.8,
     count: 1560,
     emoji: '🥛',
@@ -126,7 +126,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 6,
     title: '蒜香西兰花',
-    quote: '清爽解腻，维生素担当',
+    quote: '西兰花是十字花科蔬菜的代表，富含萝卜硫素，研究发现其有抗氧化和抗炎作用',
     rating: 4.6,
     count: 890,
     emoji: '🥦',
@@ -148,7 +148,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 7,
     title: '辣椒炒肉',
-    quote: '下饭神器，家的味道',
+    quote: '辣椒的辣味来自辣椒素，研究发现适量吃辣可以促进新陈代谢和血液循环',
     rating: 4.9,
     count: 3200,
     emoji: '🌶️',
@@ -173,7 +173,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 8,
     title: '可乐鸡翅',
-    quote: '小朋友的最爱',
+    quote: '可乐鸡翅其实是1980年代在中国本土化诞生的创意菜，灵感来自鲁菜「扒鸡」和西式可乐烹饪',
     rating: 4.8,
     count: 2800,
     emoji: '🍗',
@@ -198,7 +198,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 9,
     title: '酸辣土豆丝',
-    quote: '开胃神器，秒光盘',
+    quote: '土豆原产于南美洲安第斯山脉，约8000年前就被当地人驯化栽培，如今是全球第四大粮食作物',
     rating: 4.7,
     count: 2500,
     emoji: '🥔',
@@ -222,7 +222,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 10,
     title: '香煎三文鱼',
-    quote: '优质蛋白，秒变大厨',
+    quote: '三文鱼的橙红色来自虾青素，这是一种强大的抗氧化剂，三文鱼自己无法合成，只能通过食用磷虾获得',
     rating: 4.8,
     count: 650,
     emoji: '🐟',
@@ -247,7 +247,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 11,
     title: '虾仁蒸蛋',
-    quote: '滑嫩可口，老少皆宜',
+    quote: '蒸蛋加温水而非冷水，是做出平滑如镜口感的关键——冷水会让蛋白质凝固不均匀',
     rating: 4.7,
     count: 1100,
     emoji: '🥚',
@@ -272,7 +272,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 12,
     title: '地三鲜',
-    quote: '茄子土豆青椒，完美三角',
+    quote: '地三鲜是东北菜的代表，但在东北以外地区做法差异很大——正宗东北地三鲜只用这三种食材',
     rating: 4.8,
     count: 1800,
     emoji: '🍆',
@@ -299,7 +299,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 13,
     title: '麻婆豆腐',
-    quote: '麻辣鲜香，米饭杀手',
+    quote: '麻婆豆腐是成都「陈麻婆豆腐店」招牌菜，相传清朝同治年间由陈氏发明，店内至今仍用百年老汤',
     rating: 4.9,
     count: 2200,
     emoji: '🧈',
@@ -323,7 +323,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 14,
     title: '红烧肉',
-    quote: '肥而不腻，入口即化',
+    quote: '苏东坡被贬黄州时发明了东坡肉，留下了「慢着火，少着水，火候足时它自美」的名句',
     rating: 4.9,
     count: 3500,
     emoji: '🥩',
@@ -350,7 +350,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
   {
     id: 15,
     title: '糖醋里脊',
-    quote: '酸甜酥脆，小朋友最爱',
+    quote: '糖醋里脊源于鲁菜「糖醋鲤鱼」，在江浙沪地区演变为酥炸里脊版本，成为孩子最爱的下饭菜',
     rating: 4.8,
     count: 1900,
     emoji: '🍖',

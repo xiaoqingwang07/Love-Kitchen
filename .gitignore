@@ -2,5 +2,8 @@ node_modules/
 dist/
 .DS_Store
 .env.local
+.env
 .swc/
 project.private.config.json
+*.log
+.idea/

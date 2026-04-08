@@ -30,7 +30,7 @@ export const headerRowStyle: CSSProperties = {
   gap: 12,
   paddingLeft: D.pagePadH,
   paddingRight: D.pagePadH,
-  paddingTop: 28,
+  paddingTop: 44,
   paddingBottom: 4,
 }
 
@@ -43,11 +43,11 @@ export const headerLinkStyle: CSSProperties = {
 }
 
 export const titleStyle: CSSProperties = {
-  fontSize: 30,
+  fontSize: 34,
   fontWeight: '700',
   color: D.label,
   letterSpacing: '-0.04em',
-  lineHeight: 1.2,
+  lineHeight: 1.15,
 }
 
 export const titleHintStyle: CSSProperties = {
@@ -91,7 +91,7 @@ export const searchSubmitStyle: CSSProperties = {
   flexShrink: 0,
   padding: '10px 16px',
   borderRadius: 999,
-  backgroundColor: D.label,
+  backgroundColor: D.accent,
   marginLeft: 8,
 }
 
@@ -122,14 +122,14 @@ export const sceneScrollStyle: CSSProperties = {
 export const sceneChipStyle = (active: boolean): CSSProperties => ({
   display: 'inline-flex',
   alignItems: 'center',
-  padding: '5px 12px',
+  padding: '6px 14px',
   borderRadius: 999,
-  marginRight: 6,
-  fontSize: 12,
-  fontWeight: '500',
-  border: active ? `0.5px solid ${D.accent}` : `0.5px solid ${D.separator}`,
-  backgroundColor: active ? D.accentMuted : D.bgElevated,
-  color: active ? D.accent : D.labelSecondary,
+  marginRight: 8,
+  fontSize: 13,
+  fontWeight: active ? '600' : '500',
+  border: active ? 'none' : `0.5px solid ${D.separator}`,
+  backgroundColor: active ? D.accent : D.bgElevated,
+  color: active ? '#fff' : D.labelSecondary,
 })
 
 export const historyBoxStyle: CSSProperties = {
@@ -250,11 +250,11 @@ export const moreStripScrollStyle: CSSProperties = {
 export const moreChipStyle: CSSProperties = {
   display: 'inline-flex',
   flexDirection: 'column',
-  width: 108,
+  width: 120,
   marginRight: 10,
   verticalAlign: 'top' as const,
   backgroundColor: D.bgElevated,
-  borderRadius: D.radiusS,
+  borderRadius: D.radiusM,
   overflow: 'hidden',
   border: `0.5px solid ${D.separatorLight}`,
   boxShadow: D.shadowCard,

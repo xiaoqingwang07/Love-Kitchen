@@ -11,6 +11,8 @@ import { StepFigure } from '../../components/StepFigure'
 import { markAsCooked } from '../../store/storageUtils'
 import { STORAGE_KEYS } from '../../store/storageKeys'
 import type { Recipe, Step } from '../../types/recipe'
+import { generateShoppingList, formatShoppingListText } from '../../utils/shoppingList'
+import { detectAndSaveNewAchievements, getUserStats } from '../../utils/achievements'
 
 const SHARE_PAYLOAD_LIMIT = 1500
 
@@ -171,7 +173,25 @@ function Detail() {
   const handleMarkCooked = () => {
     if (!recipe) return
     const ok = markAsCooked(recipe)
-    if (ok) Taro.showToast({ title: '做过啦！💪', icon: 'success' })
+    if (ok) {
+      const stats = getUserStats(pantryStore.items)
+      const newAchievements = detectAndSaveNewAchievements(stats)
+      if (newAchievements.length > 0) {
+        const top = newAchievements[0]
+        Taro.showToast({ title: `🎉 解锁成就：${top.emoji} ${top.title}`, icon: 'none', duration: 2500 })
+      } else {
+        Taro.showToast({ title: '做过啦！💪', icon: 'success' })
+      }
+    }
+  }
+
+  const handleShowShoppingList = () => {
+    if (!recipe?.ingredients) return
+    const list = generateShoppingList(recipe.ingredients, pantryStore.items)
+    const text = formatShoppingListText(list)
+    Taro.setClipboardData({ data: text }).then(() => {
+      Taro.showToast({ title: '已复制采购清单', icon: 'success' })
+    })
   }
 
   // ============ 烹饪模式 ============
@@ -281,8 +301,8 @@ function Detail() {
   return (
     <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: '100px' }}>
       <View style={{
-        margin: `12px ${D.pagePadH}px 0`,
-        borderRadius: D.radiusL,
+        margin: `16px ${D.pagePadH}px 0`,
+        borderRadius: D.radiusXL,
         backgroundColor: D.bgElevated,
         border: `0.5px solid ${D.separatorLight}`,
         overflow: 'hidden',
@@ -293,12 +313,12 @@ function Detail() {
             src={recipe.image}
             mode="aspectFill"
             lazyLoad
-            style={{ width: '100%', height: 220, display: 'block', backgroundColor: D.bg }}
+            style={{ width: '100%', height: 280, display: 'block', backgroundColor: D.bg }}
           />
         ) : null}
         <View style={{ padding: recipe.image ? '20px 24px 28px' : '36px 24px 28px', alignItems: 'center', backgroundColor: D.bg }}>
           <Text style={{ fontSize: recipe.image ? 40 : 72, lineHeight: 1 }}>{recipe.emoji || '🥘'}</Text>
-          <Text style={{ marginTop: 16, fontSize: 24, fontWeight: '700', color: D.label, textAlign: 'center', letterSpacing: '-0.02em' }}>{recipe.title}</Text>
+          <Text style={{ marginTop: 16, fontSize: D.title, fontWeight: D.weightBold, color: D.label, textAlign: 'center', letterSpacing: '-0.03em' }}>{recipe.title}</Text>
           <Text style={{ marginTop: 8, fontSize: 12, fontWeight: '600', color: D.blue }}>{src}</Text>
           <View style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
             {recipe.time ? (
@@ -312,30 +332,30 @@ function Detail() {
       </View>
 
       <View style={{ padding: `28px ${D.pagePadH}px 8px` }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: D.labelSecondary, marginBottom: 14, letterSpacing: '0.06em' }}>用料</Text>
+        <Text style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: D.labelSecondary, marginBottom: 14, letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>用料</Text>
         <View style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {recipe.ingredients?.map((ing, idx) => (
-            <View key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 12px', backgroundColor: D.bgElevated, borderRadius: D.radiusS, border: `0.5px solid ${D.separatorLight}` }}>
-              <Text style={{ fontSize: 14, color: D.label, fontWeight: '600' }}>{ing.name}</Text>
-              <Text style={{ fontSize: 13, color: D.labelTertiary }}>{ing.amount}</Text>
+            <View key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 12px', backgroundColor: D.bgElevated, borderRadius: D.radiusM, border: `0.5px solid ${D.separatorLight}` }}>
+              <Text style={{ fontSize: D.body, color: D.label, fontWeight: D.weightMedium }}>{ing.name}</Text>
+              <Text style={{ fontSize: D.footnote, color: D.labelTertiary }}>{ing.amount}</Text>
             </View>
           ))}
         </View>
       </View>
 
       <View style={{ padding: `8px ${D.pagePadH}px 28px` }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: D.labelSecondary, marginBottom: 6, letterSpacing: '0.06em' }}>步骤</Text>
+        <Text style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: D.labelSecondary, marginBottom: 6, letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>步骤</Text>
         <Text style={{ fontSize: 11, color: D.labelTertiary, lineHeight: 1.45, marginBottom: 14 }}>
           配图为氛围参考或图库示意，与步骤不一定一一对应；操作以文字为准。
         </Text>
         {steps.map((step, idx) => (
           <View key={idx} style={{ marginBottom: 22, display: 'flex', gap: 14 }}>
-            <View style={{ width: 28, height: 28, backgroundColor: D.label, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{idx + 1}</Text>
+            <View style={{ width: 28, height: 28, backgroundColor: D.accent, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Text style={{ color: '#fff', fontWeight: D.weightBold, fontSize: 13 }}>{idx + 1}</Text>
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <StepFigure src={step.image} height={160} borderRadius={D.radiusM} emoji={recipe.emoji || '🥘'} />
-              <Text style={{ fontSize: 16, color: D.label, lineHeight: 1.55 }}>{step.content}</Text>
+              <Text style={{ fontSize: D.body, color: D.label, lineHeight: 1.6 }}>{step.content}</Text>
               {step.tip ? (
                 <View style={{ fontSize: 13, color: D.accentWarm, backgroundColor: D.accentWarmMuted, padding: '10px 12px', borderRadius: D.radiusS, marginTop: 10 }}>
                   <Text style={{ fontSize: 13, color: D.accentWarm }}>{step.tip}</Text>
@@ -357,12 +377,13 @@ function Detail() {
       ) : null}
 
       <View style={{ display: 'flex', gap: 10, padding: `12px ${D.pagePadH}px`, backgroundColor: D.bg, borderTop: `0.5px solid ${D.separatorLight}` }}>
-        <Button style={{ flex: 1, height: 48, borderRadius: 999, fontSize: 14, fontWeight: '600', backgroundColor: D.bgElevated, color: D.green, border: `0.5px solid ${D.separator}` }} onClick={handleMarkCooked}>做过啦</Button>
-        <Button style={{ flex: 1, height: 48, borderRadius: 999, fontSize: 14, fontWeight: '600', backgroundColor: D.bgElevated, color: D.blue, border: `0.5px solid ${D.separator}` }} open-type="share">分享</Button>
+        <Button style={{ flex: 1, height: 48, borderRadius: 999, fontSize: 14, fontWeight: D.weightSemibold, backgroundColor: D.bgElevated, color: D.green, border: `0.5px solid ${D.separator}` }} onClick={handleMarkCooked}>做过啦</Button>
+        <Button style={{ flex: 1, height: 48, borderRadius: 999, fontSize: 14, fontWeight: D.weightSemibold, backgroundColor: D.accentMuted, color: D.accent, border: `0.5px solid ${D.accentLine}` }} onClick={handleShowShoppingList}>采购清单</Button>
+        <Button style={{ flex: 1, height: 48, borderRadius: 999, fontSize: 14, fontWeight: D.weightSemibold, backgroundColor: D.bgElevated, color: D.blue, border: `0.5px solid ${D.separator}` }} open-type="share">分享</Button>
       </View>
 
-      <View style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', padding: `12px ${D.pagePadH}px`, paddingBottom: 'calc(12px + env(safe-area-inset-bottom))', backgroundColor: 'rgba(242,242,247,0.94)', backdropFilter: 'blur(12px)', borderTop: `0.5px solid ${D.separatorLight}`, boxSizing: 'border-box' }}>
-        <Button style={{ backgroundColor: D.label, color: '#fff', height: 52, borderRadius: 999, fontWeight: '600', fontSize: 17, border: 'none' }} onClick={handleStartCooking}>{steps.length > 0 ? '开始烹饪' : '暂无步骤'}</Button>
+      <View style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', padding: `12px ${D.pagePadH}px`, paddingBottom: 'calc(12px + env(safe-area-inset-bottom))', backgroundColor: D.bgGlassHeavy, backdropFilter: 'blur(20px)', borderTop: `0.5px solid ${D.separatorLight}`, boxSizing: 'border-box' }}>
+        <Button style={{ backgroundColor: D.accent, color: '#fff', height: 56, borderRadius: 999, fontWeight: D.weightSemibold, fontSize: D.body, border: 'none' }} onClick={handleStartCooking}>{steps.length > 0 ? '开始烹饪' : '暂无步骤'}</Button>
       </View>
     </View>
   )

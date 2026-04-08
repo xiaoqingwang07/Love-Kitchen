@@ -188,7 +188,7 @@ function Index() {
           </Text>
           <View style={{ display: 'flex', flexDirection: 'row', gap: 10, marginTop: 12 }}>
             <View
-              style={{ flex: 1, height: 38, borderRadius: 999, backgroundColor: '#5C4D3F', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ flex: 1, height: 38, borderRadius: 999, backgroundColor: D.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               onClick={() => Taro.switchTab({ url: '/pages/pantry/index' })}
             >
               <Text style={{ fontSize: 13, fontWeight: '600', color: '#fff' }}>去填冰箱</Text>

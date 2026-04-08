@@ -272,8 +272,8 @@ function FridgePantry() {
   return (
     <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: 120 }}>
       <ScrollView scrollY showScrollbar={false}>
-        <View style={{ padding: `${28}px ${pad}px 12px` }}>
-          <Text style={{ fontSize: 32, fontWeight: '600', color: D.label, letterSpacing: '-0.04em' }}>冰箱</Text>
+        <View style={{ padding: `44px ${pad}px 12px` }}>
+          <Text style={{ fontSize: D.titleLarge, fontWeight: D.weightBold, color: D.label, letterSpacing: '-0.04em' }}>冰箱</Text>
           <Text style={{ fontSize: D.footnote, color: D.labelSecondary, marginTop: 8, lineHeight: 1.5, maxWidth: 340 }}>
             爱心厨房 · 左冷冻、右冷藏，与「选菜」联动。点格子添加/管理；底部「购物清单」粘贴后请先核对再入库。
           </Text>
@@ -366,7 +366,7 @@ function FridgePantry() {
               }}
               onClick={() => setHighlight(k)}
             >
-              <Text style={{ fontSize: 12, fontWeight: '600', color: highlight === k ? '#fff' : D.labelSecondary }}>{t}</Text>
+              <Text style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: highlight === k ? D.bgElevated : D.labelSecondary }}>{t}</Text>
             </View>
           ))}
         </View>
@@ -477,8 +477,8 @@ function FridgePantry() {
             }}
           >
             <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: D.separator, alignSelf: 'center', marginBottom: 16 }} />
-            <Text style={{ fontSize: 18, fontWeight: '600', color: D.label }}>{slotTitle(activeSlot.side, activeSlot.slotIndex)}</Text>
-            <Text style={{ fontSize: 12, color: D.labelTertiary, marginTop: 4 }}>{slotShortLabel(activeSlot.side, activeSlot.slotIndex)}</Text>
+            <Text style={{ fontSize: D.headline, fontWeight: D.weightSemibold, color: D.label }}>{slotTitle(activeSlot.side, activeSlot.slotIndex)}</Text>
+            <Text style={{ fontSize: D.footnote, color: D.labelTertiary, marginTop: 4 }}>{slotShortLabel(activeSlot.side, activeSlot.slotIndex)}</Text>
 
             <ScrollView scrollY style={{ maxHeight: 220, marginTop: 16 }}>
               {activeItems.map((item) => {

@@ -1,49 +1,81 @@
 /**
- * 编辑感暖灰 + 墨褐主色：克制、纸质底、少饱和 — 偏高端餐饮 / 生活方式 App
+ * 苹果风格暖白 + 焦糖强调：简洁、克制、大留白 — Apple HIG 审美融入食物温度
  */
 export const D = {
-  bg: '#F4F2EE',
-  bgElevated: '#FFFCF9',
-  bgGlass: 'rgba(255, 252, 249, 0.88)',
-  separator: 'rgba(24, 22, 18, 0.08)',
-  separatorLight: 'rgba(24, 22, 18, 0.05)',
+  // ===== 背景 =====
+  bg: '#FAF9F7',
+  bgElevated: '#FFFFFF',
+  bgGrouped: '#F5F5F7',
+  bgGlass: 'rgba(255, 255, 255, 0.88)',
+  bgGlassHeavy: 'rgba(255, 255, 255, 0.92)',
+
+  // ===== 分隔线 =====
+  separator: 'rgba(24, 22, 18, 0.06)',
+  separatorLight: 'rgba(24, 22, 18, 0.04)',
+
+  // ===== 文字 =====
   label: '#12110F',
-  labelSecondary: 'rgba(18, 17, 15, 0.58)',
-  labelTertiary: 'rgba(18, 17, 15, 0.38)',
-  /** 主按钮 / 强调：低饱和咖啡褐 */
-  accent: '#5C4D3F',
-  accentMuted: 'rgba(92, 77, 63, 0.12)',
-  accentLine: 'rgba(92, 77, 63, 0.2)',
-  accentWarm: '#9A7B4F',
-  accentWarmMuted: 'rgba(154, 123, 79, 0.16)',
-  /** 链接 / 次要操作 */
-  blue: '#5A6570',
-  green: '#4A7C6A',
-  red: '#B54A3C',
-  /** 次要标签文字 / 辅助灰（原 tagStyle、loading 等） */
+  labelSecondary: 'rgba(18, 17, 15, 0.55)',
+  labelTertiary: 'rgba(18, 17, 15, 0.35)',
+
+  // ===== 强调色 =====
+  accent: '#A67B5B',
+  accentMuted: 'rgba(166, 123, 91, 0.12)',
+  accentLine: 'rgba(166, 123, 91, 0.18)',
+  accentWarm: '#C4944A',
+  accentWarmMuted: 'rgba(196, 148, 74, 0.14)',
+
+  // ===== 语义色 =====
+  blue: '#5B8FA8',
+  green: '#4A8C6C',
+  red: '#D05A38',
+  orange: '#C4944A',
+  purple: '#8E7FC5',
+
+  // ===== 标签色 =====
   tagMutedFg: '#8e8e93',
-  tagMutedBg: '#f3f4f6',
-  /** 错误提示块：浅橙底 + 左边强调 + 正文色（原 errorBox / errorText） */
-  errorBg: '#fff7ed',
-  errorAccent: '#ff9a56',
-  errorFg: '#ea580c',
-  radiusL: 24,
-  radiusM: 18,
-  radiusS: 14,
-  radiusXL: 32,
-  /** 悬浮感：更散、更轻 */
-  shadowCard: '0 2px 20px rgba(18, 17, 15, 0.06)',
-  shadowLift: '0 24px 48px rgba(18, 17, 15, 0.08)',
+  tagMutedBg: '#F5F3F0',
+
+  // ===== 错误 =====
+  errorBg: '#FFF5F0',
+  errorAccent: '#E8845A',
+  errorFg: '#D05A38',
+
+  // ===== 圆角 =====
+  radiusS: 12,
+  radiusM: 16,
+  radiusL: 20,
+  radiusXL: 28,
+
+  // ===== 阴影 =====
+  shadowCard: '0 1px 10px rgba(18, 17, 15, 0.04), 0 2px 8px rgba(18, 17, 15, 0.03)',
+  shadowLift: '0 12px 40px rgba(18, 17, 15, 0.06), 0 4px 16px rgba(18, 17, 15, 0.04)',
+
+  // ===== 间距 =====
   pagePadH: 24,
   pagePadTop: 16,
-  /** 烹饪模式：与浅色系同色相的深底，避免「两个 App」割裂感 */
-  cookingBg: '#252320',
-  cookingSurface: '#2f2c28',
-  cookingText: '#F4F2EE',
-  cookingMuted: 'rgba(244, 242, 238, 0.55)',
-  titleLarge: 34,
-  title: 22,
-  body: 17,
-  footnote: 13,
-  caption: 11,
+
+  // ===== 烹饪模式 =====
+  cookingBg: '#1C1A17',
+  cookingSurface: '#2A2724',
+  cookingText: '#FAF9F7',
+  cookingMuted: 'rgba(250, 249, 247, 0.55)',
+
+  // ===== 字号 — Apple HIG =====
+  titleLarge: 36,      // LargeTitle
+  title: 28,           // Title 1 / Title 2
+  headline: 20,       // Headline
+  body: 17,            // Body
+  callout: 16,        // Callout
+  subheadline: 15,    // Subhead
+  footnote: 13,        // Footnote
+  caption: 11,         // Caption 1
+  caption2: 10,        // Caption 2
+
+  // ===== 字重 =====
+  weightRegular: '400',
+  weightMedium: '500',
+  weightSemibold: '600',
+  weightBold: '700',
+  weightHeavy: '800',
 } as const

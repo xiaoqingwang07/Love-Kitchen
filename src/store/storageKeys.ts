@@ -19,6 +19,7 @@ export const STORAGE_KEYS = {
   pantryItems: 'pantryItems',
   pantryFridgeTipDismissed: 'pantry_fridge_tip_dismissed',
   pantryEmptyBannerDismissed: 'pantry_empty_banner_dismissed',
+  unlockedAchievements: 'unlockedAchievements',
 } as const
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS]

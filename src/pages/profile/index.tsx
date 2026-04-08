@@ -1,6 +1,6 @@
 import { View, Text, Button, ScrollView, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { observer } from 'mobx-react-lite'
 import { usePantryStore } from '../../store/context'
 import {
@@ -16,6 +16,7 @@ import { D } from '../../theme/designTokens'
 import * as Com from '../../styles/common'
 import type { SceneType } from '../../types/recipe'
 import type { Recipe } from '../../types/recipe'
+import { getUserStats, getAllAchievements } from '../../utils/achievements'
 
 function Profile() {
   const pantryStore = usePantryStore()
@@ -92,6 +93,9 @@ function Profile() {
     { label: '收藏菜谱', value: favCount, action: 'favorites' },
     { label: '做过的菜', value: cookedLen, action: 'cooked' },
   ]
+
+  const userStats = useMemo(() => getUserStats(pantryStore.items), [pantryStore.items])
+  const allAchievements = useMemo(() => getAllAchievements(userStats), [userStats])
 
   const onStatClick = (action: 'pantry' | 'favorites' | 'cooked') => {
     if (action === 'pantry') {
@@ -273,8 +277,8 @@ function Profile() {
 
   return (
       <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
-      <View style={{ padding: '28px 22px 20px' }}>
-        <Text style={{ fontSize: 28, fontWeight: '700', color: D.label, letterSpacing: '-0.03em' }}>我的</Text>
+      <View style={{ padding: '44px 22px 20px' }}>
+        <Text style={{ fontSize: D.titleLarge, fontWeight: D.weightBold, color: D.label, letterSpacing: '-0.04em' }}>我的</Text>
         <Text style={{ fontSize: D.footnote, color: D.labelSecondary, marginTop: 6 }}>爱心厨房</Text>
         <View style={{ display: 'flex', gap: 10, marginTop: 20 }}>
           {stats.map((s, i) => (
@@ -283,7 +287,7 @@ function Profile() {
               style={{ flex: 1, backgroundColor: D.bgElevated, borderRadius: D.radiusM, padding: '14px 10px', textAlign: 'center', border: `0.5px solid ${D.separatorLight}` }}
               onClick={() => onStatClick(s.action)}
             >
-              <Text style={{ fontSize: 22, fontWeight: '700', color: D.label, display: 'block' }}>{s.value}</Text>
+              <Text style={{ fontSize: D.headline, fontWeight: D.weightBold, color: D.label, display: 'block' }}>{s.value}</Text>
               <Text style={{ fontSize: 11, color: D.labelSecondary, marginTop: 4 }}>{s.label}</Text>
             </View>
           ))}
@@ -291,6 +295,35 @@ function Profile() {
         <Text style={{ fontSize: 11, color: D.labelTertiary, marginTop: 10, textAlign: 'center', lineHeight: 1.4 }}>
           点击数据：冰箱 · 收藏列表 · 做过的菜
         </Text>
+
+        {/* 成就徽章 */}
+        <View style={{ marginTop: 20 }}>
+          <Text style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: D.labelSecondary, marginBottom: 12, letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>成就</Text>
+          <View style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {allAchievements.map((a) => (
+              <View
+                key={a.id}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 12px',
+                  borderRadius: D.radiusS,
+                  backgroundColor: a.unlocked ? D.accentMuted : D.bg,
+                  border: `0.5px solid ${a.unlocked ? D.accentLine : D.separatorLight}`,
+                  opacity: a.unlocked ? 1 : 0.55,
+                }}
+              >
+                <Text style={{ fontSize: 18 }}>{a.emoji}</Text>
+                <View>
+                  <Text style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: a.unlocked ? D.label : D.labelTertiary }}>{a.title}</Text>
+                  <Text style={{ fontSize: D.caption, color: D.labelTertiary }}>{a.description}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
       </View>
 
       {/* Menu */}
@@ -309,7 +342,7 @@ function Profile() {
                 }}
                 onClick={() => applyScene(key)}
               >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: recipeScene === key ? '#fff' : D.labelSecondary }}>{label}</Text>
+                <Text style={{ fontSize: D.body, fontWeight: D.weightSemibold, color: recipeScene === key ? D.bgElevated : D.labelSecondary }}>{label}</Text>
               </View>
             ))}
           </View>

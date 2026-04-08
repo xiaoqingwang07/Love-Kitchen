@@ -50,8 +50,8 @@ export const titleStyle: CSSProperties = {
 }
 
 export const titleLargeStyle: CSSProperties = {
-  fontSize: '28px',
-  fontWeight: '700',
+  fontSize: D.title,
+  fontWeight: D.weightBold,
   color: D.label,
   marginBottom: '6px',
   letterSpacing: '-0.03em',
@@ -87,17 +87,16 @@ export const ratingBadgeStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '3px',
-  backgroundColor: '#fffbeb',
+  backgroundColor: D.accentWarmMuted,
   padding: '2px 8px',
-  borderRadius: '6px'
+  borderRadius: D.radiusS,
 }
 
 // ============ 页面容器 ============
 export const pageStyle: CSSProperties = {
   minHeight: '100vh',
   backgroundColor: D.bg,
-  padding: `12px ${D.pagePadH}px`,
-  paddingBottom: '40px'
+  padding: `12px ${D.pagePadH}px 40px`,
 }
 
 export const pageWithHeaderStyle: CSSProperties = {
@@ -148,14 +147,14 @@ export const loadingEmojiStyle: CSSProperties = {
 
 export const loadingTextStyle: CSSProperties = {
   color: D.labelTertiary,
-  fontSize: '15px',
-  fontWeight: '500'
+  fontSize: D.body,
+  fontWeight: D.weightMedium
 }
 
 // ============ 错误提示 ============
 export const errorBoxStyle: CSSProperties = {
   backgroundColor: D.errorBg,
-  borderRadius: '12px',
+  borderRadius: D.radiusS,
   padding: '14px 16px',
   marginBottom: '16px',
   borderLeft: `3px solid ${D.errorAccent}`
