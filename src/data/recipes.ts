@@ -159,7 +159,8 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
       { name: '五花肉', amount: '200g' },
       { name: '青椒', amount: '2个' },
       { name: '大蒜', amount: '3瓣' },
-      { name: '生抽', amount: '2勺' }
+      { name: '生抽', amount: '2勺' },
+      { name: '老抽', amount: '1勺' }
     ],
     steps: [
       { content: '五花肉切片，青椒切丝', time: 3 },
@@ -183,7 +184,8 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
       { name: '鸡翅中', amount: '500g' },
       { name: '可乐', amount: '330ml' },
       { name: '生姜', amount: '3片' },
-      { name: '八角', amount: '1个' }
+      { name: '八角', amount: '1个' },
+      { name: '生抽', amount: '2勺' }
     ],
     steps: [
       { content: '鸡翅洗净，两面划刀', time: 2 },
@@ -206,7 +208,8 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
     ingredients: [
       { name: '土豆', amount: '1个' },
       { name: '干辣椒', amount: '3个' },
-      { name: '白醋', amount: '2勺' }
+      { name: '白醋', amount: '2勺' },
+      { name: '葱', amount: '2根' }
     ],
     steps: [
       { content: '土豆切丝，泡水去淀粉', time: 3 },
@@ -281,7 +284,8 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
       { name: '土豆', amount: '1个' },
       { name: '青椒', amount: '1个' },
       { name: '大蒜', amount: '3瓣' },
-      { name: '生抽', amount: '2勺' }
+      { name: '生抽', amount: '2勺' },
+      { name: '老抽', amount: '1勺' }
     ],
     steps: [
       { content: '茄子切块撒盐杀水，土豆切片', time: 5 },
@@ -301,7 +305,7 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
     emoji: '🧈',
     difficulty: '中等',
     time: 20,
-    tags: ['🥬 素食', '🌶️ 麻辣'],
+    tags: ['川菜'],
     ingredients: [
       { name: '豆腐', amount: '1块' },
       { name: '肉末', amount: '100g' },
@@ -323,14 +327,16 @@ const RAW_DEFAULT_RECIPES: Recipe[] = [
     rating: 4.9,
     count: 3500,
     emoji: '🥩',
-    difficulty: '中等',
+    difficulty: '复杂',
     time: 60,
     tags: ['🥘 大菜', '🍖 肉菜'],
     ingredients: [
       { name: '五花肉', amount: '500g' },
       { name: '冰糖', amount: '30g' },
       { name: '生抽', amount: '3勺' },
-      { name: '老抽', amount: '1勺' }
+      { name: '老抽', amount: '1勺' },
+      { name: '八角', amount: '2个' },
+      { name: '桂皮', amount: '1小块' }
     ],
     steps: [
       { content: '五花肉切方块，冷水下锅焯水', time: 5 },
