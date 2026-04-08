@@ -29,7 +29,7 @@ export const INGREDIENT_CATEGORY: Record<string, FoodCategory> = {
   '油菜': 'vegetable', '韭菜': 'vegetable', '苦瓜': 'vegetable', '平菇': 'vegetable',
   '西红柿': 'vegetable', '番茄': 'vegetable', '黄瓜': 'vegetable', '茄子': 'vegetable',
   '西兰花': 'vegetable', '菠菜': 'vegetable', '南瓜': 'vegetable', '胡萝卜': 'vegetable',
-  '花菜': 'vegetable', '青椒': 'vegetable', '辣椒': 'vegetable', '豆腐': 'vegetable',
+  '花菜': 'vegetable', '青椒': 'vegetable', '辣椒': 'vegetable', '豆腐': 'other',
   '洋葱': 'vegetable', '土豆': 'vegetable',
   // 肉类
   '猪肉': 'meat', '排骨': 'meat', '五花肉': 'meat', '牛肉': 'meat',
@@ -63,6 +63,8 @@ export const SPECIFIC_SHELF_LIFE: Record<string, number> = {
   '鸡胸肉': 2, '鸡蛋': 30, '牛奶': 7,
   '虾': 1, '鱼': 1, '三文鱼': 2, '虾仁': 2,
   '香蕉': 4, '草莓': 3, '蓝莓': 5, '牛油果': 4,
+  '葱': 7, '蒜': 30, '生姜': 14, '吐司': 5, '馒头': 5,
+  '饺子皮': 7, '红薯': 21, '南瓜': 21,
 }
 
 export function getShelfLifeDays(name: string): number {
