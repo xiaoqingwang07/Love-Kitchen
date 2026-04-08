@@ -11,6 +11,18 @@
 
 /* ───────── 常量 ───────── */
 
+/** 允许的上游模型 */
+const ALLOWED_MODELS = ['MiniMax-M2.7']
+
+/** 每条消息最大长度 */
+const MAX_MESSAGE_LENGTH = 10_000
+
+/** 最多保留的消息条数 */
+const MAX_MESSAGES = 20
+
+/** 最大输出 token */
+const MAX_TOKENS = 4000
+
 /** 允许转发到上游的请求体字段（白名单） */
 const ALLOWED_FIELDS = ['model', 'messages', 'temperature', 'max_tokens']
 
@@ -63,8 +75,7 @@ function getAllowedOrigins() {
   if (env) {
     return env.split(',').map((s) => s.trim()).filter(Boolean)
   }
-  // 保守默认：仅允许 localhost 与 127.0.0.1（开发环境）
-  return ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:3000', 'http://127.0.0.1:3000']
+  return ['https://servicewechat.com', 'http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:3000', 'http://127.0.0.1:3000']
 }
 
 /**
@@ -73,9 +84,9 @@ function getAllowedOrigins() {
  * @returns {{ allowed: boolean, origin: string }}
  */
 function checkOrigin(origin) {
-  if (!origin) return { allowed: false, origin: '' }
+  if (!origin) return { allowed: true, origin: '' }
   const list = getAllowedOrigins()
-  if (list.includes(origin)) return { allowed: true, origin }
+  if (list.some((item) => origin === item || origin.startsWith(`${item}/`))) return { allowed: true, origin }
   return { allowed: false, origin }
 }
 
@@ -87,14 +98,44 @@ function checkOrigin(origin) {
  * @returns {Record<string, unknown>}
  */
 function sanitizeBody(body) {
-  if (!body || typeof body !== 'object') return {}
-  /** @type {Record<string, unknown>} */ const clean = {}
-  for (const key of ALLOWED_FIELDS) {
-    if (key in body) {
-      clean[key] = body[key]
-    }
+  if (!body || typeof body !== 'object') {
+    throw new Error('invalid body')
   }
-  return clean
+
+  const rawModel = typeof body.model === 'string' ? body.model : ''
+  const messages = Array.isArray(body.messages) ? body.messages.slice(0, MAX_MESSAGES) : []
+  const temperature = typeof body.temperature === 'number'
+    ? Math.min(Math.max(body.temperature, 0), 2)
+    : 0.7
+  const maxTokens = typeof body.max_tokens === 'number'
+    ? Math.min(Math.max(Math.floor(body.max_tokens), 1), MAX_TOKENS)
+    : 2800
+
+  if (!ALLOWED_MODELS.includes(rawModel)) {
+    throw new Error('invalid model')
+  }
+
+  const cleanMessages = messages.map((message) => {
+    if (!message || typeof message !== 'object') throw new Error('invalid message')
+    const role = message.role
+    const content = message.content
+    if (!['system', 'user', 'assistant'].includes(role)) throw new Error('invalid role')
+    if (typeof content !== 'string' || content.length === 0 || content.length > MAX_MESSAGE_LENGTH) {
+      throw new Error('invalid message content')
+    }
+    return { role, content }
+  })
+
+  if (cleanMessages.length === 0) {
+    throw new Error('messages required')
+  }
+
+  return {
+    model: rawModel,
+    messages: cleanMessages,
+    temperature,
+    max_tokens: maxTokens,
+  }
 }
 
 /* ───────── 主处理函数 ───────── */
@@ -123,7 +164,9 @@ module.exports = async function llmProxy(req, res) {
   if (!originInfo.allowed) {
     return res.status(403).json({ error: 'Origin not allowed' })
   }
-  res.setHeader('Access-Control-Allow-Origin', originInfo.origin)
+  if (originInfo.origin) {
+    res.setHeader('Access-Control-Allow-Origin', originInfo.origin)
+  }
 
   /* ---- 4. 共享密钥验证 ---- */
   const shared = process.env.LLM_PROXY_SHARED_SECRET
@@ -150,7 +193,12 @@ module.exports = async function llmProxy(req, res) {
   }
 
   /* ---- 7. 请求体净化 + 转发 ---- */
-  const sanitized = sanitizeBody(req.body)
+  let sanitized
+  try {
+    sanitized = sanitizeBody(req.body)
+  } catch {
+    return res.status(400).json({ error: 'Invalid request body' })
+  }
 
   try {
     const r = await fetch('https://api.minimaxi.com/v1/chat/completions', {

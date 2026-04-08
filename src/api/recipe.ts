@@ -7,7 +7,7 @@ import Taro from '@tarojs/taro'
 import type { Recipe, SceneType } from '../types/recipe'
 import { enrichRecipeMedia } from '../utils/enrichRecipeMedia'
 import { parseLlmRecipeArray } from '../schemas/recipeLlm'
-import { LLM_STORAGE_KEYS, STORAGE_KEYS } from '../store/storageKeys'
+import { STORAGE_KEYS } from '../store/storageKeys'
 
 /** OpenAI 兼容 Base URL（中国大陆：api.minimaxi.com，勿使用 api.minimax.io） */
 const API_BASE_URL = 'https://api.minimaxi.com/v1'
@@ -64,19 +64,6 @@ export interface FetchRecipesOptions extends RequestConfig {
 const DEFAULT_RETRY = 2
 const DEFAULT_TIMEOUT_MS = 60000
 const DEFAULT_CONFIG: RequestConfig = { retry: DEFAULT_RETRY, timeout: DEFAULT_TIMEOUT_MS }
-
-/**
- * 优先「我的」里保存的 Key；否则返回空字符串。
- */
-export function getLlmApiKey(): string {
-  try {
-    for (const k of LLM_STORAGE_KEYS) {
-      const v = Taro.getStorageSync(k)
-      if (v != null && String(v).trim() !== '') return String(v).trim()
-    }
-  } catch { /* storage unavailable */ }
-  return ''
-}
 
 function proxyUrl(): string {
   if (typeof TARO_APP_LLM_PROXY_URL !== 'string') return ''

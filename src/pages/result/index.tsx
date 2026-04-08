@@ -2,7 +2,7 @@ import { View, Text, Image } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import { useEffect, useState, useMemo, useRef, type CSSProperties } from 'react'
 import { DEFAULT_RECIPES } from '../../data/recipes'
-import { fetchRecipes, getLlmApiKey, getStoredScene, usesLlmProxy } from '../../api/recipe'
+import { fetchRecipes, getStoredScene, usesLlmProxy } from '../../api/recipe'
 import { getFavoriteIds, toggleFavorite, generateCacheKey, getCachedRecipe, setCachedRecipe, removeCachedRecipe } from '../../store/storageUtils'
 import { matchRecipesSimple } from '../../utils/recipeMatch'
 import { shuffleWithSeed, daySeed } from '../../utils/shuffleSeed'
@@ -17,7 +17,7 @@ function parseScene(s: string | undefined): SceneType {
 }
 
 function hasUsableLlm(): boolean {
-  return usesLlmProxy() || getLlmApiKey().trim().length > 0
+  return usesLlmProxy()
 }
 
 function getFallbackMessage(raw: string | undefined, hasIngredientMatch: boolean): string {
