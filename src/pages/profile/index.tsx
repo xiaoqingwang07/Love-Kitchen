@@ -399,7 +399,7 @@ function Profile() {
         {!usesLlmProxy() && showApiKeyInput && (
           <View style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '16px', marginBottom: '12px', marginTop: '-4px', border: `0.5px solid ${D.separatorLight}` }}>
             <Text style={{ fontSize: 12, color: D.labelTertiary, marginBottom: 8, lineHeight: 1.45 }}>
-              上线前请改用服务端中转（见仓库 api/llm-proxy.js 与 .env.local.example）。此处仅适合本地调试；也可在 .env.local 写 TARO_APP_MINIMAX_API_KEY（勿提交）。直连需将 https://api.minimaxi.com 加入小程序 request 合法域名。
+              上线前请部署服务端中转（见仓库 api/llm-proxy.js），并在 .env.local 中配置 TARO_APP_LLM_PROXY_URL。仅中转模式可用，前端不再支持直连 LLM。
             </Text>
             <Input
               style={{ height: '44px', backgroundColor: D.bg, borderRadius: '12px', padding: '0 16px', fontSize: '14px', marginBottom: '12px', border: `0.5px solid ${D.separatorLight}` }}

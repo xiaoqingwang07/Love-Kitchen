@@ -66,7 +66,7 @@ const DEFAULT_TIMEOUT_MS = 60000
 const DEFAULT_CONFIG: RequestConfig = { retry: DEFAULT_RETRY, timeout: DEFAULT_TIMEOUT_MS }
 
 /**
- * 优先「我的」里保存的 Key；否则 .env.local / 环境变量注入的 TARO_APP_MINIMAX_API_KEY（其次兼容 TARO_APP_DEEPSEEK_API_KEY 占位读取，接口仍为 MiniMax）。
+ * 优先「我的」里保存的 Key；否则返回空字符串。
  */
 export function getLlmApiKey(): string {
   try {
@@ -75,27 +75,12 @@ export function getLlmApiKey(): string {
       if (v != null && String(v).trim() !== '') return String(v).trim()
     }
   } catch { /* storage unavailable */ }
-  if (typeof TARO_APP_MINIMAX_API_KEY === 'string' && TARO_APP_MINIMAX_API_KEY.trim() !== '') {
-    return TARO_APP_MINIMAX_API_KEY.trim()
-  }
-  if (typeof TARO_APP_DEEPSEEK_API_KEY === 'string' && TARO_APP_DEEPSEEK_API_KEY.trim() !== '') {
-    return TARO_APP_DEEPSEEK_API_KEY.trim()
-  }
   return ''
 }
-
-const getApiKey = getLlmApiKey
 
 function proxyUrl(): string {
   if (typeof TARO_APP_LLM_PROXY_URL !== 'string') return ''
   return TARO_APP_LLM_PROXY_URL.trim()
-}
-
-function proxySecretHeader(): Record<string, string> {
-  if (typeof TARO_APP_LLM_PROXY_SECRET !== 'string') return {}
-  const s = TARO_APP_LLM_PROXY_SECRET.trim()
-  if (!s) return {}
-  return { 'X-LLM-Proxy-Secret': s }
 }
 
 /** 已配置构建期 LLM 中转 URL（生产环境应优先使用，避免 Key 进包） */
@@ -108,27 +93,18 @@ async function llmChatCompletions(
   timeout: number
 ): Promise<{ statusCode: number; data: unknown }> {
   const p = proxyUrl()
+  if (!p) {
+    throw new APIError(
+      '请配置服务端 LLM 中转（.env.local 中 TARO_APP_LLM_PROXY_URL）',
+      APIErrorType.NO_API_KEY
+    )
+  }
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...proxySecretHeader(),
-  }
-  let url: string
-  if (p) {
-    url = p
-  } else {
-    const apiKey = getApiKey()
-    if (!apiKey) {
-      throw new APIError(
-        '请配置服务端 LLM 中转（.env.local 中 TARO_APP_LLM_PROXY_URL），或仅在开发环境配置 TARO_APP_MINIMAX_API_KEY',
-        APIErrorType.NO_API_KEY
-      )
-    }
-    headers.Authorization = `Bearer ${apiKey}`
-    url = `${API_BASE_URL}/chat/completions`
   }
 
   const response = await Taro.request({
-    url,
+    url: p,
     method: 'POST',
     header: headers,
     data: body,
@@ -215,9 +191,9 @@ export const fetchRecipes = async (
   count: number = 3,
   config?: FetchRecipesOptions
 ): Promise<Recipe[]> => {
-  if (!usesLlmProxy() && !getApiKey()) {
+  if (!usesLlmProxy()) {
     throw new APIError(
-      '请配置 LLM：生产环境填写 TARO_APP_LLM_PROXY_URL（推荐），或开发时在「我的」/ .env.local 配置 MiniMax Key',
+      '请配置 LLM 中转：填写 TARO_APP_LLM_PROXY_URL',
       APIErrorType.NO_API_KEY
     )
   }
@@ -297,27 +273,9 @@ ${SCENE_USER_TAIL[scene]}
 }
 
 export const checkApiKey = async (): Promise<{ valid: boolean; error?: string }> => {
-  if (usesLlmProxy()) {
-    try {
-      const { statusCode, data } = await llmChatCompletions(
-        { model: DEFAULT_MODEL, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 },
-        15000
-      )
-      if (statusCode === 200) return { valid: true }
-      if (statusCode === 401 || statusCode === 403) {
-        return { valid: false, error: '中转或上游鉴权失败' }
-      }
-      const d = data as Record<string, unknown> | undefined
-      const errObj = d?.error as { message?: string } | undefined
-      const hint = errObj?.message || (typeof d?.message === 'string' ? d.message : '')
-      return { valid: false, error: hint ? `${statusCode}: ${hint}` : `错误: ${statusCode}` }
-    } catch (e: any) {
-      return { valid: false, error: e.message || '网络错误' }
-    }
+  if (!usesLlmProxy()) {
+    return { valid: false, error: '请配置 TARO_APP_LLM_PROXY_URL' }
   }
-
-  const apiKey = getApiKey()
-  if (!apiKey) return { valid: false, error: '请先设置 API Key 或配置 TARO_APP_LLM_PROXY_URL' }
   try {
     const { statusCode, data } = await llmChatCompletions(
       { model: DEFAULT_MODEL, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 },
@@ -325,7 +283,7 @@ export const checkApiKey = async (): Promise<{ valid: boolean; error?: string }>
     )
     if (statusCode === 200) return { valid: true }
     if (statusCode === 401 || statusCode === 403) {
-      return { valid: false, error: 'API Key 无效' }
+      return { valid: false, error: '中转或上游鉴权失败' }
     }
     const d = data as Record<string, unknown> | undefined
     const errObj = d?.error as { message?: string } | undefined
