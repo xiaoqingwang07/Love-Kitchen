@@ -41,7 +41,7 @@ function scoreRecipe(recipe: Recipe, weather: WeatherData): number {
 
 /** 与天气联动的推荐语（首屏一句话） */
 export function getReasonText(weather: WeatherData): string {
-  if (weather.description && weather.city !== '上海') {
+  if (weather.description && !weather.city.startsWith('上海')) {
     return weather.description
   }
   if (weather.temperature <= 10 || weather.condition === 'rainy' || weather.condition === 'snowy') {
