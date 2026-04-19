@@ -93,3 +93,16 @@ export function getWeatherRecommendationsForWeather(
 export function getWeatherRecommendations(count: number = 3): RecommendResult {
   return getWeatherRecommendationsForWeather(getMockWeather(), count, 0)
 }
+
+/**
+ * 天气无关的「每日家常」推荐。
+ * 仅按评分 + 日种子随机，避免用虚构天气误导用户。
+ */
+export function getDailyRecommendations(total: number, variant: number = 0, topPool: number = 24): Recipe[] {
+  const ranked = [...DEFAULT_RECIPES].sort((a, b) => (b.rating || 0) - (a.rating || 0))
+  const poolSize = Math.min(topPool, ranked.length)
+  const head = ranked.slice(0, poolSize)
+  const seed = daySeed() + variant * 9973
+  const shuffled = shuffleWithSeed([...head], seed)
+  return shuffled.slice(0, Math.min(total, shuffled.length))
+}

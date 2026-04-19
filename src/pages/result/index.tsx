@@ -3,12 +3,20 @@ import Taro, { useRouter } from '@tarojs/taro'
 import { useEffect, useState, useMemo, useRef, type CSSProperties } from 'react'
 import { DEFAULT_RECIPES } from '../../data/recipes'
 import { fetchRecipes, getStoredScene, usesLlmProxy } from '../../api/recipe'
-import { getFavoriteIds, toggleFavorite, generateCacheKey, getCachedRecipe, setCachedRecipe, removeCachedRecipe } from '../../store/storageUtils'
+import {
+  getFavoriteIds,
+  toggleFavorite,
+  generateCacheKey,
+  getCachedRecipe,
+  setCachedRecipe,
+  removeCachedRecipe,
+} from '../../store/storageUtils'
 import { matchRecipesSimple } from '../../utils/recipeMatch'
 import { shuffleWithSeed, daySeed } from '../../utils/shuffleSeed'
 import { D } from '../../theme/designTokens'
 import { STORAGE_KEYS } from '../../store/storageKeys'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
+import { SkeletonRecipeList } from '../../components/Skeleton'
 import type { Recipe, SceneType } from '../../types/recipe'
 
 function parseScene(s: string | undefined): SceneType {
@@ -20,27 +28,33 @@ function hasUsableLlm(): boolean {
   return usesLlmProxy()
 }
 
-function getFallbackMessage(raw: string | undefined, hasIngredientMatch: boolean): string {
-  if (hasIngredientMatch) return '已优先为你展示本地匹配菜谱；联网智能生成可稍后再试。'
-  if (!raw) return '当前先为你展示本地推荐菜谱，稍后再试试联网智能生成。'
-  if (raw.includes('超时') || raw.includes('网络')) return '联网有点不稳定，先为你展示本地推荐菜谱。'
-  if (raw.includes('频繁')) return '请求有点多，先看看本地推荐菜谱。'
-  if (raw.includes('Key') || raw.includes('LLM') || raw.includes('MiniMax') || raw.includes('配置')) {
-    return '当前先为你展示本地推荐菜谱，联网智能生成稍后开放。'
-  }
-  return '当前先为你展示本地推荐菜谱，稍后再试试联网智能生成。'
+type ErrorNotice = {
+  tone: 'info' | 'warn'
+  title: string
+  detail: string
 }
 
-const SOURCE_LABEL: Record<string, string> = {
-  ai: 'AI',
-  cache: '缓存',
-  local: '本地',
+function buildErrorNotice(raw: string | undefined, hasIngredientMatch: boolean): ErrorNotice {
+  if (!raw || hasIngredientMatch) {
+    return {
+      tone: 'info',
+      title: '已为你匹配本地菜谱',
+      detail: '联网推荐不可用时的备选内容，质量稳妥。',
+    }
+  }
+  if (raw.includes('超时') || raw.includes('网络')) {
+    return { tone: 'warn', title: '网络不稳定', detail: '先展示本地菜谱，稍后可重试 AI。' }
+  }
+  if (raw.includes('频繁')) {
+    return { tone: 'warn', title: '请求过于频繁', detail: '稍等一下再试，先看看本地推荐。' }
+  }
+  return { tone: 'info', title: '本地推荐', detail: 'AI 暂不可用，已展示本地匹配菜谱。' }
 }
 
 export default function Result() {
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string>('')
+  const [notice, setNotice] = useState<ErrorNotice | null>(null)
   const [reloadTick, setReloadTick] = useState(0)
   const skipCacheOnceRef = useRef(false)
   const router = useRouter()
@@ -53,12 +67,8 @@ export default function Result() {
     let cancelled = false
 
     setIsLoading(false)
-    setError('')
+    setNotice(null)
 
-    const safeSetError = (msg: string) => {
-      if (cancelled) return
-      setError(msg)
-    }
     const safeSetLoading = (v: boolean) => {
       if (cancelled) return
       setIsLoading(v)
@@ -67,7 +77,6 @@ export default function Result() {
     const fetchAI = async (ingredients: string[], scene: SceneType, bypassCache: boolean) => {
       if (cancelled) return
       safeSetLoading(true)
-      safeSetError('')
 
       const cacheKey = generateCacheKey(ingredients, scene)
       const cached = !bypassCache ? (getCachedRecipe(cacheKey) as Recipe[] | null) : null
@@ -99,10 +108,11 @@ export default function Result() {
         if (cancelled) return
         console.error('AI Error:', err)
         const localMatched = matchRecipesSimple(ingredients, 6)
-        setError(getFallbackMessage(err?.message, localMatched.length > 0))
-        const fallback = localMatched.length > 0
-          ? localMatched
-          : shuffleWithSeed([...DEFAULT_RECIPES], daySeed()).slice(0, 6)
+        setNotice(buildErrorNotice(err?.message, localMatched.length > 0))
+        const fallback =
+          localMatched.length > 0
+            ? localMatched
+            : shuffleWithSeed([...DEFAULT_RECIPES], daySeed()).slice(0, 6)
         setRecipes(
           fallback.map((r) => ({
             ...r,
@@ -132,7 +142,11 @@ export default function Result() {
           }))
         )
       } else {
-        setError('本地库暂无匹配，正在尝试 AI…')
+        setNotice({
+          tone: 'info',
+          title: '本地库没有直接匹配',
+          detail: '正在请 AI 帮你搭配…',
+        })
         void fetchAI(list, scene, false)
       }
     } else if ((from === 'ai' || auto === 'true') && decodedIngredients) {
@@ -142,9 +156,12 @@ export default function Result() {
       if (!hasUsableLlm()) {
         const localMatched = matchRecipesSimple(list, 6)
         if (cancelled) return
-        setError(getFallbackMessage('LLM unavailable', localMatched.length > 0))
+        setNotice(buildErrorNotice('LLM unavailable', localMatched.length > 0))
         setRecipes(
-          (localMatched.length > 0 ? localMatched : shuffleWithSeed([...DEFAULT_RECIPES], daySeed()).slice(0, 6)).map((r) => ({
+          (localMatched.length > 0
+            ? localMatched
+            : shuffleWithSeed([...DEFAULT_RECIPES], daySeed()).slice(0, 6)
+          ).map((r) => ({
             ...r,
             source: 'local' as const,
             isFavorite: checkFavorite(r.id),
@@ -175,7 +192,7 @@ export default function Result() {
           },
         ])
       } else {
-        setError('未找到该菜谱')
+        setNotice({ tone: 'warn', title: '未找到该菜谱', detail: '返回首页再试试别的' })
         setRecipes([])
       }
     } else {
@@ -217,15 +234,27 @@ export default function Result() {
     : []
   const aiScene = parseScene(router.params.scene)
   const showAiRegen =
-    (router.params.from === 'ai' || router.params.auto === 'true') && aiIngredientsList.length > 0
+    (router.params.from === 'ai' || router.params.auto === 'true') &&
+    aiIngredientsList.length > 0
 
   const handleRegenerateAi = () => {
     const key = generateCacheKey(aiIngredientsList, aiScene)
     removeCachedRecipe(key)
     skipCacheOnceRef.current = true
     setReloadTick((t) => t + 1)
-    Taro.showToast({ title: '正在重新生成…', icon: 'none' })
+    Taro.showToast({ title: '重新为你生成', icon: 'none' })
   }
+
+  const headerSubtitle = useMemo(() => {
+    if (!recipes.length) return ''
+    if (router.params.from === 'ai' || router.params.auto === 'true') {
+      return `${recipes.length} 道 · 基于你给的食材由 AI 搭配`
+    }
+    if (router.params.from === 'pantry') {
+      return `${recipes.length} 道 · 根据你选的食材匹配`
+    }
+    return `${recipes.length} 道 · 家常精选`
+  }, [recipes.length, router.params])
 
   const S = useMemo(
     () => ({
@@ -234,7 +263,7 @@ export default function Result() {
         backgroundColor: D.bg,
         padding: `${D.pagePadTop}px ${D.pagePadH}px 40px`,
       } as CSSProperties,
-      header: { marginBottom: 22 } as CSSProperties,
+      header: { marginBottom: 20 } as CSSProperties,
       title: {
         fontSize: D.titleLarge,
         fontWeight: D.weightBold,
@@ -243,14 +272,39 @@ export default function Result() {
         letterSpacing: '-0.04em',
       } as CSSProperties,
       subtitle: { fontSize: D.footnote, color: D.labelSecondary } as CSSProperties,
-      errorBox: {
-        backgroundColor: D.bgElevated,
-        borderRadius: D.radiusM,
-        padding: '14px 16px',
-        marginBottom: 18,
-        border: `0.5px solid ${D.separator}`,
+      regenBtn: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: 14,
+        padding: '6px 12px',
+        borderRadius: 999,
+        backgroundColor: D.accentMuted,
+        color: D.accent,
+        fontSize: D.caption,
+        fontWeight: D.weightSemibold,
       } as CSSProperties,
-      errorText: { fontSize: D.footnote, color: D.accentWarm, lineHeight: 1.45 } as CSSProperties,
+      notice: (tone: 'info' | 'warn'): CSSProperties => ({
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 10,
+        backgroundColor: tone === 'warn' ? D.errorBg : D.accentMuted,
+        borderRadius: D.radiusM,
+        padding: '12px 14px',
+        marginBottom: 16,
+        borderLeft: `3px solid ${tone === 'warn' ? D.errorAccent : D.accent}`,
+      }),
+      noticeTitle: (tone: 'info' | 'warn'): CSSProperties => ({
+        fontSize: D.footnote,
+        fontWeight: D.weightSemibold,
+        color: tone === 'warn' ? D.errorFg : D.accent,
+        marginBottom: 2,
+      }),
+      noticeDetail: {
+        fontSize: D.caption,
+        color: D.labelSecondary,
+        lineHeight: 1.5,
+      } as CSSProperties,
       listContainer: { display: 'flex', flexDirection: 'column', gap: 12 } as CSSProperties,
       card: {
         backgroundColor: D.bgElevated,
@@ -263,14 +317,14 @@ export default function Result() {
         boxShadow: D.shadowCard,
       } as CSSProperties,
       imgBox: {
-        width: 100,
-        height: 100,
+        width: 92,
+        height: 92,
         backgroundColor: D.bg,
         borderRadius: D.radiusM,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: 38,
+        fontSize: 34,
         flexShrink: 0,
         overflow: 'hidden',
       } as CSSProperties,
@@ -280,12 +334,13 @@ export default function Result() {
         fontWeight: D.weightSemibold,
         color: D.label,
         marginBottom: 4,
+        letterSpacing: '-0.01em',
       } as CSSProperties,
       quote: {
         fontSize: D.caption,
         color: D.labelSecondary,
         marginBottom: 8,
-        lineHeight: 1.4,
+        lineHeight: 1.5,
       } as CSSProperties,
       metaRow: {
         display: 'flex',
@@ -293,36 +348,16 @@ export default function Result() {
         gap: 8,
         flexWrap: 'wrap' as const,
       } as CSSProperties,
-      badge: {
-        fontSize: D.caption,
-        fontWeight: D.weightSemibold,
-        color: D.accent,
-        backgroundColor: D.accentMuted,
-        padding: '3px 8px',
-        borderRadius: D.radiusS,
-      } as CSSProperties,
-      badgeAi: {
-        fontSize: D.caption,
-        fontWeight: D.weightSemibold,
-        color: D.green,
-        backgroundColor: 'rgba(74, 140, 108, 0.12)',
-        padding: '3px 8px',
-        borderRadius: D.radiusS,
-      } as CSSProperties,
-      badgeCache: {
-        fontSize: D.caption,
-        fontWeight: D.weightSemibold,
-        color: D.blue,
-        backgroundColor: 'rgba(90, 143, 168, 0.12)',
-        padding: '3px 8px',
-        borderRadius: D.radiusS,
-      } as CSSProperties,
-      timeTag: {
+      metaText: {
         fontSize: D.caption,
         color: D.labelTertiary,
-        backgroundColor: D.bg,
-        padding: '3px 8px',
-        borderRadius: D.radiusS,
+      } as CSSProperties,
+      metaDot: {
+        width: 3,
+        height: 3,
+        borderRadius: 2,
+        backgroundColor: D.labelTertiary,
+        opacity: 0.5,
       } as CSSProperties,
       favBtn: {
         padding: 10,
@@ -331,99 +366,100 @@ export default function Result() {
         border: 'none',
         lineHeight: 1,
       } as CSSProperties,
-      loadingBox: {
-        height: '60vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column',
-      } as CSSProperties,
-      loadingEmoji: { fontSize: 52, marginBottom: 16 } as CSSProperties,
-      loadingText: { color: D.labelSecondary, fontSize: D.body, fontWeight: D.weightMedium } as CSSProperties,
     }),
     []
   )
-
-  if (isLoading) {
-    return (
-      <View style={{ ...S.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <View style={S.loadingBox}>
-          <Text style={S.loadingEmoji}>🍳</Text>
-          <Text style={S.loadingText}>正在为你搭配菜谱…</Text>
-        </View>
-      </View>
-    )
-  }
 
   return (
     <View style={S.page}>
       <View style={S.header}>
         <Text style={S.title}>推荐</Text>
-        <Text style={S.subtitle}>
-          {recipes.length} 道 · 先挑顺眼的，再进详情看做法和用料
-        </Text>
-        {showAiRegen ? (
-          <Text
-            style={{ fontSize: 12, color: D.blue, fontWeight: '600', marginTop: 10 }}
-            onClick={handleRegenerateAi}
-          >
-            忽略缓存，重新生成
-          </Text>
+        {headerSubtitle ? <Text style={S.subtitle}>{headerSubtitle}</Text> : null}
+        {showAiRegen && !isLoading ? (
+          <View className="tap-scale" style={S.regenBtn} onClick={handleRegenerateAi}>
+            <Text>↻</Text>
+            <Text>换个思路</Text>
+          </View>
         ) : null}
       </View>
 
-      {error ? (
-        <View style={S.errorBox}>
-          <Text style={S.errorText}>{error}</Text>
+      {notice ? (
+        <View style={S.notice(notice.tone)}>
+          <Text style={{ fontSize: 16, lineHeight: 1.2, marginTop: 1 }}>
+            {notice.tone === 'warn' ? '⚠️' : '✦'}
+          </Text>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={S.noticeTitle(notice.tone)}>{notice.title}</Text>
+            <Text style={S.noticeDetail}>{notice.detail}</Text>
+          </View>
         </View>
       ) : null}
 
-      <View style={S.listContainer}>
-        {recipes.map((item, idx) => {
-          const r = enrichRecipeMedia(item)
-          const badgeSt =
-            r.source === 'ai' ? S.badgeAi : r.source === 'cache' ? S.badgeCache : S.badge
-          return (
-          <View key={r.id || idx} style={S.card} onClick={() => goToDetail(r)}>
-            <View style={S.imgBox}>
-              {r.image ? (
-                <Image
-                  src={r.image}
-                  mode="aspectFill"
-                  style={{ width: '100%', height: '100%', display: 'block' }}
-                  lazyLoad
-                />
-              ) : (
-                <Text>{r.emoji || '🥘'}</Text>
-              )}
-            </View>
-            <View style={S.infoBox}>
-              <Text style={S.cardTitle}>{r.title}</Text>
-              {r.quote ? (
-                <Text style={S.quote} numberOfLines={2}>
-                  {r.quote}
-                </Text>
-              ) : null}
-              <View style={S.metaRow}>
-                {r.source ? (
-                  <Text style={badgeSt}>{SOURCE_LABEL[r.source] || r.source}</Text>
-                ) : null}
-                {r.time ? <Text style={S.timeTag}>{r.time} 分钟</Text> : null}
+      {isLoading ? (
+        <SkeletonRecipeList count={4} />
+      ) : (
+        <View style={S.listContainer}>
+          {recipes.map((item, idx) => {
+            const r = enrichRecipeMedia(item)
+            const metaParts: string[] = []
+            if (r.time) metaParts.push(`${r.time} 分钟`)
+            if (r.difficulty) metaParts.push(r.difficulty)
+            return (
+              <View
+                key={r.id || idx}
+                className="tap-scale"
+                style={S.card}
+                onClick={() => goToDetail(r)}
+              >
+                <View style={S.imgBox}>
+                  {r.image ? (
+                    <Image
+                      src={r.image}
+                      mode="aspectFill"
+                      style={{ width: '100%', height: '100%', display: 'block' }}
+                      lazyLoad
+                    />
+                  ) : (
+                    <Text>{r.emoji || '🥘'}</Text>
+                  )}
+                </View>
+                <View style={S.infoBox}>
+                  <Text style={S.cardTitle}>{r.title}</Text>
+                  {r.quote ? (
+                    <Text style={S.quote} numberOfLines={2}>
+                      {r.quote}
+                    </Text>
+                  ) : null}
+                  {metaParts.length > 0 ? (
+                    <View style={S.metaRow}>
+                      {metaParts.map((part, i) => (
+                        <View
+                          key={i}
+                          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                        >
+                          {i > 0 ? <View style={S.metaDot} /> : null}
+                          <Text style={S.metaText}>{part}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                </View>
+                <View
+                  style={S.favBtn}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleToggleFavorite(r)
+                  }}
+                >
+                  <Text style={{ color: r.isFavorite ? D.accentWarm : D.labelTertiary }}>
+                    {r.isFavorite ? '♥' : '♡'}
+                  </Text>
+                </View>
               </View>
-            </View>
-            <View
-              style={S.favBtn}
-              onClick={(e) => {
-                e.stopPropagation()
-                handleToggleFavorite(r)
-              }}
-            >
-              <Text>{r.isFavorite ? '♥' : '♡'}</Text>
-            </View>
-          </View>
-          )
-        })}
-      </View>
+            )
+          })}
+        </View>
+      )}
     </View>
   )
 }

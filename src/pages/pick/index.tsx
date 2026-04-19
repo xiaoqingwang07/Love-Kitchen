@@ -52,11 +52,19 @@ function Pick() {
     )
   }, [ingredientFilter])
 
-  /** 每次进入选菜页：按当前冰箱临期重新默认勾选 1～2 项（无临期则清空勾选） */
   useDidShow(() => {
-    const names = pantryStore.expiringItems.map((i) => i.name)
-    setSelected(names.slice(0, 2))
+    // 不再默认覆盖用户勾选——只在首次进入且当前为空时做一次轻提示
   })
+
+  const handleSelectAllExpiring = () => {
+    const names = pantryStore.expiringItems.map((i) => i.name)
+    if (names.length === 0) {
+      Taro.showToast({ title: '暂无临期食材', icon: 'none' })
+      return
+    }
+    setSelected((prev) => Array.from(new Set([...prev, ...names])))
+    Taro.showToast({ title: `已加入 ${names.length} 项临期`, icon: 'success' })
+  }
 
   const toggleSelect = (name: string) => {
     setSelected(prev =>
@@ -111,8 +119,8 @@ function Pick() {
     <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: '120px' }}>
       <View style={{ padding: '44px 22px 8px' }}>
         <Text style={{ fontSize: D.titleLarge, fontWeight: D.weightBold, color: D.label, display: 'block', marginBottom: 6, letterSpacing: '-0.04em' }}>选菜</Text>
-        <Text style={{ fontSize: D.footnote, color: D.labelSecondary, lineHeight: 1.45 }}>
-          爱心厨房：优先消耗临期食材；也可直接勾选常见菜，再智能匹配菜谱
+        <Text style={{ fontSize: D.footnote, color: D.labelSecondary, lineHeight: 1.5 }}>
+          勾选要用的食材，按需加入临期优先处理
         </Text>
       </View>
 
@@ -179,7 +187,25 @@ function Pick() {
 
         {expiringNames.length > 0 && (
           <>
-            <Text style={{ fontSize: D.caption, fontWeight: '600', color: D.accentWarm, marginBottom: 8, letterSpacing: '0.06em' }}>临期 · 优先消耗</Text>
+            <View
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 8,
+              }}
+            >
+              <Text style={{ fontSize: D.caption, fontWeight: D.weightSemibold, color: D.accentWarm, letterSpacing: '0.14em', textTransform: 'uppercase' as const }}>
+                临期 · 优先消耗
+              </Text>
+              <Text
+                className="tap-scale"
+                style={{ fontSize: D.caption, color: D.accent, fontWeight: D.weightSemibold }}
+                onClick={handleSelectAllExpiring}
+              >
+                全部加入
+              </Text>
+            </View>
             <View style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: 16 }}>
               {pantryStore.expiringItems.map(item => {
                 const days = getDaysLeft(item)

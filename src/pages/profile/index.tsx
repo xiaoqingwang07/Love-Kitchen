@@ -13,10 +13,27 @@ import { STORAGE_KEYS } from '../../store/storageKeys'
 import { checkApiKey, getStoredScene, setStoredScene, usesLlmProxy } from '../../api/recipe'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
 import { D } from '../../theme/designTokens'
-import * as Com from '../../styles/common'
 import type { SceneType } from '../../types/recipe'
 import type { Recipe } from '../../types/recipe'
 import { getUserStats, getAllAchievements } from '../../utils/achievements'
+
+/** 仅在开发/体验版环境显示工程调试入口 */
+function isDevEnv(): boolean {
+  try {
+    const info = Taro.getAccountInfoSync?.()
+    const env = info?.miniProgram?.envVersion
+    return env === 'develop' || env === 'trial'
+  } catch {
+    return false
+  }
+}
+
+const SCENE_OPTIONS: { key: SceneType; label: string }[] = [
+  { key: 'normal', label: '日常' },
+  { key: 'runner', label: '运动后' },
+  { key: 'quick', label: '快手' },
+  { key: 'muscle', label: '高蛋白' },
+]
 
 function Profile() {
   const pantryStore = usePantryStore()
@@ -28,6 +45,8 @@ function Profile() {
   const [recipeScene, setRecipeScene] = useState<SceneType>(() => getStoredScene())
   const [showFavorites, setShowFavorites] = useState(false)
   const [favoriteItems, setFavoriteItems] = useState<Recipe[]>([])
+  const [aboutTaps, setAboutTaps] = useState(0)
+  const [devUnlocked, setDevUnlocked] = useState(isDevEnv())
 
   const loadFavoriteItems = useCallback(() => {
     setFavoriteItems(getFavoriteDetails())
@@ -54,17 +73,10 @@ function Profile() {
     }
   }, [])
 
-  const SCENE_OPTIONS: { key: SceneType; label: string }[] = [
-    { key: 'normal', label: '日常' },
-    { key: 'runner', label: '运动后' },
-    { key: 'quick', label: '快手' },
-    { key: 'muscle', label: '高蛋白' },
-  ]
-
   const applyScene = (k: SceneType) => {
     setRecipeScene(k)
     setStoredScene(k)
-    Taro.showToast({ title: '已保存推荐场景', icon: 'success' })
+    Taro.showToast({ title: '已保存', icon: 'success' })
   }
 
   const handleTestLlmProxy = async () => {
@@ -75,7 +87,11 @@ function Profile() {
     if (result.valid) {
       Taro.showToast({ title: '中转可用', icon: 'success' })
     } else {
-      Taro.showModal({ title: '检测失败', content: result.error || '请检查 Vercel 环境与小程序 request 域名', showCancel: false })
+      Taro.showModal({
+        title: '检测失败',
+        content: result.error || '请检查 Vercel 部署与 request 合法域名',
+        showCancel: false,
+      })
     }
   }
 
@@ -90,12 +106,13 @@ function Profile() {
 
   const stats: { label: string; value: number; action: 'pantry' | 'favorites' | 'cooked' }[] = [
     { label: '冰箱食材', value: pantryStore.totalCount, action: 'pantry' },
-    { label: '收藏菜谱', value: favCount, action: 'favorites' },
-    { label: '做过的菜', value: cookedLen, action: 'cooked' },
+    { label: '收藏', value: favCount, action: 'favorites' },
+    { label: '做过', value: cookedLen, action: 'cooked' },
   ]
 
   const userStats = useMemo(() => getUserStats(pantryStore.items), [pantryStore.items])
   const allAchievements = useMemo(() => getAllAchievements(userStats), [userStats])
+  const unlockedCount = allAchievements.filter((a) => a.unlocked).length
 
   const onStatClick = (action: 'pantry' | 'favorites' | 'cooked') => {
     if (action === 'pantry') {
@@ -111,52 +128,95 @@ function Profile() {
     setShowHistory(true)
   }
 
+  const handleResetMock = () => {
+    Taro.showModal({
+      title: '重置冰箱数据',
+      content: '这会把冰箱清空并填入 18 条示例食材，当前库存全部丢失。继续？',
+      confirmText: '重置',
+      confirmColor: '#D05A38',
+      success: (res) => {
+        if (res.confirm) {
+          Taro.showModal({
+            title: '再次确认',
+            content: '此操作不可撤销',
+            confirmText: '确认重置',
+            confirmColor: '#D05A38',
+            success: (r2) => {
+              if (r2.confirm) {
+                pantryStore.resetToMock()
+                Taro.showToast({ title: '已重置', icon: 'success' })
+              }
+            },
+          })
+        }
+      },
+    })
+  }
+
+  // ---------- 收藏列表 ----------
   if (showFavorites) {
     const isEmpty = favoriteItems.length === 0
     return (
       <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
         <View
           style={{
-            padding: '20px',
+            padding: '20px 22px',
             backgroundColor: D.bgElevated,
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
+            gap: 12,
             borderBottom: `0.5px solid ${D.separatorLight}`,
           }}
         >
-          <Text style={{ fontSize: '16px', color: D.accent }} onClick={() => setShowFavorites(false)}>
+          <Text
+            style={{ fontSize: D.body, color: D.accent }}
+            onClick={() => setShowFavorites(false)}
+          >
             ← 返回
           </Text>
-          <Text style={{ fontSize: '18px', fontWeight: '700', color: D.label }}>我的收藏</Text>
+          <Text
+            style={{
+              fontSize: D.headline,
+              fontWeight: D.weightBold,
+              color: D.label,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            收藏
+          </Text>
         </View>
-        <ScrollView scrollY style={{ flex: 1, padding: '20px' }}>
+        <ScrollView scrollY style={{ padding: '16px 22px 40px' }}>
           {isEmpty ? (
-            <View style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '48px' }}>
-              <Text style={{ fontSize: '48px', marginBottom: '12px' }}>⭐</Text>
-              <Text style={{ fontSize: '16px', fontWeight: '600', color: D.label, marginBottom: '8px' }}>暂无收藏</Text>
-              <Text style={{ fontSize: '14px', color: D.labelTertiary, textAlign: 'center', paddingLeft: 28, paddingRight: 28 }}>
-                在推荐列表点「♡」即可收藏
+            <View
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                paddingTop: 64,
+              }}
+            >
+              <Text style={{ fontSize: 52, marginBottom: 16 }}>♡</Text>
+              <Text
+                style={{
+                  fontSize: D.body,
+                  fontWeight: D.weightSemibold,
+                  color: D.label,
+                  marginBottom: 6,
+                }}
+              >
+                还没有收藏
               </Text>
-              <View style={{ marginTop: 24, width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <View
-                  style={{
-                    height: 48,
-                    borderRadius: 999,
-                    backgroundColor: D.accent,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                  onClick={() =>
-                    Taro.navigateTo({
-                      url: `/pages/result/index?from=random&scene=${getStoredScene()}`,
-                    })
-                  }
-                >
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#fff' }}>去看推荐</Text>
-                </View>
-              </View>
+              <Text
+                style={{
+                  fontSize: D.footnote,
+                  color: D.labelTertiary,
+                  textAlign: 'center',
+                  padding: '0 40px',
+                  lineHeight: 1.5,
+                }}
+              >
+                在推荐列表点 ♡ 就能收藏到这里
+              </Text>
             </View>
           ) : (
             favoriteItems.map((item, idx) => {
@@ -164,42 +224,78 @@ function Profile() {
               return (
                 <View
                   key={String(r.id ?? idx)}
-                  style={{ ...Com.cardRowStyle, marginBottom: 10 }}
+                  className="tap-scale"
+                  style={{
+                    backgroundColor: D.bgElevated,
+                    borderRadius: D.radiusM,
+                    padding: 14,
+                    marginBottom: 10,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 14,
+                    border: `0.5px solid ${D.separatorLight}`,
+                    boxShadow: D.shadowCard,
+                  }}
                   onClick={() => {
                     Taro.setStorageSync(STORAGE_KEYS.selectedRecipeDetail, r)
                     Taro.navigateTo({ url: '/pages/detail/index' })
                   }}
                 >
-                  <View style={Com.emojiBoxSmallStyle}>
+                  <View
+                    style={{
+                      width: 60,
+                      height: 60,
+                      backgroundColor: D.bg,
+                      borderRadius: D.radiusS,
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     {r.image ? (
                       <Image
                         src={r.image}
                         mode="aspectFill"
-                        style={{ width: '100%', height: '100%', display: 'block' }}
+                        style={{ width: '100%', height: '100%' }}
                         lazyLoad
                       />
                     ) : (
-                      <Text>{r.emoji || '🥘'}</Text>
+                      <Text style={{ fontSize: 28 }}>{r.emoji || '🥘'}</Text>
                     )}
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={Com.titleStyle}>{r.title}</Text>
-                    <Text style={Com.textMutedStyle} numberOfLines={1}>
-                      {r.quote || r.nutritionAnalysis || '点击查看详情'}
+                    <Text
+                      style={{
+                        fontSize: D.subheadline,
+                        fontWeight: D.weightSemibold,
+                        color: D.label,
+                      }}
+                    >
+                      {r.title}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: D.caption,
+                        color: D.labelTertiary,
+                        marginTop: 4,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {r.quote || r.nutritionAnalysis || '点开查看做法'}
                     </Text>
                   </View>
-                  <View
+                  <Text
+                    style={{ fontSize: 22, color: D.accentWarm, padding: '0 6px' }}
                     onClick={(e) => {
                       e.stopPropagation()
                       toggleFavorite(r)
                       loadFavoriteItems()
-                      Taro.showToast({ title: '已取消收藏', icon: 'none' })
+                      Taro.showToast({ title: '已取消', icon: 'none' })
                     }}
-                    style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}
                   >
-                    <Text style={{ fontSize: 18 }}>♥</Text>
-                    <Text style={{ fontSize: 10, color: D.labelTertiary, fontWeight: '600' }}>取消</Text>
-                  </View>
+                    ♥
+                  </Text>
                 </View>
               )
             })
@@ -209,33 +305,84 @@ function Profile() {
     )
   }
 
+  // ---------- 做过的菜 ----------
   if (showHistory) {
     return (
       <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
-        <View style={{ padding: '20px', backgroundColor: D.bgElevated, display: 'flex', alignItems: 'center', gap: '12px', borderBottom: `0.5px solid ${D.separatorLight}` }}>
-          <Text style={{ fontSize: '16px', color: D.accent }} onClick={() => setShowHistory(false)}>← 返回</Text>
-          <Text style={{ fontSize: '18px', fontWeight: '700', color: D.label }}>做过的菜</Text>
+        <View
+          style={{
+            padding: '20px 22px',
+            backgroundColor: D.bgElevated,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            borderBottom: `0.5px solid ${D.separatorLight}`,
+          }}
+        >
+          <Text
+            style={{ fontSize: D.body, color: D.accent }}
+            onClick={() => setShowHistory(false)}
+          >
+            ← 返回
+          </Text>
+          <Text
+            style={{
+              fontSize: D.headline,
+              fontWeight: D.weightBold,
+              color: D.label,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            做过的菜
+          </Text>
         </View>
-        <ScrollView scrollY style={{ padding: '20px' }}>
+        <ScrollView scrollY style={{ padding: '16px 22px 40px' }}>
           {cookedRecipes.length === 0 ? (
-            <View style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '80px' }}>
-              <Text style={{ fontSize: '48px', marginBottom: '12px' }}>👨‍🍳</Text>
-              <Text style={{ fontSize: '15px', color: D.labelTertiary }}>还没有做过菜的记录</Text>
+            <View
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                paddingTop: 80,
+              }}
+            >
+              <Text style={{ fontSize: 52, marginBottom: 16 }}>👨‍🍳</Text>
+              <Text style={{ fontSize: D.footnote, color: D.labelTertiary }}>
+                还没有做菜记录，做一道试试
+              </Text>
             </View>
           ) : (
             cookedRecipes.map((item, idx) => (
               <View
                 key={idx}
-                style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '14px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '12px', border: `0.5px solid ${D.separatorLight}`, boxShadow: D.shadowCard }}
+                className="tap-scale"
+                style={{
+                  backgroundColor: D.bgElevated,
+                  borderRadius: D.radiusM,
+                  padding: '14px 16px',
+                  marginBottom: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  border: `0.5px solid ${D.separatorLight}`,
+                }}
                 onClick={() => {
                   Taro.setStorageSync(STORAGE_KEYS.selectedRecipeDetail, item)
                   Taro.navigateTo({ url: '/pages/detail/index' })
                 }}
               >
-                <Text style={{ fontSize: '32px' }}>{item.emoji || '🥘'}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: '16px', fontWeight: '600', color: D.label, display: 'block' }}>{item.title}</Text>
-                  <Text style={{ fontSize: '12px', color: D.labelTertiary }}>
+                <Text style={{ fontSize: 30 }}>{item.emoji || '🥘'}</Text>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    style={{
+                      fontSize: D.subheadline,
+                      fontWeight: D.weightSemibold,
+                      color: D.label,
+                    }}
+                  >
+                    {item.title}
+                  </Text>
+                  <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>
                     {new Date(item.cookedAt).toLocaleDateString('zh-CN')} 做过
                   </Text>
                 </View>
@@ -248,26 +395,103 @@ function Profile() {
     )
   }
 
+  // ---------- 关于 ----------
   if (showAbout) {
     return (
       <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
-        <View style={{ padding: '20px', backgroundColor: D.bgElevated, display: 'flex', alignItems: 'center', gap: '12px', borderBottom: `0.5px solid ${D.separatorLight}` }}>
-          <Text style={{ fontSize: '16px', color: D.accent }} onClick={() => setShowAbout(false)}>← 返回</Text>
-          <Text style={{ fontSize: '18px', fontWeight: '700', color: D.label }}>关于</Text>
+        <View
+          style={{
+            padding: '20px 22px',
+            backgroundColor: D.bgElevated,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            borderBottom: `0.5px solid ${D.separatorLight}`,
+          }}
+        >
+          <Text
+            style={{ fontSize: D.body, color: D.accent }}
+            onClick={() => {
+              setShowAbout(false)
+              setAboutTaps(0)
+            }}
+          >
+            ← 返回
+          </Text>
+          <Text
+            style={{
+              fontSize: D.headline,
+              fontWeight: D.weightBold,
+              color: D.label,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            关于
+          </Text>
         </View>
-        <View style={{ padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Text style={{ fontSize: '64px', marginBottom: '16px' }}>🍳</Text>
-          <Text style={{ fontSize: '22px', fontWeight: '700', color: D.label, marginBottom: '4px' }}>爱心厨房</Text>
-          <Text style={{ fontSize: '14px', color: D.labelTertiary, marginBottom: '24px' }}>Love Kitchen v1.0</Text>
-          <View style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '20px', width: '100%', border: `0.5px solid ${D.separatorLight}`, boxShadow: D.shadowCard }}>
-            <Text style={{ fontSize: '14px', color: D.labelSecondary, lineHeight: '1.8', display: 'block' }}>
-              面向家庭的 AI 厨房助手微信小程序。
+        <View
+          style={{
+            padding: '48px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          <Text
+            style={{ fontSize: 72, marginBottom: 20 }}
+            onClick={() => {
+              const next = aboutTaps + 1
+              setAboutTaps(next)
+              if (next >= 7) {
+                setDevUnlocked(true)
+                Taro.showToast({ title: '已解锁开发者选项', icon: 'none' })
+              }
+            }}
+          >
+            🍳
+          </Text>
+          <Text
+            style={{
+              fontSize: D.title,
+              fontWeight: D.weightBold,
+              color: D.label,
+              marginBottom: 6,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            爱心厨房
+          </Text>
+          <Text style={{ fontSize: D.footnote, color: D.labelTertiary, marginBottom: 28 }}>
+            Love Kitchen · v1.1
+          </Text>
+          <View
+            style={{
+              backgroundColor: D.bgElevated,
+              borderRadius: D.radiusL,
+              padding: 20,
+              width: '100%',
+              border: `0.5px solid ${D.separatorLight}`,
+              boxShadow: D.shadowCard,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: D.subheadline,
+                color: D.labelSecondary,
+                lineHeight: 1.7,
+              }}
+            >
+              面向家庭的 AI 厨房助手。把食材管理、今天吃什么、一步一步做到完成，串成一条顺滑的路径。
             </Text>
-            <Text style={{ fontSize: '14px', color: D.labelSecondary, lineHeight: '1.8', display: 'block', marginTop: '8px' }}>
-              解决「今天吃什么、怎么做」以及食材浪费问题。通过极简管理、智能决策、高效执行，让每一餐都有爱。
-            </Text>
-            <Text style={{ fontSize: '13px', color: D.labelTertiary, display: 'block', marginTop: '16px' }}>
-              爱心厨房 — 让每一餐都有爱。
+            <Text
+              style={{
+                fontSize: D.footnote,
+                color: D.labelTertiary,
+                marginTop: 14,
+                lineHeight: 1.6,
+              }}
+            >
+              让每一餐都有爱。
             </Text>
           </View>
         </View>
@@ -275,50 +499,139 @@ function Profile() {
     )
   }
 
+  // ---------- 主页 ----------
   return (
-      <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
+    <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: 40 }}>
       <View style={{ padding: '44px 22px 20px' }}>
-        <Text style={{ fontSize: D.titleLarge, fontWeight: D.weightBold, color: D.label, letterSpacing: '-0.04em' }}>我的</Text>
-        <Text style={{ fontSize: D.footnote, color: D.labelSecondary, marginTop: 6 }}>爱心厨房</Text>
+        <Text
+          style={{
+            fontSize: D.titleLarge,
+            fontWeight: D.weightBold,
+            color: D.label,
+            letterSpacing: '-0.04em',
+          }}
+        >
+          我的
+        </Text>
+        <Text
+          style={{
+            fontSize: D.footnote,
+            color: D.labelSecondary,
+            marginTop: 8,
+          }}
+        >
+          爱心厨房 · 你的家庭饭桌助理
+        </Text>
+
+        {/* 数据三联卡 */}
         <View style={{ display: 'flex', gap: 10, marginTop: 20 }}>
           {stats.map((s, i) => (
             <View
               key={i}
-              style={{ flex: 1, backgroundColor: D.bgElevated, borderRadius: D.radiusM, padding: '14px 10px', textAlign: 'center', border: `0.5px solid ${D.separatorLight}` }}
+              className="tap-scale"
+              style={{
+                flex: 1,
+                backgroundColor: D.bgElevated,
+                borderRadius: D.radiusM,
+                padding: '14px 12px',
+                border: `0.5px solid ${D.separatorLight}`,
+                boxShadow: D.shadowCard,
+              }}
               onClick={() => onStatClick(s.action)}
             >
-              <Text style={{ fontSize: D.headline, fontWeight: D.weightBold, color: D.label, display: 'block' }}>{s.value}</Text>
-              <Text style={{ fontSize: 11, color: D.labelSecondary, marginTop: 4 }}>{s.label}</Text>
+              <Text
+                style={{
+                  fontSize: D.title,
+                  fontWeight: D.weightBold,
+                  color: D.label,
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                {s.value}
+              </Text>
+              <Text
+                style={{
+                  fontSize: D.caption,
+                  color: D.labelSecondary,
+                  marginTop: 4,
+                }}
+              >
+                {s.label}
+              </Text>
             </View>
           ))}
         </View>
-        <Text style={{ fontSize: 11, color: D.labelTertiary, marginTop: 10, textAlign: 'center', lineHeight: 1.4 }}>
-          点击数据：冰箱 · 收藏列表 · 做过的菜
-        </Text>
 
-        {/* 成就徽章 */}
-        <View style={{ marginTop: 20 }}>
-          <Text style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: D.labelSecondary, marginBottom: 12, letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>成就</Text>
-          <View style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {/* 成就 */}
+        <View style={{ marginTop: 28 }}>
+          <View
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              marginBottom: 12,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: D.caption,
+                fontWeight: D.weightSemibold,
+                color: D.labelSecondary,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase' as const,
+              }}
+            >
+              成就
+            </Text>
+            <Text style={{ fontSize: D.caption, color: D.labelTertiary }}>
+              {unlockedCount}/{allAchievements.length}
+            </Text>
+          </View>
+          <View
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 8,
+            }}
+          >
             {allAchievements.map((a) => (
               <View
                 key={a.id}
                 style={{
                   display: 'flex',
-                  flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 6,
-                  padding: '8px 12px',
-                  borderRadius: D.radiusS,
-                  backgroundColor: a.unlocked ? D.accentMuted : D.bg,
-                  border: `0.5px solid ${a.unlocked ? D.accentLine : D.separatorLight}`,
+                  gap: 10,
+                  padding: '10px 12px',
+                  borderRadius: D.radiusM,
+                  backgroundColor: a.unlocked ? D.accentMuted : D.bgElevated,
+                  border: `0.5px solid ${
+                    a.unlocked ? D.accentLine : D.separatorLight
+                  }`,
                   opacity: a.unlocked ? 1 : 0.55,
                 }}
               >
-                <Text style={{ fontSize: 18 }}>{a.emoji}</Text>
-                <View>
-                  <Text style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: a.unlocked ? D.label : D.labelTertiary }}>{a.title}</Text>
-                  <Text style={{ fontSize: D.caption, color: D.labelTertiary }}>{a.description}</Text>
+                <Text style={{ fontSize: 22 }}>{a.emoji}</Text>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    style={{
+                      fontSize: D.footnote,
+                      fontWeight: D.weightSemibold,
+                      color: a.unlocked ? D.label : D.labelSecondary,
+                    }}
+                  >
+                    {a.title}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      color: D.labelTertiary,
+                      marginTop: 2,
+                      lineHeight: 1.3,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {a.description}
+                  </Text>
                 </View>
               </View>
             ))}
@@ -326,108 +639,281 @@ function Profile() {
         </View>
       </View>
 
-      {/* Menu */}
+      {/* 偏好设置 */}
       <View style={{ padding: '0 22px 32px' }}>
-        <View style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusM, padding: 16, marginBottom: 12, border: `0.5px solid ${D.separatorLight}` }}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: D.labelSecondary, marginBottom: 12 }}>默认 AI 场景</Text>
-          <View style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <Text
+          style={{
+            fontSize: D.caption,
+            fontWeight: D.weightSemibold,
+            color: D.labelSecondary,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase' as const,
+            marginBottom: 10,
+          }}
+        >
+          偏好
+        </Text>
+
+        {/* 场景 */}
+        <View
+          style={{
+            backgroundColor: D.bgElevated,
+            borderRadius: D.radiusM,
+            padding: 16,
+            marginBottom: 10,
+            border: `0.5px solid ${D.separatorLight}`,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: D.subheadline,
+              fontWeight: D.weightSemibold,
+              color: D.label,
+            }}
+          >
+            推荐场景
+          </Text>
+          <Text
+            style={{
+              fontSize: D.caption,
+              color: D.labelTertiary,
+              marginTop: 4,
+              lineHeight: 1.5,
+            }}
+          >
+            AI 出菜时会按这个场景调整语气、步骤和营养侧重
+          </Text>
+          <View style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
             {SCENE_OPTIONS.map(({ key, label }) => (
               <View
                 key={key}
+                className="tap-scale"
                 style={{
-                  padding: '8px 14px',
+                  padding: '6px 14px',
                   borderRadius: 999,
                   backgroundColor: recipeScene === key ? D.label : D.bg,
-                  border: recipeScene === key ? 'none' : `0.5px solid ${D.separator}`,
+                  border:
+                    recipeScene === key ? 'none' : `0.5px solid ${D.separator}`,
                 }}
                 onClick={() => applyScene(key)}
               >
-                <Text style={{ fontSize: D.body, fontWeight: D.weightSemibold, color: recipeScene === key ? D.bgElevated : D.labelSecondary }}>{label}</Text>
+                <Text
+                  style={{
+                    fontSize: D.footnote,
+                    fontWeight: D.weightSemibold,
+                    color: recipeScene === key ? D.bgElevated : D.labelSecondary,
+                  }}
+                >
+                  {label}
+                </Text>
               </View>
             ))}
           </View>
         </View>
+
+        {/* 就餐人数 */}
         <View
-          style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '16px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '14px', border: `0.5px solid ${D.separatorLight}`, boxShadow: D.shadowCard }}
-        >
-          <Text style={{ fontSize: '24px' }}>🛡️</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: '16px', fontWeight: '600', color: D.label, display: 'block' }}>
-              智能推荐服务
-            </Text>
-            <Text style={{ fontSize: '13px', color: apiKeyValid === false ? D.red : apiKeyValid === true ? D.green : D.labelTertiary }}>
-              {apiKeyValid === false
-                ? '中转不可用，请检查部署与合法域名'
-                : apiKeyValid === true
-                  ? '已启用：密钥在服务器，客户端不携带 Key'
-                  : '正在检测…'}
-            </Text>
-          </View>
-        </View>
-
-        <View style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '16px', marginBottom: '12px', marginTop: '-4px', border: `0.5px solid ${D.separatorLight}` }}>
-          <Button
-            style={{ height: '40px', backgroundColor: D.accent, color: '#fff', borderRadius: '20px', fontSize: '14px', border: 'none' }}
-            onClick={handleTestLlmProxy}
-          >检测中转连通性</Button>
-        </View>
-
-        {/* Diners Count */}
-        <View style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '16px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '14px', border: `0.5px solid ${D.separatorLight}`, boxShadow: D.shadowCard }}>
-          <Text style={{ fontSize: '24px' }}>👥</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: '16px', fontWeight: '600', color: D.label, display: 'block' }}>默认就餐人数</Text>
-            <Text style={{ fontSize: '13px', color: D.labelTertiary }}>推荐菜谱份量参考</Text>
-          </View>
-          <View style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <View
-              style={{ width: '32px', height: '32px', borderRadius: '16px', backgroundColor: D.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `0.5px solid ${D.separatorLight}` }}
-              onClick={() => handleDinersChange(-1)}
-            ><Text style={{ fontSize: '18px', color: D.blue }}>-</Text></View>
-            <Text style={{ fontSize: '18px', fontWeight: '700', color: D.accent, minWidth: '24px', textAlign: 'center' }}>{dinersCount}</Text>
-            <View
-              style={{ width: '32px', height: '32px', borderRadius: '16px', backgroundColor: D.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              onClick={() => handleDinersChange(1)}
-            ><Text style={{ fontSize: '18px', color: '#fff' }}>+</Text></View>
-          </View>
-        </View>
-
-        {/* About */}
-        <View
-          style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '16px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '14px', border: `0.5px solid ${D.separatorLight}`, boxShadow: D.shadowCard }}
-          onClick={() => setShowAbout(true)}
-        >
-          <Text style={{ fontSize: '24px' }}>ℹ️</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: '16px', fontWeight: '600', color: D.label, display: 'block' }}>关于</Text>
-            <Text style={{ fontSize: '13px', color: D.labelTertiary }}>爱心厨房 v1.0</Text>
-          </View>
-          <Text style={{ fontSize: '16px', color: D.labelTertiary }}>›</Text>
-        </View>
-
-        {/* Reset Mock Data */}
-        <View
-          style={{ backgroundColor: D.bgElevated, borderRadius: D.radiusS, padding: '16px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '14px', border: `0.5px solid ${D.separatorLight}`, boxShadow: D.shadowCard }}
-          onClick={() => {
-            Taro.showModal({
-              title: '重置冰箱',
-              content: '将冰箱食材恢复为示例数据，确认？',
-              success: (res) => {
-                if (res.confirm) {
-                  pantryStore.resetToMock()
-                  Taro.showToast({ title: '已重置', icon: 'success' })
-                }
-              }
-            })
+          style={{
+            backgroundColor: D.bgElevated,
+            borderRadius: D.radiusM,
+            padding: 16,
+            marginBottom: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            border: `0.5px solid ${D.separatorLight}`,
           }}
         >
-          <Text style={{ fontSize: '24px' }}>🔄</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: '16px', fontWeight: '600', color: D.label, display: 'block' }}>重置冰箱数据</Text>
-            <Text style={{ fontSize: '13px', color: D.labelTertiary }}>恢复示例食材数据</Text>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              style={{
+                fontSize: D.subheadline,
+                fontWeight: D.weightSemibold,
+                color: D.label,
+              }}
+            >
+              默认就餐人数
+            </Text>
+            <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4 }}>
+              份量推荐时的参考值
+            </Text>
           </View>
-          <Text style={{ fontSize: '16px', color: D.labelTertiary }}>›</Text>
+          <View style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <View
+              className="tap-scale"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: D.bg,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: `0.5px solid ${D.separator}`,
+              }}
+              onClick={() => handleDinersChange(-1)}
+            >
+              <Text style={{ fontSize: 18, color: D.label }}>−</Text>
+            </View>
+            <Text
+              style={{
+                fontSize: D.headline,
+                fontWeight: D.weightBold,
+                color: D.label,
+                minWidth: 24,
+                textAlign: 'center',
+              }}
+            >
+              {dinersCount}
+            </Text>
+            <View
+              className="tap-scale"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: D.accent,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onClick={() => handleDinersChange(1)}
+            >
+              <Text style={{ fontSize: 18, color: '#fff' }}>+</Text>
+            </View>
+          </View>
         </View>
+
+        {/* 联网状态 */}
+        {usesLlmProxy() ? (
+          <View
+            style={{
+              backgroundColor: D.bgElevated,
+              borderRadius: D.radiusM,
+              padding: 16,
+              marginBottom: 10,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              border: `0.5px solid ${D.separatorLight}`,
+            }}
+          >
+            <View
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: 5,
+                backgroundColor:
+                  apiKeyValid === false
+                    ? D.red
+                    : apiKeyValid === true
+                    ? D.green
+                    : D.labelTertiary,
+              }}
+            />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text
+                style={{
+                  fontSize: D.subheadline,
+                  fontWeight: D.weightSemibold,
+                  color: D.label,
+                }}
+              >
+                智能推荐
+              </Text>
+              <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>
+                {apiKeyValid === false
+                  ? '暂不可用，稍后 AI 会自动回退到本地库'
+                  : apiKeyValid === true
+                  ? '已启用，密钥保存在服务端'
+                  : '正在检测…'}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {/* 关于 */}
+        <View
+          className="tap-scale"
+          style={{
+            backgroundColor: D.bgElevated,
+            borderRadius: D.radiusM,
+            padding: 16,
+            marginBottom: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            border: `0.5px solid ${D.separatorLight}`,
+          }}
+          onClick={() => setShowAbout(true)}
+        >
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                fontSize: D.subheadline,
+                fontWeight: D.weightSemibold,
+                color: D.label,
+              }}
+            >
+              关于
+            </Text>
+            <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>
+              爱心厨房 v1.1
+            </Text>
+          </View>
+          <Text style={{ color: D.labelTertiary }}>›</Text>
+        </View>
+
+        {/* 开发者调试（仅开发/体验版 or 关于页 7 连击解锁） */}
+        {devUnlocked ? (
+          <View
+            style={{
+              marginTop: 24,
+              padding: '14px 16px',
+              borderRadius: D.radiusM,
+              border: `0.5px dashed ${D.separator}`,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: D.caption,
+                color: D.labelTertiary,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase' as const,
+                marginBottom: 10,
+              }}
+            >
+              开发者选项
+            </Text>
+            <Button
+              style={{
+                height: 40,
+                backgroundColor: D.bg,
+                color: D.label,
+                borderRadius: 999,
+                fontSize: D.footnote,
+                border: `0.5px solid ${D.separator}`,
+                marginBottom: 10,
+              }}
+              onClick={handleTestLlmProxy}
+            >
+              检测 LLM 中转
+            </Button>
+            <Button
+              style={{
+                height: 40,
+                backgroundColor: D.errorBg,
+                color: D.errorFg,
+                borderRadius: 999,
+                fontSize: D.footnote,
+                border: 'none',
+              }}
+              onClick={handleResetMock}
+            >
+              重置冰箱数据
+            </Button>
+          </View>
+        ) : null}
       </View>
     </View>
   )

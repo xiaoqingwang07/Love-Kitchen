@@ -1,6 +1,6 @@
-import { View, Text, Input, Button, ScrollView, Textarea } from '@tarojs/components'
-import Taro from '@tarojs/taro'
-import { useState, useMemo, type CSSProperties } from 'react'
+import { View, Text, Input, Button, ScrollView, Textarea, Image } from '@tarojs/components'
+import Taro, { useDidShow } from '@tarojs/taro'
+import { useState, useMemo, useEffect, type CSSProperties } from 'react'
 import { observer } from 'mobx-react-lite'
 import { usePantryStore } from '../../store/context'
 import { getCategoryForName } from '../../data/shelfLife'
@@ -10,18 +10,21 @@ import type { FridgeSide } from '../../types/fridge'
 import { slotKind, slotTitle } from '../../types/fridge'
 import { parseShoppingLines, suggestPlacementWithBalance } from '../../utils/fridgePlacement'
 import { D } from '../../theme/designTokens'
-import { STORAGE_KEYS } from '../../store/storageKeys'
 import { slotShortLabel } from '../../utils/slotLabel'
+import {
+  readIntakeDraft,
+  clearIntakeDraft,
+  type IntakeDraft,
+} from '../../utils/mediaIntake'
 
 type HighlightMode = 'all' | 'expiring' | 'expired'
 
 const pad = D.pagePadH
-
-/** 每层最小高度；左右成对行等高，食材名完整换行 */
 const SLOT_PULL_MIN = 56
 const SLOT_DRAWER_MIN = 62
 const SLOT_STACK_GAP = 5
 const SLOT_INDICES = [0, 1, 2, 3, 4, 5, 6] as const
+const DAY_MS = 24 * 60 * 60 * 1000
 
 function FridgePantry() {
   const store = usePantryStore()
@@ -34,55 +37,43 @@ function FridgePantry() {
   const [receiptPreview, setReceiptPreview] = useState<
     { name: string; amount: string; side: FridgeSide; slotIndex: number }[] | null
   >(null)
-  const [showFridgeTip, setShowFridgeTip] = useState(() => {
-    try {
-      return !Taro.getStorageSync(STORAGE_KEYS.pantryFridgeTipDismissed)
-    } catch {
-      return true
+  const [intakeDraft, setIntakeDraft] = useState<IntakeDraft | null>(null)
+  const [editing, setEditing] = useState<PantryItem | null>(null)
+  const [editAmount, setEditAmount] = useState('')
+  const [editDaysLeft, setEditDaysLeft] = useState<number>(0)
+
+  useDidShow(() => {
+    const draft = readIntakeDraft()
+    if (draft) {
+      setIntakeDraft(draft)
+      setShowReceipt(true)
+      setReceiptPreview(null)
     }
   })
-  const [showEmptyBanner, setShowEmptyBanner] = useState(() => {
-    try {
-      return !Taro.getStorageSync(STORAGE_KEYS.pantryEmptyBannerDismissed)
-    } catch {
-      return true
+
+  useEffect(() => {
+    if (editing) {
+      setEditAmount(editing.amount)
+      setEditDaysLeft(Math.max(0, getDaysLeft(editing)))
     }
-  })
+  }, [editing])
 
-  const slotHasHighlight = (side: FridgeSide, slotIndex: number): boolean => {
-    const list = store.itemsInSlot(side, slotIndex)
-    if (highlight === 'all') return true
-    return list.some((i) => {
-      const s = getFreshnessStatus(i)
-      return highlight === 'expiring' ? s === 'expiring' : s === 'expired'
-    })
-  }
-
-  const slotDimmed = (side: FridgeSide, slotIndex: number): boolean => {
-    if (highlight === 'all') return false
-    const list = store.itemsInSlot(side, slotIndex)
-    if (list.length === 0) return true
-    return !slotHasHighlight(side, slotIndex)
-  }
-
-  /** 外柜：金属包边 + 内凹阴影，双开门 */
+  // ---------- 冰箱外柜视觉 ----------
   const fridgeCabinet: CSSProperties = {
     borderRadius: 22,
     padding: 4,
     background: 'linear-gradient(145deg, #b8c0cc 0%, #dde3ea 38%, #c9d0da 72%, #aeb6c2 100%)',
     boxShadow: '0 12px 40px rgba(18, 22, 28, 0.14), inset 0 1px 0 rgba(255,255,255,0.65)',
   }
-
   const doorMidSealFill: CSSProperties = {
     width: 6,
     alignSelf: 'stretch',
     flexShrink: 0,
     borderRadius: 2,
-    background: 'linear-gradient(90deg, rgba(0,0,0,0.12) 0%, rgba(255,255,255,0.55) 45%, rgba(0,0,0,0.1) 100%)',
+    background:
+      'linear-gradient(90deg, rgba(0,0,0,0.12) 0%, rgba(255,255,255,0.55) 45%, rgba(0,0,0,0.1) 100%)',
     boxShadow: 'inset 0 0 6px rgba(0,0,0,0.15)',
   }
-
-  /** 左门把手靠右、右门把手靠左，贴近中缝 */
   const doorHandle = (edge: 'left' | 'right'): CSSProperties => ({
     position: 'absolute',
     top: '40%',
@@ -92,35 +83,39 @@ function FridgePantry() {
     height: 44,
     borderRadius: 2,
     background: 'linear-gradient(180deg, rgba(255,255,255,0.9), rgba(170,178,190,0.95))',
-    boxShadow: edge === 'right' ? 'inset -1px 0 2px rgba(0,0,0,0.08)' : 'inset 1px 0 2px rgba(0,0,0,0.08)',
+    boxShadow:
+      edge === 'right'
+        ? 'inset -1px 0 2px rgba(0,0,0,0.08)'
+        : 'inset 1px 0 2px rgba(0,0,0,0.08)',
   })
-
   const freezerChamber: CSSProperties = {
     flex: 1,
     minWidth: 0,
     borderRadius: 16,
     padding: '8px 7px 10px',
     position: 'relative',
-    background: 'linear-gradient(168deg, #d8e6f5 0%, #c5d8ed 28%, #b8cce8 55%, #a8bedd 100%)',
+    background:
+      'linear-gradient(168deg, #d8e6f5 0%, #c5d8ed 28%, #b8cce8 55%, #a8bedd 100%)',
     border: '1px solid rgba(255,255,255,0.5)',
-    boxShadow: 'inset 0 3px 14px rgba(255,255,255,0.45), inset 0 -8px 24px rgba(25,55,95,0.12)',
+    boxShadow:
+      'inset 0 3px 14px rgba(255,255,255,0.45), inset 0 -8px 24px rgba(25,55,95,0.12)',
     display: 'flex',
     flexDirection: 'column',
   }
-
   const fridgeChamber: CSSProperties = {
     flex: 1,
     minWidth: 0,
     borderRadius: 16,
     padding: '8px 7px 10px',
     position: 'relative',
-    background: 'linear-gradient(168deg, #f4faf6 0%, #e8f2eb 30%, #dce8df 60%, #d0dfd3 100%)',
+    background:
+      'linear-gradient(168deg, #f4faf6 0%, #e8f2eb 30%, #dce8df 60%, #d0dfd3 100%)',
     border: '1px solid rgba(255,255,255,0.55)',
-    boxShadow: 'inset 0 3px 14px rgba(255,255,255,0.55), inset 0 -8px 24px rgba(45,75,55,0.08)',
+    boxShadow:
+      'inset 0 3px 14px rgba(255,255,255,0.55), inset 0 -8px 24px rgba(45,75,55,0.08)',
     display: 'flex',
     flexDirection: 'column',
   }
-
   const frostOverlay: CSSProperties = {
     position: 'absolute',
     top: 0,
@@ -129,17 +124,48 @@ function FridgePantry() {
     height: 36,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    background: 'linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 100%)',
+    background:
+      'linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 100%)',
     pointerEvents: 'none',
+  }
+  const ledBar = (isFz: boolean): CSSProperties => ({
+    height: 4,
+    borderRadius: 2,
+    marginBottom: 2,
+    background: isFz
+      ? 'linear-gradient(90deg, rgba(120,170,230,0.35), rgba(200,230,255,0.9), rgba(120,170,230,0.35))'
+      : 'linear-gradient(90deg, rgba(140,200,160,0.25), rgba(230,255,240,0.85), rgba(140,200,160,0.25))',
+    boxShadow: '0 0 8px rgba(255,255,255,0.6)',
+  })
+
+  // ---------- 逻辑 ----------
+  const slotHasHighlight = (side: FridgeSide, slotIndex: number): boolean => {
+    const list = store.itemsInSlot(side, slotIndex)
+    if (highlight === 'all') return true
+    return list.some((i) => {
+      const s = getFreshnessStatus(i)
+      return highlight === 'expiring' ? s === 'expiring' : s === 'expired'
+    })
+  }
+  const slotDimmed = (side: FridgeSide, slotIndex: number): boolean => {
+    if (highlight === 'all') return false
+    const list = store.itemsInSlot(side, slotIndex)
+    if (list.length === 0) return true
+    return !slotHasHighlight(side, slotIndex)
   }
 
   const renderSlot = (side: FridgeSide, index: number) => {
     const items = store.itemsInSlot(side, index)
     const kind = slotKind(index)
     const dim = slotDimmed(side, index)
+    const hasExpired = items.some((i) => getFreshnessStatus(i) === 'expired')
+    const hasExpiring = items.some((i) => getFreshnessStatus(i) === 'expiring')
     const ring =
       highlight !== 'all' &&
-      items.some((i) => getFreshnessStatus(i) === (highlight === 'expiring' ? 'expiring' : 'expired'))
+      items.some((i) =>
+        getFreshnessStatus(i) ===
+        (highlight === 'expiring' ? 'expiring' : 'expired')
+      )
     const minH = kind === 'pull' ? SLOT_PULL_MIN : SLOT_DRAWER_MIN
     const isFz = side === 'freezer'
     const summary = items.length === 0 ? '空' : items.map((i) => i.name).join('、')
@@ -151,8 +177,11 @@ function FridgePantry() {
           width: '100%',
           borderRadius: 8,
           backgroundColor: isFz ? 'rgba(255,255,255,0.38)' : 'rgba(255,255,255,0.52)',
-          border: ring ? `1.5px solid ${highlight === 'expiring' ? D.accentWarm : D.red}` : '1px solid rgba(255,255,255,0.65)',
-          boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.7)',
+          border: ring
+            ? `1.5px solid ${highlight === 'expiring' ? D.accentWarm : D.red}`
+            : '1px solid rgba(255,255,255,0.65)',
+          boxShadow:
+            'inset 0 2px 6px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.7)',
           padding: '6px 8px',
           opacity: dim ? 0.35 : 1,
           display: 'flex',
@@ -162,6 +191,7 @@ function FridgePantry() {
           boxSizing: 'border-box',
           flex: 1,
           alignSelf: 'stretch',
+          position: 'relative',
         }}
         onClick={() => {
           setActiveSlot({ side, slotIndex: index })
@@ -169,13 +199,54 @@ function FridgePantry() {
           setAddAmount('')
         }}
       >
-        <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <Text style={{ fontSize: 9, fontWeight: '700', color: isFz ? 'rgba(30,55,90,0.55)' : 'rgba(35,65,45,0.5)', letterSpacing: '0.06em' }}>
+        {/* 右上角默认状态点（不受 highlight 影响） */}
+        {hasExpired || hasExpiring ? (
+          <View
+            style={{
+              position: 'absolute',
+              top: 6,
+              right: 6,
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: hasExpired ? D.red : D.accentWarm,
+              boxShadow: `0 0 0 2px ${isFz ? 'rgba(216,230,245,0.9)' : 'rgba(244,250,246,0.9)'}`,
+            }}
+          />
+        ) : null}
+
+        <View
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 9,
+              fontWeight: '700',
+              color: isFz ? 'rgba(30,55,90,0.55)' : 'rgba(35,65,45,0.5)',
+              letterSpacing: '0.06em',
+            }}
+          >
             {kind === 'pull' ? `搁板 ${index + 1}` : index === 5 ? '果菜抽屉' : '保鲜抽屉'}
           </Text>
           {items.length > 0 ? (
-            <View style={{ backgroundColor: isFz ? 'rgba(255,255,255,0.55)' : D.accentMuted, padding: '1px 6px', borderRadius: 999, flexShrink: 0 }}>
-              <Text style={{ fontSize: 9, fontWeight: '700', color: D.accent }}>{items.length}</Text>
+            <View
+              style={{
+                backgroundColor: isFz ? 'rgba(255,255,255,0.55)' : D.accentMuted,
+                padding: '1px 6px',
+                borderRadius: 999,
+                flexShrink: 0,
+                marginRight: hasExpired || hasExpiring ? 12 : 0,
+              }}
+            >
+              <Text style={{ fontSize: 9, fontWeight: '700', color: D.accent }}>
+                {items.length}
+              </Text>
             </View>
           ) : null}
         </View>
@@ -193,16 +264,6 @@ function FridgePantry() {
       </View>
     )
   }
-
-  const ledBar = (isFz: boolean): CSSProperties => ({
-    height: 4,
-    borderRadius: 2,
-    marginBottom: 2,
-    background: isFz
-      ? 'linear-gradient(90deg, rgba(120,170,230,0.35), rgba(200,230,255,0.9), rgba(120,170,230,0.35))'
-      : 'linear-gradient(90deg, rgba(140,200,160,0.25), rgba(230,255,240,0.85), rgba(140,200,160,0.25))',
-    boxShadow: '0 0 8px rgba(255,255,255,0.6)',
-  })
 
   const handleAddToSlot = () => {
     if (!activeSlot) return
@@ -226,7 +287,12 @@ function FridgePantry() {
       return
     }
     const virtual: PantryItem[] = [...store.items]
-    const preview: { name: string; amount: string; side: FridgeSide; slotIndex: number }[] = []
+    const preview: {
+      name: string
+      amount: string
+      side: FridgeSide
+      slotIndex: number
+    }[] = []
     for (const line of lines) {
       const cat = getCategoryForName(line.name)
       const p = suggestPlacementWithBalance(line.name, cat, virtual)
@@ -242,7 +308,12 @@ function FridgePantry() {
         side: p.side,
         slotIndex: p.slotIndex,
       })
-      preview.push({ name: line.name, amount: line.amount, side: p.side, slotIndex: p.slotIndex })
+      preview.push({
+        name: line.name,
+        amount: line.amount,
+        side: p.side,
+        slotIndex: p.slotIndex,
+      })
     }
     setReceiptPreview(preview)
   }
@@ -255,7 +326,17 @@ function FridgePantry() {
     setReceiptPreview(null)
     setReceiptText('')
     setShowReceipt(false)
+    clearIntakeDraft()
+    setIntakeDraft(null)
     Taro.showToast({ title: `已入库 ${receiptPreview.length} 项`, icon: 'success' })
+  }
+
+  const handleCloseReceipt = () => {
+    setShowReceipt(false)
+    setReceiptText('')
+    setReceiptPreview(null)
+    clearIntakeDraft()
+    setIntakeDraft(null)
   }
 
   const activeItems = useMemo(() => {
@@ -264,117 +345,262 @@ function FridgePantry() {
   }, [activeSlot, store.items])
 
   const getStatusStyle = (status: FreshnessStatus): CSSProperties => {
-    if (status === 'expired') return { color: D.red, backgroundColor: 'rgba(255,59,48,0.08)' }
-    if (status === 'expiring') return { color: D.accentWarm, backgroundColor: 'rgba(255,149,0,0.12)' }
-    return { color: D.green, backgroundColor: 'rgba(52,199,89,0.1)' }
+    if (status === 'expired') return { color: D.red, backgroundColor: 'rgba(208,90,56,0.12)' }
+    if (status === 'expiring') return { color: D.accentWarm, backgroundColor: D.accentWarmMuted }
+    return { color: D.green, backgroundColor: 'rgba(74,140,108,0.12)' }
+  }
+
+  const handleSaveEdit = () => {
+    if (!editing) return
+    store.updateItem(editing.id, {
+      amount: editAmount,
+      expiresAt: Date.now() + Math.max(0, editDaysLeft) * DAY_MS,
+    })
+    setEditing(null)
+    Taro.showToast({ title: '已更新', icon: 'success' })
+  }
+
+  const handleMoveItem = (item: PantryItem) => {
+    Taro.showActionSheet({
+      itemList: [
+        '冷冻 · 搁板 1',
+        '冷冻 · 搁板 2-5',
+        '冷冻 · 抽屉',
+        '冷藏 · 搁板 1',
+        '冷藏 · 搁板 2-5',
+        '冷藏 · 抽屉',
+      ],
+      success: (res) => {
+        const slotMap: { side: FridgeSide; slotIndex: number }[] = [
+          { side: 'freezer', slotIndex: 0 },
+          { side: 'freezer', slotIndex: 2 },
+          { side: 'freezer', slotIndex: 5 },
+          { side: 'fridge', slotIndex: 0 },
+          { side: 'fridge', slotIndex: 2 },
+          { side: 'fridge', slotIndex: 5 },
+        ]
+        const dest = slotMap[res.tapIndex]
+        if (!dest) return
+        store.moveItem(item.id, dest.side, dest.slotIndex)
+        setEditing(null)
+        Taro.showToast({ title: '已移动', icon: 'success' })
+      },
+    })
   }
 
   return (
     <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: 120 }}>
       <ScrollView scrollY showScrollbar={false}>
         <View style={{ padding: `44px ${pad}px 12px` }}>
-          <Text style={{ fontSize: D.titleLarge, fontWeight: D.weightBold, color: D.label, letterSpacing: '-0.04em' }}>冰箱</Text>
-          <Text style={{ fontSize: D.footnote, color: D.labelSecondary, marginTop: 8, lineHeight: 1.5, maxWidth: 340 }}>
-            爱心厨房 · 左冷冻、右冷藏，与「选菜」联动。点格子添加/管理；底部「购物清单」粘贴后请先核对再入库。
+          <Text
+            style={{
+              fontSize: D.titleLarge,
+              fontWeight: D.weightBold,
+              color: D.label,
+              letterSpacing: '-0.04em',
+            }}
+          >
+            冰箱
+          </Text>
+          <Text
+            style={{
+              fontSize: D.footnote,
+              color: D.labelSecondary,
+              marginTop: 8,
+              lineHeight: 1.5,
+              maxWidth: 340,
+            }}
+          >
+            左冷冻、右冷藏。点格子查看 / 添加，食材会自动标记临期（黄）和过期（红）。
           </Text>
         </View>
 
-        {store.totalCount === 0 && showEmptyBanner ? (
+        {/* 临期概览（有库存时才出现） */}
+        {store.totalCount > 0 ? (
           <View
             style={{
               margin: `0 ${pad}px 14px`,
-              padding: '14px 16px',
-              backgroundColor: D.accentMuted,
-              borderRadius: D.radiusM,
-              border: `0.5px solid ${D.accentLine}`,
-            }}
-          >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: D.label, marginBottom: 6 }}>先把冰箱填起来</Text>
-            <Text style={{ fontSize: 12, color: D.labelSecondary, lineHeight: 1.5, marginBottom: 10 }}>
-              点下面任意一格输入名称与数量即可录入。没有食材时，「选菜」里的临期提醒不会出现——也可直接去首页用搜索做推荐。
-            </Text>
-            <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <View
-                style={{ flex: 1, height: 38, borderRadius: 999, backgroundColor: D.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                onClick={() => Taro.switchTab({ url: '/pages/index/index' })}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#fff' }}>去首页搜索</Text>
-              </View>
-              <Text
-                style={{ fontSize: 12, fontWeight: '600', color: D.labelTertiary, flexShrink: 0 }}
-                onClick={() => {
-                  try {
-                    Taro.setStorageSync(STORAGE_KEYS.pantryEmptyBannerDismissed, 1)
-                  } catch {
-                    /* ignore */
-                  }
-                  setShowEmptyBanner(false)
-                }}
-              >
-                不再提示
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        {showFridgeTip ? (
-          <View
-            style={{
-              margin: `0 ${pad}px 14px`,
-              padding: '12px 14px',
-              backgroundColor: D.accentMuted,
-              borderRadius: D.radiusS,
-              border: `0.5px solid ${D.accentLine}`,
               display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
               gap: 10,
             }}
           >
-            <Text style={{ flex: 1, fontSize: 12, color: D.label, lineHeight: 1.5 }}>
-              每一横排左右两格等高，食材名会完整换行。点格子管理数量与临期；底部可「小票入库」批量添加。
-            </Text>
-            <Text
-              style={{ fontSize: 12, fontWeight: '700', color: D.accent, flexShrink: 0 }}
-              onClick={() => {
-                try {
-                  Taro.setStorageSync(STORAGE_KEYS.pantryFridgeTipDismissed, 1)
-                } catch { /* ignore */ }
-                setShowFridgeTip(false)
+            <View
+              style={{
+                flex: 1,
+                padding: '12px 14px',
+                backgroundColor: D.bgElevated,
+                borderRadius: D.radiusM,
+                border: `0.5px solid ${D.separatorLight}`,
               }}
             >
-              知道了
+              <Text
+                style={{
+                  fontSize: D.caption,
+                  color: D.labelTertiary,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase' as const,
+                }}
+              >
+                共
+              </Text>
+              <Text
+                style={{
+                  fontSize: D.title,
+                  fontWeight: D.weightBold,
+                  color: D.label,
+                  marginTop: 2,
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                {store.totalCount}
+                <Text style={{ fontSize: D.caption, color: D.labelTertiary, fontWeight: D.weightRegular }}>
+                  {' '}
+                  项
+                </Text>
+              </Text>
+            </View>
+            {store.expiringCount > 0 ? (
+              <View
+                className="tap-scale"
+                onClick={() => setHighlight('expiring')}
+                style={{
+                  flex: 1,
+                  padding: '12px 14px',
+                  backgroundColor: D.accentWarmMuted,
+                  borderRadius: D.radiusM,
+                  border: `0.5px solid ${D.accentLine}`,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: D.caption,
+                    color: D.accentWarm,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase' as const,
+                  }}
+                >
+                  临期
+                </Text>
+                <Text
+                  style={{
+                    fontSize: D.title,
+                    fontWeight: D.weightBold,
+                    color: D.accentWarm,
+                    marginTop: 2,
+                  }}
+                >
+                  {store.expiringCount}
+                </Text>
+              </View>
+            ) : null}
+            {store.expiredCount > 0 ? (
+              <View
+                className="tap-scale"
+                onClick={() => setHighlight('expired')}
+                style={{
+                  flex: 1,
+                  padding: '12px 14px',
+                  backgroundColor: D.errorBg,
+                  borderRadius: D.radiusM,
+                  border: `0.5px solid rgba(208,90,56,0.2)`,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: D.caption,
+                    color: D.red,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase' as const,
+                  }}
+                >
+                  过期
+                </Text>
+                <Text
+                  style={{
+                    fontSize: D.title,
+                    fontWeight: D.weightBold,
+                    color: D.red,
+                    marginTop: 2,
+                  }}
+                >
+                  {store.expiredCount}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {store.totalCount === 0 ? (
+          <View
+            style={{
+              margin: `0 ${pad}px 14px`,
+              padding: '16px 18px',
+              backgroundColor: D.bgElevated,
+              borderRadius: D.radiusM,
+              border: `0.5px solid ${D.separatorLight}`,
+            }}
+          >
+            <Text style={{ fontSize: D.body, fontWeight: D.weightSemibold, color: D.label }}>
+              先填一些食材
+            </Text>
+            <Text
+              style={{
+                fontSize: D.footnote,
+                color: D.labelSecondary,
+                lineHeight: 1.5,
+                marginTop: 6,
+              }}
+            >
+              点任意格子可手动录入，或从下方「采购清单」粘贴一批。
             </Text>
           </View>
         ) : null}
 
-        <View style={{ display: 'flex', flexDirection: 'row', gap: 8, padding: `0 ${pad}px`, marginBottom: 18 }}>
+        {/* 高亮过滤 */}
+        <View
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            gap: 8,
+            padding: `0 ${pad}px`,
+            marginBottom: 16,
+          }}
+        >
           {(
             [
               { k: 'all' as HighlightMode, t: '全貌' },
-              { k: 'expiring' as HighlightMode, t: '临期格' },
-              { k: 'expired' as HighlightMode, t: '过期格' },
+              { k: 'expiring' as HighlightMode, t: '只看临期' },
+              { k: 'expired' as HighlightMode, t: '只看过期' },
             ] as const
           ).map(({ k, t }) => (
             <View
               key={k}
+              className="tap-scale"
               style={{
-                padding: '8px 14px',
+                padding: '7px 14px',
                 borderRadius: 999,
                 backgroundColor: highlight === k ? D.label : D.bgElevated,
                 border: highlight === k ? 'none' : `0.5px solid ${D.separator}`,
               }}
               onClick={() => setHighlight(k)}
             >
-              <Text style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: highlight === k ? D.bgElevated : D.labelSecondary }}>{t}</Text>
+              <Text
+                style={{
+                  fontSize: D.footnote,
+                  fontWeight: D.weightSemibold,
+                  color: highlight === k ? D.bgElevated : D.labelSecondary,
+                }}
+              >
+                {t}
+              </Text>
             </View>
           ))}
         </View>
 
+        {/* 冰箱本体 */}
         <View style={{ padding: `0 ${pad}px 28px` }}>
           <View style={fridgeCabinet}>
             <View style={{ display: 'flex', flexDirection: 'column' }}>
-              {/* 门楣：双室标题 */}
               <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch' }}>
                 <View
                   style={{
@@ -387,9 +613,34 @@ function FridgePantry() {
                   <View style={frostOverlay} />
                   <View style={doorHandle('right')} />
                   <View style={ledBar(true)} />
-                  <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 2 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#1e3a5c', letterSpacing: '-0.02em' }}>❄ 冷冻室</Text>
-                    <Text style={{ fontSize: 9, fontWeight: '600', color: 'rgba(30,58,92,0.55)' }}>≈ −18°C</Text>
+                  <View
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingRight: 2,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: '700',
+                        color: '#1e3a5c',
+                        letterSpacing: '-0.02em',
+                      }}
+                    >
+                      ❄ 冷冻室
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 9,
+                        fontWeight: '600',
+                        color: 'rgba(30,58,92,0.55)',
+                      }}
+                    >
+                      ≈ −18°C
+                    </Text>
                   </View>
                 </View>
                 <View style={doorMidSealFill} />
@@ -403,13 +654,37 @@ function FridgePantry() {
                 >
                   <View style={doorHandle('left')} />
                   <View style={ledBar(false)} />
-                  <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 2 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#2d4a38', letterSpacing: '-0.02em' }}>🥬 冷藏室</Text>
-                    <Text style={{ fontSize: 9, fontWeight: '600', color: 'rgba(45,74,56,0.5)' }}>≈ 4°C</Text>
+                  <View
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingRight: 2,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: '700',
+                        color: '#2d4a38',
+                        letterSpacing: '-0.02em',
+                      }}
+                    >
+                      🥬 冷藏室
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 9,
+                        fontWeight: '600',
+                        color: 'rgba(45,74,56,0.5)',
+                      }}
+                    >
+                      ≈ 4°C
+                    </Text>
                   </View>
                 </View>
               </View>
-              {/* 储藏格：同一行左右等高；底角与室色衔接 */}
               <View
                 style={{
                   padding: '6px 4px 8px',
@@ -427,9 +702,13 @@ function FridgePantry() {
                     key={`slot-row-${i}`}
                     style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch' }}
                   >
-                    <View style={{ flex: 1, minWidth: 0, display: 'flex' }}>{renderSlot('freezer', i)}</View>
+                    <View style={{ flex: 1, minWidth: 0, display: 'flex' }}>
+                      {renderSlot('freezer', i)}
+                    </View>
                     <View style={doorMidSealFill} />
-                    <View style={{ flex: 1, minWidth: 0, display: 'flex' }}>{renderSlot('fridge', i)}</View>
+                    <View style={{ flex: 1, minWidth: 0, display: 'flex' }}>
+                      {renderSlot('fridge', i)}
+                    </View>
                   </View>
                 ))}
               </View>
@@ -438,13 +717,13 @@ function FridgePantry() {
         </View>
 
         <View style={{ padding: `0 ${pad}px 100px` }}>
-          <Text style={{ fontSize: 11, color: D.labelTertiary, lineHeight: 1.5 }}>
-            拍照识别小票将后续接入；当前请用手动清单，格式每行「食材 数量」。
+          <Text style={{ fontSize: D.caption, color: D.labelTertiary, lineHeight: 1.5 }}>
+            点任一格子添加或编辑；底部「采购清单」支持粘贴多条一次入库。
           </Text>
         </View>
       </ScrollView>
 
-      {/* 格内详情 */}
+      {/* 格内详情 sheet */}
       {activeSlot ? (
         <View
           style={{
@@ -453,7 +732,7 @@ function FridgePantry() {
             left: 0,
             width: '100%',
             height: '100%',
-            backgroundColor: 'rgba(29,29,31,0.35)',
+            backgroundColor: 'rgba(18,17,15,0.5)',
             zIndex: 200,
             display: 'flex',
             alignItems: 'flex-end',
@@ -464,7 +743,7 @@ function FridgePantry() {
           <View
             style={{
               width: '100%',
-              maxHeight: '78%',
+              maxHeight: '82%',
               backgroundColor: D.bgElevated,
               borderTopLeftRadius: D.radiusXL,
               borderTopRightRadius: D.radiusXL,
@@ -476,17 +755,40 @@ function FridgePantry() {
               e.stopPropagation()
             }}
           >
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: D.separator, alignSelf: 'center', marginBottom: 16 }} />
-            <Text style={{ fontSize: D.headline, fontWeight: D.weightSemibold, color: D.label }}>{slotTitle(activeSlot.side, activeSlot.slotIndex)}</Text>
-            <Text style={{ fontSize: D.footnote, color: D.labelTertiary, marginTop: 4 }}>{slotShortLabel(activeSlot.side, activeSlot.slotIndex)}</Text>
+            <View
+              style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: D.separator,
+                alignSelf: 'center',
+                margin: '0 auto 16px',
+              }}
+            />
+            <Text
+              style={{
+                fontSize: D.headline,
+                fontWeight: D.weightBold,
+                color: D.label,
+                letterSpacing: '-0.02em',
+              }}
+            >
+              {slotTitle(activeSlot.side, activeSlot.slotIndex)}
+            </Text>
+            <Text style={{ fontSize: D.footnote, color: D.labelTertiary, marginTop: 4 }}>
+              {slotShortLabel(activeSlot.side, activeSlot.slotIndex)}
+            </Text>
 
-            <ScrollView scrollY style={{ maxHeight: 220, marginTop: 16 }}>
+            <ScrollView scrollY style={{ maxHeight: 240, marginTop: 16 }}>
               {activeItems.map((item) => {
                 const st = getFreshnessStatus(item)
                 const stStyle = getStatusStyle(st)
+                const daysLeft = getDaysLeft(item)
                 return (
                   <View
                     key={item.id}
+                    className="tap-scale"
+                    onClick={() => setEditing(item)}
                     style={{
                       display: 'flex',
                       flexDirection: 'row',
@@ -495,71 +797,523 @@ function FridgePantry() {
                       borderBottom: `0.5px solid ${D.separatorLight}`,
                     }}
                   >
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '600', color: D.label }}>{item.name}</Text>
-                      <Text style={{ fontSize: 12, color: D.labelTertiary, marginTop: 2 }}>{item.amount}</Text>
-                      <View style={{ marginTop: 6, alignSelf: 'flex-start', padding: '3px 8px', borderRadius: 6, ...stStyle }}>
-                        <Text style={{ fontSize: 10, fontWeight: '600', color: stStyle.color }}>
-                          {st === 'expired' ? '已过期' : st === 'expiring' ? `临期 ${getDaysLeft(item)}天` : '新鲜'}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={{
+                          fontSize: D.body,
+                          fontWeight: D.weightSemibold,
+                          color: D.label,
+                        }}
+                      >
+                        {item.name}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: D.caption,
+                          color: D.labelTertiary,
+                          marginTop: 2,
+                        }}
+                      >
+                        {item.amount}
+                      </Text>
+                      <View
+                        style={{
+                          marginTop: 6,
+                          alignSelf: 'flex-start',
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          ...stStyle,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            fontWeight: D.weightSemibold,
+                            color: stStyle.color,
+                          }}
+                        >
+                          {st === 'expired'
+                            ? '已过期'
+                            : st === 'expiring'
+                            ? `${daysLeft} 天到期`
+                            : `${daysLeft} 天`}
                         </Text>
                       </View>
                     </View>
-                    <Text style={{ fontSize: 20, color: D.labelTertiary, padding: 8 }} onClick={() => store.removeItem(item.id)}>
-                      ×
+                    <Text
+                      style={{
+                        fontSize: D.caption,
+                        color: D.labelTertiary,
+                        padding: '0 6px',
+                      }}
+                    >
+                      编辑 ›
                     </Text>
                   </View>
                 )
               })}
+              {activeItems.length === 0 ? (
+                <Text
+                  style={{
+                    fontSize: D.footnote,
+                    color: D.labelTertiary,
+                    padding: '12px 0',
+                  }}
+                >
+                  这一格还空着
+                </Text>
+              ) : null}
             </ScrollView>
 
-            <Text style={{ fontSize: 12, fontWeight: '600', color: D.labelSecondary, marginTop: 16, marginBottom: 8 }}>放入此格</Text>
+            <Text
+              style={{
+                fontSize: D.caption,
+                fontWeight: D.weightSemibold,
+                color: D.labelSecondary,
+                marginTop: 16,
+                marginBottom: 8,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase' as const,
+              }}
+            >
+              放入此格
+            </Text>
             <Input
-              style={{ height: 48, backgroundColor: D.bg, borderRadius: D.radiusS, padding: '0 14px', fontSize: D.body, marginBottom: 8 }}
+              style={{
+                height: 48,
+                backgroundColor: D.bg,
+                borderRadius: D.radiusS,
+                padding: '0 14px',
+                fontSize: D.body,
+                marginBottom: 8,
+              }}
               placeholder="名称"
               value={addName}
               onInput={(e) => setAddName(e.detail.value)}
             />
             <Input
-              style={{ height: 48, backgroundColor: D.bg, borderRadius: D.radiusS, padding: '0 14px', fontSize: D.body, marginBottom: 12 }}
-              placeholder="数量"
+              style={{
+                height: 48,
+                backgroundColor: D.bg,
+                borderRadius: D.radiusS,
+                padding: '0 14px',
+                fontSize: D.body,
+                marginBottom: 12,
+              }}
+              placeholder="数量，如 2 个 / 500g"
               value={addAmount}
               onInput={(e) => setAddAmount(e.detail.value)}
             />
-            <Button style={{ height: 50, borderRadius: 999, backgroundColor: D.label, color: '#fff', fontSize: D.body, fontWeight: '600', border: 'none' }} onClick={handleAddToSlot}>
+            <Button
+              style={{
+                height: 48,
+                borderRadius: 999,
+                backgroundColor: D.accent,
+                color: '#fff',
+                fontSize: D.subheadline,
+                fontWeight: D.weightSemibold,
+                border: 'none',
+              }}
+              onClick={handleAddToSlot}
+            >
               放入
             </Button>
-            <Button style={{ marginTop: 10, height: 44, borderRadius: 999, backgroundColor: 'transparent', color: D.labelSecondary, fontSize: D.footnote, border: 'none' }} onClick={() => setActiveSlot(null)}>
+            <Button
+              style={{
+                marginTop: 10,
+                height: 42,
+                borderRadius: 999,
+                backgroundColor: 'transparent',
+                color: D.labelSecondary,
+                fontSize: D.footnote,
+                border: 'none',
+              }}
+              onClick={() => setActiveSlot(null)}
+            >
               关闭
             </Button>
           </View>
         </View>
       ) : null}
 
-      {/* 小票清单 */}
-      {showReceipt ? (
-        <View style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(29,29,31,0.4)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: pad }}>
-          <View style={{ width: '100%', maxWidth: 400, backgroundColor: D.bgElevated, borderRadius: D.radiusXL, padding: 22, maxHeight: '85%' }}>
-            <Text style={{ fontSize: 18, fontWeight: '600', color: D.label }}>购物清单 · 确认后入库</Text>
-            <Text style={{ fontSize: 12, color: D.labelTertiary, marginTop: 6, lineHeight: 1.45 }}>
-              解析后请核对列表与推荐格子，无误再点「确认入库」。每行一件，例：西红柿 500g
+      {/* 编辑 item sheet */}
+      {editing ? (
+        <View
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(18,17,15,0.55)',
+            zIndex: 260,
+            display: 'flex',
+            alignItems: 'flex-end',
+          }}
+          onClick={() => setEditing(null)}
+        >
+          <View
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              backgroundColor: D.bgElevated,
+              borderTopLeftRadius: D.radiusXL,
+              borderTopRightRadius: D.radiusXL,
+              padding: `20px ${pad}px`,
+              paddingBottom: 'calc(24px + env(safe-area-inset-bottom))',
+              boxShadow: D.shadowLift,
+            }}
+          >
+            <View
+              style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: D.separator,
+                alignSelf: 'center',
+                margin: '0 auto 16px',
+              }}
+            />
+            <Text style={{ fontSize: D.headline, fontWeight: D.weightBold, color: D.label }}>
+              {editing.name}
             </Text>
+            <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4 }}>
+              当前位置：{slotShortLabel(editing.side, editing.slotIndex)}
+            </Text>
+
+            <Text
+              style={{
+                fontSize: D.caption,
+                fontWeight: D.weightSemibold,
+                color: D.labelSecondary,
+                marginTop: 18,
+                marginBottom: 6,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase' as const,
+              }}
+            >
+              数量
+            </Text>
+            <Input
+              style={{
+                height: 48,
+                backgroundColor: D.bg,
+                borderRadius: D.radiusS,
+                padding: '0 14px',
+                fontSize: D.body,
+              }}
+              value={editAmount}
+              onInput={(e) => setEditAmount(e.detail.value)}
+            />
+
+            <Text
+              style={{
+                fontSize: D.caption,
+                fontWeight: D.weightSemibold,
+                color: D.labelSecondary,
+                marginTop: 16,
+                marginBottom: 6,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase' as const,
+              }}
+            >
+              还能放几天
+            </Text>
+            <View style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <View
+                className="tap-scale"
+                onClick={() => setEditDaysLeft((d) => Math.max(0, d - 1))}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: D.bg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 20, color: D.label }}>−</Text>
+              </View>
+              <Text
+                style={{
+                  flex: 1,
+                  textAlign: 'center',
+                  fontSize: 28,
+                  fontWeight: D.weightBold,
+                  color: D.label,
+                }}
+              >
+                {editDaysLeft}
+                <Text style={{ fontSize: D.footnote, color: D.labelTertiary, fontWeight: D.weightRegular }}>
+                  {' '}天
+                </Text>
+              </Text>
+              <View
+                className="tap-scale"
+                onClick={() => setEditDaysLeft((d) => d + 1)}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: D.bg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 20, color: D.label }}>+</Text>
+              </View>
+            </View>
+
+            <View style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+              <Button
+                style={{
+                  flex: 1,
+                  height: 48,
+                  borderRadius: 999,
+                  backgroundColor: D.errorBg,
+                  color: D.errorFg,
+                  fontSize: D.footnote,
+                  fontWeight: D.weightSemibold,
+                  border: 'none',
+                }}
+                onClick={() => {
+                  const id = editing.id
+                  Taro.showModal({
+                    title: '删除',
+                    content: `把「${editing.name}」从冰箱删除？`,
+                    confirmColor: '#D05A38',
+                    success: (r) => {
+                      if (r.confirm) {
+                        store.removeItem(id)
+                        setEditing(null)
+                        Taro.showToast({ title: '已删除', icon: 'none' })
+                      }
+                    },
+                  })
+                }}
+              >
+                删除
+              </Button>
+              <Button
+                style={{
+                  flex: 1,
+                  height: 48,
+                  borderRadius: 999,
+                  backgroundColor: D.bg,
+                  color: D.label,
+                  fontSize: D.footnote,
+                  fontWeight: D.weightSemibold,
+                  border: `0.5px solid ${D.separator}`,
+                }}
+                onClick={() => handleMoveItem(editing)}
+              >
+                换位置
+              </Button>
+              <Button
+                style={{
+                  flex: 1.4,
+                  height: 48,
+                  borderRadius: 999,
+                  backgroundColor: D.accent,
+                  color: '#fff',
+                  fontSize: D.footnote,
+                  fontWeight: D.weightSemibold,
+                  border: 'none',
+                }}
+                onClick={handleSaveEdit}
+              >
+                保存
+              </Button>
+            </View>
+            <Button
+              style={{
+                marginTop: 10,
+                height: 42,
+                borderRadius: 999,
+                backgroundColor: 'transparent',
+                color: D.labelSecondary,
+                fontSize: D.footnote,
+                border: 'none',
+              }}
+              onClick={() => setEditing(null)}
+            >
+              取消
+            </Button>
+          </View>
+        </View>
+      ) : null}
+
+      {/* 采购清单 / 小票入库 */}
+      {showReceipt ? (
+        <View
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(18,17,15,0.55)',
+            zIndex: 300,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: pad,
+          }}
+          onClick={handleCloseReceipt}
+        >
+          <View
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 420,
+              backgroundColor: D.bgElevated,
+              borderRadius: D.radiusXL,
+              padding: 22,
+              maxHeight: '86%',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: D.shadowLift,
+            }}
+          >
+            <Text style={{ fontSize: D.headline, fontWeight: D.weightBold, color: D.label }}>
+              采购清单
+            </Text>
+            <Text
+              style={{
+                fontSize: D.caption,
+                color: D.labelTertiary,
+                marginTop: 6,
+                lineHeight: 1.5,
+              }}
+            >
+              每行一件，例：西红柿 500g。系统会根据分类推荐冷冻 / 冷藏与格位，入库前可复核。
+            </Text>
+
+            {intakeDraft?.kind === 'photo' || intakeDraft?.kind === 'album' ? (
+              <View
+                style={{
+                  marginTop: 12,
+                  padding: 10,
+                  borderRadius: D.radiusM,
+                  backgroundColor: D.bg,
+                  display: 'flex',
+                  gap: 10,
+                  alignItems: 'center',
+                }}
+              >
+                <Image
+                  src={intakeDraft.filePath}
+                  mode="aspectFill"
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: D.radiusS,
+                    backgroundColor: D.bgElevated,
+                  }}
+                />
+                <Text style={{ flex: 1, fontSize: D.caption, color: D.labelSecondary, lineHeight: 1.45 }}>
+                  你刚才拍的照片，照着把食材写进清单即可。
+                </Text>
+              </View>
+            ) : null}
+
+            {intakeDraft?.kind === 'voice' ? (
+              <View
+                style={{
+                  marginTop: 12,
+                  padding: 12,
+                  borderRadius: D.radiusM,
+                  backgroundColor: D.bg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <Text style={{ fontSize: 20 }}>🎧</Text>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ fontSize: D.footnote, color: D.label, fontWeight: D.weightSemibold }}>
+                    语音备忘
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: D.caption,
+                      color: D.labelTertiary,
+                      marginTop: 2,
+                    }}
+                  >
+                    约 {Math.round((intakeDraft.durationMs ?? 0) / 1000)} 秒 · 边听边写
+                  </Text>
+                </View>
+                <Text
+                  className="tap-scale"
+                  style={{
+                    fontSize: D.footnote,
+                    color: D.accent,
+                    fontWeight: D.weightSemibold,
+                  }}
+                  onClick={() => {
+                    try {
+                      const ctx = Taro.createInnerAudioContext()
+                      ctx.src = intakeDraft.filePath
+                      ctx.play()
+                    } catch (e) {
+                      console.warn('audio play failed', e)
+                    }
+                  }}
+                >
+                  播放
+                </Text>
+              </View>
+            ) : null}
+
             {!receiptPreview ? (
               <Textarea
-                style={{ width: '100%', minHeight: 140, marginTop: 14, padding: '12px 14px', borderRadius: D.radiusS, border: `0.5px solid ${D.separator}`, fontSize: 14, boxSizing: 'border-box', backgroundColor: D.bg }}
-                placeholder="粘贴小票或手写清单，每行一件…"
+                style={{
+                  width: '100%',
+                  minHeight: 140,
+                  marginTop: 14,
+                  padding: '12px 14px',
+                  borderRadius: D.radiusS,
+                  border: `0.5px solid ${D.separator}`,
+                  fontSize: D.subheadline,
+                  boxSizing: 'border-box',
+                  backgroundColor: D.bg,
+                }}
+                placeholder="每行一件，例：西红柿 500g"
                 value={receiptText}
                 maxlength={2000}
                 onInput={(e) => setReceiptText(e.detail.value)}
               />
             ) : null}
             {receiptPreview ? (
-              <ScrollView scrollY style={{ maxHeight: 280, marginTop: 12 }}>
+              <ScrollView scrollY style={{ maxHeight: 280, marginTop: 14, flex: 1 }}>
                 {receiptPreview.map((row, i) => (
-                  <View key={i} style={{ paddingTop: 10, paddingBottom: 10, borderBottom: `0.5px solid ${D.separatorLight}` }}>
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: D.label }}>
-                      {row.name} <Text style={{ fontWeight: '400', color: D.labelSecondary }}>{row.amount}</Text>
+                  <View
+                    key={i}
+                    style={{
+                      paddingTop: 10,
+                      paddingBottom: 10,
+                      borderBottom: `0.5px solid ${D.separatorLight}`,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: D.subheadline,
+                        fontWeight: D.weightSemibold,
+                        color: D.label,
+                      }}
+                    >
+                      {row.name}{' '}
+                      <Text
+                        style={{
+                          fontWeight: D.weightRegular,
+                          color: D.labelTertiary,
+                          fontSize: D.caption,
+                        }}
+                      >
+                        {row.amount}
+                      </Text>
                     </Text>
-                    <Text style={{ fontSize: 12, color: D.accent, marginTop: 4 }}>
+                    <Text style={{ fontSize: D.caption, color: D.accent, marginTop: 4 }}>
                       推荐 → {slotShortLabel(row.side, row.slotIndex)}
                     </Text>
                   </View>
@@ -569,19 +1323,64 @@ function FridgePantry() {
             <View style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               {!receiptPreview ? (
                 <>
-                  <Button style={{ flex: 1, height: 48, borderRadius: 999, backgroundColor: D.bg, color: D.label, border: 'none', fontSize: D.footnote }} onClick={() => { setShowReceipt(false); setReceiptText('') }}>
+                  <Button
+                    style={{
+                      flex: 1,
+                      height: 48,
+                      borderRadius: 999,
+                      backgroundColor: D.bg,
+                      color: D.label,
+                      border: 'none',
+                      fontSize: D.footnote,
+                    }}
+                    onClick={handleCloseReceipt}
+                  >
                     取消
                   </Button>
-                  <Button style={{ flex: 1, height: 48, borderRadius: 999, backgroundColor: D.label, color: '#fff', border: 'none', fontSize: D.footnote, fontWeight: '600' }} onClick={handleParseReceipt}>
+                  <Button
+                    style={{
+                      flex: 1.4,
+                      height: 48,
+                      borderRadius: 999,
+                      backgroundColor: D.accent,
+                      color: '#fff',
+                      border: 'none',
+                      fontSize: D.footnote,
+                      fontWeight: D.weightSemibold,
+                    }}
+                    onClick={handleParseReceipt}
+                  >
                     解析并预览
                   </Button>
                 </>
               ) : (
                 <>
-                  <Button style={{ flex: 1, height: 48, borderRadius: 999, backgroundColor: D.bg, border: 'none', fontSize: D.footnote }} onClick={() => setReceiptPreview(null)}>
+                  <Button
+                    style={{
+                      flex: 1,
+                      height: 48,
+                      borderRadius: 999,
+                      backgroundColor: D.bg,
+                      border: 'none',
+                      fontSize: D.footnote,
+                    }}
+                    onClick={() => setReceiptPreview(null)}
+                  >
                     返回编辑
                   </Button>
-                  <Button style={{ flex: 1, height: 48, borderRadius: 999, backgroundColor: D.accent, color: '#fff', border: 'none', fontSize: D.footnote, fontWeight: '600' }} onClick={handleCommitReceipt}>
+                  <Button
+                    style={{
+                      flex: 1.4,
+                      height: 48,
+                      borderRadius: 999,
+                      backgroundColor: D.accent,
+                      color: '#fff',
+                      border: 'none',
+                      fontSize: D.footnote,
+                      fontWeight: D.weightSemibold,
+                    }}
+                    onClick={handleCommitReceipt}
+                  >
                     确认入库
                   </Button>
                 </>
@@ -591,6 +1390,7 @@ function FridgePantry() {
         </View>
       ) : null}
 
+      {/* 底部主操作条 */}
       <View
         style={{
           position: 'fixed',
@@ -599,7 +1399,7 @@ function FridgePantry() {
           width: '100%',
           padding: `12px ${pad}px`,
           paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
-          backgroundColor: D.bgGlass,
+          backgroundColor: D.bgGlassHeavy,
           backdropFilter: 'blur(20px)',
           borderTop: `0.5px solid ${D.separatorLight}`,
           display: 'flex',
@@ -608,21 +1408,40 @@ function FridgePantry() {
         }}
       >
         <Button
-          style={{ flex: 1, height: 50, borderRadius: 999, backgroundColor: D.label, color: '#fff', fontSize: D.footnote, fontWeight: '600', border: 'none' }}
+          style={{
+            flex: 1,
+            height: 50,
+            borderRadius: 999,
+            backgroundColor: D.accent,
+            color: '#fff',
+            fontSize: D.subheadline,
+            fontWeight: D.weightSemibold,
+            border: 'none',
+          }}
           onClick={() => {
             setReceiptPreview(null)
             setShowReceipt(true)
           }}
         >
-          小票入库
+          采购清单入库
         </Button>
         {store.expiredCount > 0 ? (
           <Button
-            style={{ height: 50, borderRadius: 999, padding: '0 18px', backgroundColor: 'rgba(255,59,48,0.1)', color: D.red, fontSize: 12, fontWeight: '600', border: 'none' }}
+            style={{
+              height: 50,
+              borderRadius: 999,
+              padding: '0 18px',
+              backgroundColor: D.errorBg,
+              color: D.errorFg,
+              fontSize: D.footnote,
+              fontWeight: D.weightSemibold,
+              border: 'none',
+            }}
             onClick={() => {
               Taro.showModal({
                 title: '清理过期',
-                content: `移除 ${store.expiredCount} 项？`,
+                content: `把 ${store.expiredCount} 项过期食材一次性移除？`,
+                confirmColor: '#D05A38',
                 success: (r) => {
                   if (r.confirm) {
                     store.removeExpired()
@@ -636,7 +1455,16 @@ function FridgePantry() {
           </Button>
         ) : null}
         <Button
-          style={{ height: 50, borderRadius: 999, padding: '0 18px', backgroundColor: D.bgElevated, color: D.accent, fontSize: 12, fontWeight: '600', border: `0.5px solid ${D.separator}` }}
+          style={{
+            height: 50,
+            borderRadius: 999,
+            padding: '0 18px',
+            backgroundColor: D.bgElevated,
+            color: D.accent,
+            fontSize: D.footnote,
+            fontWeight: D.weightSemibold,
+            border: `0.5px solid ${D.separator}`,
+          }}
           onClick={() => Taro.switchTab({ url: '/pages/pick/index' })}
         >
           去选菜

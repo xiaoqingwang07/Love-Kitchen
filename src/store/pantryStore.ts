@@ -224,6 +224,25 @@ export class PantryStore {
     this.items[idx] = { ...this.items[idx], side, slotIndex: slot }
   }
 
+  /** 编辑单项：名称、数量、过期时间；传 undefined 表示保持原值 */
+  updateItem(
+    id: string,
+    patch: { name?: string; amount?: string; expiresAt?: number }
+  ) {
+    const idx = this.items.findIndex((i) => i.id === id)
+    if (idx < 0) return
+    const cur = this.items[idx]
+    this.items[idx] = {
+      ...cur,
+      name: patch.name?.trim() || cur.name,
+      amount: patch.amount?.trim() || cur.amount,
+      expiresAt:
+        typeof patch.expiresAt === 'number' && Number.isFinite(patch.expiresAt)
+          ? patch.expiresAt
+          : cur.expiresAt,
+    }
+  }
+
   removeItem(id: string) {
     this.items = this.items.filter((i) => i.id !== id)
   }

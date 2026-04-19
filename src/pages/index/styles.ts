@@ -1,5 +1,6 @@
 /**
- * 首页 — 双核：搜索 + 今日推荐；留白与层级克制
+ * 首页样式：统一搜索台面 + 今日推荐 + 临期卡片
+ * 设计：暖白留白、克制层级、搜索框即产品门面
  */
 import type { CSSProperties } from 'react'
 import { D } from '../../theme/designTokens'
@@ -7,19 +8,8 @@ import { D } from '../../theme/designTokens'
 export const pageStyle: CSSProperties = {
   minHeight: '100vh',
   backgroundColor: D.bg,
-  paddingBottom: '88px',
+  paddingBottom: 96,
   paddingTop: D.pagePadTop,
-}
-
-export const headerStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  paddingLeft: D.pagePadH,
-  paddingRight: D.pagePadH,
-  paddingTop: 28,
-  paddingBottom: 4,
-  alignItems: 'flex-start',
-  maxWidth: '100%',
 }
 
 export const headerRowStyle: CSSProperties = {
@@ -30,114 +20,119 @@ export const headerRowStyle: CSSProperties = {
   gap: 12,
   paddingLeft: D.pagePadH,
   paddingRight: D.pagePadH,
-  paddingTop: 44,
+  paddingTop: 40,
   paddingBottom: 4,
 }
 
-export const headerLinkStyle: CSSProperties = {
-  fontSize: 15,
-  fontWeight: '600',
-  color: D.accent,
-  paddingTop: 6,
-  flexShrink: 0,
-}
-
 export const titleStyle: CSSProperties = {
-  fontSize: 34,
-  fontWeight: '700',
+  fontSize: D.titleLarge,
+  fontWeight: D.weightBold,
   color: D.label,
   letterSpacing: '-0.04em',
-  lineHeight: 1.15,
+  lineHeight: 1.12,
 }
 
 export const titleHintStyle: CSSProperties = {
   marginTop: 10,
   fontSize: D.footnote,
   color: D.labelTertiary,
-  fontWeight: '400',
-  letterSpacing: '0.02em',
-  lineHeight: 1.45,
-  maxWidth: '100%',
+  fontWeight: D.weightRegular,
+  letterSpacing: '0.01em',
+  lineHeight: 1.5,
 }
+
+export const headerLinkStyle: CSSProperties = {
+  fontSize: D.subheadline,
+  fontWeight: D.weightSemibold,
+  color: D.accent,
+  paddingTop: 6,
+  flexShrink: 0,
+}
+
+// ================= 统一搜索框（Google 式） =================
 
 export const searchSectionStyle: CSSProperties = {
-  padding: `20px ${D.pagePadH} 10px`,
+  padding: `20px ${D.pagePadH}px 12px`,
 }
 
-export const searchRowStyle: CSSProperties = {
+/** 搜索壳：一体化大圆角，左边输入，右边动作栏 */
+export const searchShellStyle: CSSProperties = {
+  backgroundColor: D.bgElevated,
+  borderRadius: 28,
+  border: `0.5px solid ${D.separatorLight}`,
+  boxShadow: D.shadowCard,
+  padding: '6px 6px 6px 18px',
   display: 'flex',
-  flexDirection: 'row',
-  alignItems: 'stretch',
+  alignItems: 'center',
   gap: 0,
 }
 
-export const searchBarWrapStyle: CSSProperties = {
+export const searchIconStyle: CSSProperties = {
+  fontSize: 18,
+  color: D.labelTertiary,
+  marginRight: 10,
+  flexShrink: 0,
+}
+
+export const searchInputStyle: CSSProperties = {
   flex: 1,
+  fontSize: 16,
+  color: D.label,
+  height: 44,
   minWidth: 0,
 }
 
-export const searchBarStyle: CSSProperties = {
-  backgroundColor: D.bgElevated,
-  borderRadius: D.radiusL,
+/** 搜索壳右侧操作栏：分隔线 + 图标按钮 */
+export const searchActionsStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  padding: '12px 12px 12px 16px',
-  border: `0.5px solid ${D.separatorLight}`,
-  boxShadow: D.shadowCard,
-  height: '100%',
-}
-
-export const searchSubmitStyle: CSSProperties = {
-  flexShrink: 0,
-  padding: '10px 16px',
-  borderRadius: 999,
-  backgroundColor: D.accent,
+  gap: 0,
+  paddingLeft: 4,
+  borderLeft: `0.5px solid ${D.separator}`,
   marginLeft: 8,
 }
 
-export const searchSubmitTextStyle: CSSProperties = {
-  fontSize: 14,
-  fontWeight: '600',
-  color: '#fff',
-}
-
-export const searchIconStyle: CSSProperties = {
-  fontSize: 17,
-  marginRight: 12,
-  opacity: 0.4,
-  color: D.labelSecondary,
-}
-
-export const sceneRowStyle: CSSProperties = {
-  paddingLeft: D.pagePadH,
-  paddingRight: D.pagePadH,
-  paddingBottom: 4,
-  paddingTop: 2,
-}
-
-export const sceneScrollStyle: CSSProperties = {
-  whiteSpace: 'nowrap' as const,
-}
-
-export const sceneChipStyle = (active: boolean): CSSProperties => ({
-  display: 'inline-flex',
+export const searchActionBtnStyle: CSSProperties = {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  display: 'flex',
   alignItems: 'center',
-  padding: '6px 14px',
+  justifyContent: 'center',
+  color: D.labelSecondary,
+  fontSize: 18,
+}
+
+/** 输入非空时出现的「搜索」主按钮 */
+export const searchSubmitStyle: CSSProperties = {
+  flexShrink: 0,
+  paddingLeft: 14,
+  paddingRight: 14,
+  height: 40,
   borderRadius: 999,
-  marginRight: 8,
-  fontSize: 13,
-  fontWeight: active ? '600' : '500',
-  border: active ? 'none' : `0.5px solid ${D.separator}`,
-  backgroundColor: active ? D.accent : D.bgElevated,
-  color: active ? '#fff' : D.labelSecondary,
-})
+  backgroundColor: D.accent,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginLeft: 4,
+}
+
+export const searchSubmitTextStyle: CSSProperties = {
+  fontSize: D.subheadline,
+  fontWeight: D.weightSemibold,
+  color: '#fff',
+  letterSpacing: '0.01em',
+}
+
+// ================= 历史搜索 =================
 
 export const historyBoxStyle: CSSProperties = {
   backgroundColor: D.bgElevated,
-  borderRadius: D.radiusM,
-  margin: `0 ${D.pagePadH} 16px`,
+  borderRadius: D.radiusL,
+  margin: `0 ${D.pagePadH}px 16px`,
   padding: '16px 16px 12px',
   border: `0.5px solid ${D.separatorLight}`,
+  boxShadow: D.shadowCard,
 }
 
 export const historyHeaderStyle: CSSProperties = {
@@ -148,17 +143,17 @@ export const historyHeaderStyle: CSSProperties = {
 }
 
 export const historyTitleStyle: CSSProperties = {
-  fontSize: 11,
-  fontWeight: '600',
+  fontSize: D.caption,
+  fontWeight: D.weightSemibold,
   color: D.labelTertiary,
-  letterSpacing: '0.12em',
+  letterSpacing: '0.14em',
   textTransform: 'uppercase' as const,
 }
 
 export const clearBtnStyle: CSSProperties = {
   fontSize: D.footnote,
   color: D.blue,
-  fontWeight: '500',
+  fontWeight: D.weightMedium,
 }
 
 export const historyListStyle: CSSProperties = {
@@ -176,28 +171,92 @@ export const historyTagStyle: CSSProperties = {
   border: `0.5px solid ${D.separatorLight}`,
 }
 
-export const recipesSectionStyle: CSSProperties = {
-  padding: `8px ${D.pagePadH} 24px`,
+// ================= 快捷卡片（临期 / 空冰箱引导 / 今日推荐） =================
+
+export const urgentCardStyle: CSSProperties = {
+  margin: `4px ${D.pagePadH}px 18px`,
+  padding: '16px 18px',
+  borderRadius: D.radiusL,
+  background: `linear-gradient(135deg, ${D.accentWarmMuted} 0%, ${D.accentMuted} 100%)`,
+  border: `0.5px solid ${D.accentLine}`,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 10,
 }
 
-export const sectionHeaderBlockStyle: CSSProperties = {
-  marginBottom: 16,
+export const urgentTitleStyle: CSSProperties = {
+  fontSize: D.body,
+  fontWeight: D.weightSemibold,
+  color: D.label,
+  letterSpacing: '-0.01em',
+}
+
+export const urgentLeadStyle: CSSProperties = {
+  fontSize: D.footnote,
+  color: D.labelSecondary,
+  lineHeight: 1.5,
+}
+
+export const urgentActionsStyle: CSSProperties = {
+  display: 'flex',
+  gap: 10,
+  marginTop: 4,
+}
+
+export const urgentPrimaryBtnStyle: CSSProperties = {
+  flex: 1,
+  height: 40,
+  borderRadius: 999,
+  backgroundColor: D.accent,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+}
+
+export const urgentSecondaryBtnStyle: CSSProperties = {
+  flex: 1,
+  height: 40,
+  borderRadius: 999,
+  backgroundColor: D.bgElevated,
+  border: `0.5px solid ${D.separatorLight}`,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+}
+
+export const onboardCardStyle: CSSProperties = {
+  margin: `4px ${D.pagePadH}px 18px`,
+  padding: '16px 18px',
+  borderRadius: D.radiusL,
+  backgroundColor: D.bgElevated,
+  border: `0.5px solid ${D.separatorLight}`,
+  boxShadow: D.shadowCard,
+}
+
+// ================= 今日推荐 =================
+
+export const recipesSectionStyle: CSSProperties = {
+  padding: `4px ${D.pagePadH}px 24px`,
+}
+
+export const sectionHeaderStyle: CSSProperties = {
+  marginBottom: 14,
 }
 
 export const sectionTitleStyle: CSSProperties = {
-  fontSize: 13,
-  fontWeight: '600',
+  fontSize: D.caption,
+  fontWeight: D.weightSemibold,
   color: D.labelSecondary,
   letterSpacing: '0.14em',
   textTransform: 'uppercase' as const,
-  marginBottom: 8,
+  marginBottom: 6,
 }
 
 export const sectionLeadStyle: CSSProperties = {
   fontSize: D.body,
-  fontWeight: '600',
+  fontWeight: D.weightSemibold,
   color: D.label,
-  lineHeight: 1.45,
+  lineHeight: 1.4,
   letterSpacing: '-0.02em',
 }
 
@@ -208,114 +267,76 @@ export const sectionMetaRowStyle: CSSProperties = {
   justifyContent: 'space-between',
   gap: 10,
   rowGap: 8,
-  marginTop: 6,
+  marginTop: 10,
 }
 
 export const sectionMetaTextStyle: CSSProperties = {
-  fontSize: D.footnote,
+  fontSize: D.caption,
   color: D.labelTertiary,
   flex: 1,
   minWidth: '60%',
   lineHeight: 1.4,
 }
 
-export const sectionMoreStyle: CSSProperties = {
-  fontSize: D.footnote,
-  color: D.accent,
-  fontWeight: '600',
+export const sectionActionsStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 14,
   flexShrink: 0,
 }
 
-export const recipeListStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 12,
+export const sectionActionStyle: CSSProperties = {
+  fontSize: D.footnote,
+  color: D.accent,
+  fontWeight: D.weightSemibold,
+  flexShrink: 0,
 }
 
-export const moreStripTitleStyle: CSSProperties = {
-  fontSize: 12,
-  fontWeight: '600',
-  color: D.labelSecondary,
-  letterSpacing: '0.12em',
-  textTransform: 'uppercase' as const,
-  marginTop: 20,
-  marginBottom: 10,
-}
-
-export const moreStripScrollStyle: CSSProperties = {
+// 横向推荐条：大卡片 + 菜名覆盖
+export const recommendScrollStyle: CSSProperties = {
   whiteSpace: 'nowrap' as const,
-  marginBottom: 8,
+  marginBottom: 10,
+  marginLeft: -4,
+  paddingLeft: 4,
 }
 
-export const moreChipStyle: CSSProperties = {
+export const recommendCardStyle: CSSProperties = {
   display: 'inline-flex',
   flexDirection: 'column',
-  width: 120,
-  marginRight: 10,
+  width: 168,
+  marginRight: 12,
   verticalAlign: 'top' as const,
   backgroundColor: D.bgElevated,
-  borderRadius: D.radiusM,
+  borderRadius: D.radiusL,
   overflow: 'hidden',
   border: `0.5px solid ${D.separatorLight}`,
   boxShadow: D.shadowCard,
 }
 
-export const moreChipThumbStyle: CSSProperties = {
+export const recommendThumbStyle: CSSProperties = {
   width: '100%',
-  height: 72,
+  height: 112,
   backgroundColor: D.bg,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  position: 'relative',
 }
 
-export const moreChipTitleStyle: CSSProperties = {
-  fontSize: 12,
-  fontWeight: '600',
+export const recommendTitleStyle: CSSProperties = {
+  fontSize: D.subheadline,
+  fontWeight: D.weightSemibold,
   color: D.label,
-  padding: '8px 10px 10px',
+  padding: '10px 12px 6px',
   lineHeight: 1.35,
   whiteSpace: 'normal' as const,
+  letterSpacing: '-0.01em',
 }
 
-export const recipeRowCardStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'row',
-  backgroundColor: D.bgElevated,
-  borderRadius: D.radiusM,
-  overflow: 'hidden',
-  border: `0.5px solid ${D.separatorLight}`,
-  boxShadow: D.shadowCard,
-}
-
-export const recipeThumbWrapStyle: CSSProperties = {
-  width: 112,
-  height: 112,
-  flexShrink: 0,
-  backgroundColor: D.bg,
-}
-
-export const recipeRowBodyStyle: CSSProperties = {
-  flex: 1,
-  padding: '14px 16px',
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'center',
-  minWidth: 0,
-}
-
-export const recipeTitleStyle: CSSProperties = {
-  fontSize: 16,
-  fontWeight: '600',
-  color: D.label,
-  marginBottom: 6,
-  display: 'block',
-  lineHeight: 1.35,
-  letterSpacing: '-0.02em',
-}
-
-export const recipeTagStyle: CSSProperties = {
+export const recommendMetaStyle: CSSProperties = {
   fontSize: D.caption,
   color: D.labelTertiary,
-  fontWeight: '500',
+  padding: '0 12px 12px',
+  whiteSpace: 'normal' as const,
 }
