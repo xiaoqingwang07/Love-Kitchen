@@ -11,7 +11,7 @@ import {
   setCachedRecipe,
   removeCachedRecipe,
 } from '../../store/storageUtils'
-import { matchRecipesSimple } from '../../utils/recipeMatch'
+import { matchRecipesSimple, matchRecipesWithFallbackSignal } from '../../utils/recipeMatch'
 import { shuffleWithSeed, daySeed } from '../../utils/shuffleSeed'
 import { D } from '../../theme/designTokens'
 import { STORAGE_KEYS } from '../../store/storageKeys'
@@ -108,7 +108,7 @@ export default function Result() {
         if (cancelled) return
         console.error('AI Error:', err)
         const localMatched = matchRecipesSimple(ingredients, 6)
-        setNotice(buildErrorNotice(err?.message, localMatched.length > 0))
+        setNotice(buildErrorNotice((err as { message?: string })?.message, localMatched.length > 0))
         const fallback =
           localMatched.length > 0
             ? localMatched
@@ -131,7 +131,14 @@ export default function Result() {
 
     if (from === 'pantry' && decodedIngredients) {
       const list = decodedIngredients.split(/[,、]/).filter(Boolean)
-      const matched = matchRecipesSimple(list, 6)
+      // 临期食材从 URL 参数中读取（选菜页会附带 expiring 参数）
+      const expiringRaw = router.params.expiring ?? ''
+      const expiringList = expiringRaw ? decodeURIComponent(expiringRaw).split(',').filter(Boolean) : []
+      const { recipes: matched, needsAI } = matchRecipesWithFallbackSignal(list, {
+        limit: 6,
+        expiringIngredients: expiringList,
+        aiTriggerThreshold: 3,
+      })
       if (cancelled) return
       if (matched.length > 0) {
         setRecipes(
@@ -141,6 +148,15 @@ export default function Result() {
             isFavorite: checkFavorite(r.id),
           }))
         )
+        if (needsAI && hasUsableLlm()) {
+          // 本地有一些结果但不足 3 条——先展示本地，后台静默请求 AI 补充
+          setNotice({
+            tone: 'info',
+            title: `已找到 ${matched.length} 道本地菜谱`,
+            detail: '同时请 AI 为你搜寻更多…',
+          })
+          void fetchAI(list, scene, false)
+        }
       } else {
         setNotice({
           tone: 'info',

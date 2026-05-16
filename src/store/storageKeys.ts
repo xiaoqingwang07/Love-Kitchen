@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   recipeCache: 'recipeCache',
   recipeScene: 'recipeScene',
   defaultDinersCount: 'defaultDinersCount',
+  pickAutoSelectIngredients: 'pickAutoSelectIngredients',
   llmApiKey: 'LLM_API_KEY',
   deepseekApiKey: 'DEEPSEEK_API_KEY',
   pantryItems: 'pantryItems',

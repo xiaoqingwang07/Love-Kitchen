@@ -21,20 +21,39 @@ export default defineAppConfig({
     list: [
       {
         pagePath: 'pages/index/index',
-        text: '首页'
+        text: '首页',
+        iconPath: 'assets/tabbar/home.png',
+        selectedIconPath: 'assets/tabbar/home_active.png'
       },
       {
         pagePath: 'pages/pick/index',
-        text: '选菜'
+        text: '选菜',
+        iconPath: 'assets/tabbar/pick.png',
+        selectedIconPath: 'assets/tabbar/pick_active.png'
       },
       {
         pagePath: 'pages/pantry/index',
-        text: '冰箱'
+        text: '冰箱',
+        iconPath: 'assets/tabbar/pantry.png',
+        selectedIconPath: 'assets/tabbar/pantry_active.png'
       },
       {
         pagePath: 'pages/profile/index',
-        text: '我的'
+        text: '我的',
+        iconPath: 'assets/tabbar/profile.png',
+        selectedIconPath: 'assets/tabbar/profile_active.png'
       }
     ]
+  },
+  requiredPrivateInfos: [
+    'getLocation'
+  ],
+  permission: {
+    'scope.userLocation': {
+      desc: '用于获取当地天气，推荐时令菜谱'
+    },
+    'scope.record': {
+      desc: '用于语音记录食材，便于快速整理冰箱库存'
+    }
   }
 })

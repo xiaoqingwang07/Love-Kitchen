@@ -276,6 +276,20 @@ function Detail() {
             </Text>
           </Text>
 
+          {step.image ? (
+            <Image
+              src={step.image}
+              mode="aspectFill"
+              style={{
+                width: '100%',
+                height: 180,
+                borderRadius: D.radiusL,
+                marginBottom: 22,
+                backgroundColor: D.cookingSurface,
+              }}
+            />
+          ) : null}
+
           <Text
             style={{
               fontSize: 24,
@@ -834,6 +848,19 @@ function Detail() {
                 </Text>
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
+                {step.image ? (
+                  <Image
+                    src={step.image}
+                    mode="aspectFill"
+                    style={{
+                      width: '100%',
+                      height: 156,
+                      borderRadius: D.radiusM,
+                      marginBottom: 12,
+                      backgroundColor: D.bgGrouped,
+                    }}
+                  />
+                ) : null}
                 <Text
                   style={{
                     fontSize: D.body,

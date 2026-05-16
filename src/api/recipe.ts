@@ -144,19 +144,33 @@ const requestWithRetry = async <T>(fn: () => Promise<T>, retries: number = 2): P
   throw lastError
 }
 
+/**
+ * 步骤内容格式要求（强制）：
+ * - 每步 content 30~60 字，包含具体动作、火候、时间信息
+ * - 举例："中火热锅后倒入 2 勺油，油温七成热时放入姜蒜末，翻炒约 30 秒至金黄出香。"
+ * - tip 字段（可选）：补充关键技巧或避坑提示，10~30 字
+ */
+const STEP_FORMAT_RULE = `每个步骤的写法规范（必须严格遵守）：
+- content：30~60 字，包含「动作 + 火候（大火/中火/小火）+ 器具（锅/平底锅/砂锅等）+ 时间或状态判断」，例如："中火热锅，倒入 2 勺食用油，油温七成热（微微冒烟）时放入姜蒜末，持续翻炒约 30 秒至金黄出香。"
+- time：该步骤所需分钟数（整数）
+- tip（可选）：关键技巧或避坑提示，10~30 字，例如："锅要够热，蔬菜才不会出水变烂。"`
+
 const JSON_SCHEMA = `必须返回纯 JSON 数组，不要 Markdown、不要解释文字。结构示例：
-[{ "title": "菜名", "quote": "一句话点评", "rating": 4.8, "count": 1024, "emoji": "🥘", "image": "可选 HTTPS 成品图 URL", "ingredients": [{"name": "食材1", "amount": "用量"}], "steps": [{"content": "步骤1", "time": 10, "tip": "可选", "image": "可选 HTTPS 步骤图 URL"}], "nutritionAnalysis": "营养要点", "time": 20, "difficulty": "简单" }]
-image 与 steps[].image 可省略；省略时客户端会用图库兜底。`
+[{ "title": "菜名", "quote": "一句话历史或文化点评（30字以内）", "rating": 4.8, "count": 1024, "emoji": "🥘", "ingredients": [{"name": "食材1", "amount": "具体用量（含单位，如 200g/3勺/1个）"}], "steps": [{"content": "详细步骤文字", "time": 5, "tip": "可选技巧"}], "nutritionAnalysis": "营养要点（30~50字）", "time": 20, "difficulty": "简单" }]
+不要在 JSON 中加 image 字段（客户端已有智能配图）。`
 
 const SCENE_BLOCKS: Record<SceneType, string> = {
-  normal: `你是专业中餐与家庭营养主厨。
-要求：营养均衡、做法家常、用料贴近中国家庭厨房。`,
-  runner: `用户可能刚做完运动，需要一餐家常、易消化、能补充能量与蛋白质的加餐。
-要求：做法务实、调料常见；不必强调极限运动或专业数据，像给家人做饭一样自然。`,
-  quick: `用户时间紧张，需要快手菜。
-要求：总耗时尽量控制在 15 分钟内、步骤不超过 5 步、调料常见。`,
-  muscle: `用户想吃得更高蛋白，但仍然是家常饮食场景。
-要求：高蛋白、烹饪方式简单（蒸/煮/快炒为主），口味自然，份量说明要合理。`,
+  normal: `你是专业中餐与家庭营养主厨，擅长将菜谱写得既家常又专业。
+要求：营养均衡、做法家常、用料贴近中国家庭厨房；步骤细节要足够帮助零基础厨房新手成功。`,
+  runner: `你是专业运动营养主厨，了解运动后身体需求。
+用户可能刚做完运动，需要一餐家常、易消化、能补充能量与蛋白质的加餐。
+要求：做法务实、调料常见；步骤描述详细，像给家人做饭一样自然。`,
+  quick: `你是专业快手菜主厨，擅长用最少时间做出最美味的家常菜。
+用户时间紧张，需要快手菜。
+要求：总耗时尽量控制在 15 分钟内、步骤不超过 5 步、调料常见；步骤要简洁高效。`,
+  muscle: `你是专业高蛋白饮食主厨，了解健康饮食需求。
+用户想吃得更高蛋白，但仍然是家常饮食场景。
+要求：高蛋白、烹饪方式简单（蒸/煮/快炒为主），口味自然，每份用量说明合理。`,
 }
 
 const SCENE_USER_TAIL: Record<SceneType, string> = {
@@ -190,8 +204,10 @@ export const fetchRecipes = async (
 
   const systemPrompt = `${SCENE_BLOCKS[scene]}
 
+${STEP_FORMAT_RULE}
+
 ${JSON_SCHEMA}
-共返回 ${count} 道菜；每道菜的 ingredients 与 steps 必须完整、可执行。`
+共返回 ${count} 道菜；每道菜的 ingredients 与 steps 必须完整、可执行。steps 至少 4 步，每步必须符合上述格式规范。`
 
   const userContent = `食材（用户现有）：${ingredients.join('、')}。
 就餐人数：${diners} 人（请按人数调整用料用量描述）。
@@ -207,7 +223,7 @@ ${SCENE_USER_TAIL[scene]}
           { role: 'user', content: userContent },
         ],
         temperature: 0.75,
-        max_tokens: 2800,
+        max_tokens: 4000,
       },
       config?.timeout ?? DEFAULT_TIMEOUT_MS
     )

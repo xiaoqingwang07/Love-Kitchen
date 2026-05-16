@@ -11,6 +11,7 @@ import { slotKind, slotTitle } from '../../types/fridge'
 import { parseShoppingLines, suggestPlacementWithBalance } from '../../utils/fridgePlacement'
 import { D } from '../../theme/designTokens'
 import { slotShortLabel } from '../../utils/slotLabel'
+import { STORAGE_KEYS } from '../../store/storageKeys'
 import {
   readIntakeDraft,
   clearIntakeDraft,
@@ -491,6 +492,26 @@ function FridgePantry() {
                 >
                   {store.expiringCount}
                 </Text>
+                {/* 点击跳转选菜页，并自动勾选所有临期食材 */}
+                <View
+                  className="tap-scale"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const expiringNames = store.expiringItems.map(i => i.name)
+                    Taro.setStorageSync(STORAGE_KEYS.pickAutoSelectIngredients, expiringNames)
+                    Taro.switchTab({ url: '/pages/pick/index' })
+                  }}
+                  style={{
+                    marginTop: 8,
+                    backgroundColor: D.accentWarm,
+                    borderRadius: 99,
+                    padding: '4px 10px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontSize: 10, color: '#fff', fontWeight: '600' }}>去选菜 →</Text>
+                </View>
               </View>
             ) : null}
             {store.expiredCount > 0 ? (

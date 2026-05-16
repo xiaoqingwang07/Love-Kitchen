@@ -28,6 +28,13 @@ import * as S from './styles'
  * 3. 若冰箱中有临期食材，升级卡片替代普通欢迎语；
  * 4. 不再展示「场景 chip」，场景偏好改由「我的」一次性设定。
  */
+
+/** 本地热词列表：按使用频率 / 季节 / 中餐热度排列，每次可静态更新 */
+const HOT_WORDS = [
+  '番茄炒蛋', '红烧肉', '宫保鸡丁', '麻婆豆腐', '可乐鸡翅',
+  '蒜蓉西兰花', '葱油拌面', '皮蛋豆腐', '辣椒炒肉', '鱼香肉丝',
+  '土豆炖牛肉', '蒸鸡蛋', '炒青菜', '回锅肉', '白灼虾',
+]
 function Index() {
   const pantryStore = usePantryStore()
   const [inputValue, setInputValue] = useState('')
@@ -202,10 +209,9 @@ function Index() {
               <View
                 className="tap-scale"
                 style={S.searchActionBtnStyle}
-                onTouchStart={() => {
-                  skipSearchBlurRef.current = true
-                }}
+                onTouchStart={() => { skipSearchBlurRef.current = true }}
                 onClick={() => {
+                  Taro.showToast({ title: '语音说出你的食材', icon: 'none', duration: 1500 })
                   setShowVoice(true)
                 }}
               >
@@ -214,20 +220,22 @@ function Index() {
               <View
                 className="tap-scale"
                 style={S.searchActionBtnStyle}
-                onTouchStart={() => {
-                  skipSearchBlurRef.current = true
+                onTouchStart={() => { skipSearchBlurRef.current = true }}
+                onClick={() => {
+                  Taro.showToast({ title: '从相册选食材照片', icon: 'none', duration: 1500 })
+                  handlePickImage('album')
                 }}
-                onClick={() => handlePickImage('album')}
               >
                 <Text style={{ fontSize: 18 }}>🖼</Text>
               </View>
               <View
                 className="tap-scale"
                 style={S.searchActionBtnStyle}
-                onTouchStart={() => {
-                  skipSearchBlurRef.current = true
+                onTouchStart={() => { skipSearchBlurRef.current = true }}
+                onClick={() => {
+                  Taro.showToast({ title: '拍下冰箱 / 食材识别', icon: 'none', duration: 1500 })
+                  handlePickImage('camera')
                 }}
-                onClick={() => handlePickImage('camera')}
               >
                 <Text style={{ fontSize: 18 }}>📷</Text>
               </View>
@@ -236,7 +244,7 @@ function Index() {
         </View>
       </View>
 
-      {/* 搜索历史（聚焦时展示） */}
+      {/* 搜索历史 + 热词联想（聚焦时展示） */}
       {showHistory && (
         <View
           style={S.historyBoxStyle}
@@ -282,6 +290,36 @@ function Index() {
               ))}
             </View>
           )}
+
+          {/* 热词联想：常见菜名快速填入 */}
+          <View style={{ marginTop: 14 }}>
+            <Text style={{ fontSize: D.caption, color: D.labelTertiary, letterSpacing: '0.08em', marginBottom: 8, display: 'block' }}>
+              大家都在搜
+            </Text>
+            <View style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {HOT_WORDS.map((word) => (
+                <View
+                  key={word}
+                  className="tap-scale"
+                  style={{
+                    padding: '5px 12px',
+                    backgroundColor: D.bgElevated,
+                    border: `0.5px solid ${D.separatorLight}`,
+                    borderRadius: 99,
+                  }}
+                  onTouchStart={() => { skipSearchBlurRef.current = true }}
+                  onClick={() => {
+                    setInputValue(word)
+                    skipSearchBlurRef.current = true
+                    setShowHistory(false)
+                    doSearch(word)
+                  }}
+                >
+                  <Text style={{ fontSize: D.footnote, color: D.label }}>{word}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
         </View>
       )}
 
@@ -302,7 +340,10 @@ function Index() {
             <View
               className="tap-scale"
               style={S.urgentPrimaryBtnStyle}
-              onClick={() => Taro.navigateTo({ url: '/pages/pick/index' })}
+              onClick={() => {
+                Taro.setStorageSync(STORAGE_KEYS.pickAutoSelectIngredients, expiringItems.map((i) => i.name))
+                Taro.switchTab({ url: '/pages/pick/index' })
+              }}
             >
               <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: '#fff' }}>
                 拿临期做一道

@@ -43,6 +43,18 @@ function Pick() {
     return pantryStore.expiringItems.map(i => i.name)
   }, [pantryStore.expiringItems])
 
+  const applyAutoSelect = () => {
+    const raw = Taro.getStorageSync(STORAGE_KEYS.pickAutoSelectIngredients)
+    if (!raw) return
+    Taro.removeStorageSync(STORAGE_KEYS.pickAutoSelectIngredients)
+    const names = Array.isArray(raw)
+      ? raw.map(String).filter(Boolean)
+      : String(raw).split(',').filter(Boolean)
+    if (names.length > 0) {
+      setSelected(prev => Array.from(new Set([...prev, ...names])))
+    }
+  }
+
   const filterHasMatch = useMemo(() => {
     const raw = ingredientFilter.trim()
     if (!raw) return true
@@ -53,7 +65,7 @@ function Pick() {
   }, [ingredientFilter])
 
   useDidShow(() => {
-    // 不再默认覆盖用户勾选——只在首次进入且当前为空时做一次轻提示
+    applyAutoSelect()
   })
 
   const handleSelectAllExpiring = () => {
@@ -88,8 +100,12 @@ function Pick() {
     Taro.setStorageSync(STORAGE_KEYS.savedIngredients, selected)
     addSearchHistory(selected.join('、'))
     const scene = getStoredScene()
+    // 将临期食材名称也传给 result 页，用于临期加权排序
+    const expiringParam = expiringNames.length > 0
+      ? `&expiring=${encodeURIComponent(expiringNames.join(','))}`
+      : ''
     Taro.navigateTo({
-      url: `/pages/result/index?from=pantry&ingredients=${encodeURIComponent(selected.join(','))}&scene=${scene}`
+      url: `/pages/result/index?from=pantry&ingredients=${encodeURIComponent(selected.join(','))}&scene=${scene}${expiringParam}`
     })
   }
 
