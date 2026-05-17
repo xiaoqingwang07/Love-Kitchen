@@ -10,6 +10,7 @@ import { STORAGE_KEYS } from './storageKeys'
 
 /** 连续改库存时合并为单次写入，避免频繁 JSON + Storage 同步 */
 const PANTRY_PERSIST_DEBOUNCE_MS = 400
+const MAX_SLOT_INDEX = 8
 
 function debounce(fn: () => void, ms: number): () => void {
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -39,14 +40,14 @@ function parseRow(x: unknown): PartialRow | null {
   if (typeof o.expiresAt !== 'number' || !Number.isFinite(o.expiresAt)) return null
   if (typeof o.defaultShelfLife !== 'number' || !Number.isFinite(o.defaultShelfLife) || o.defaultShelfLife <= 0) return null
   if (o.side !== undefined && o.side !== 'freezer' && o.side !== 'fridge') return null
-  if (o.slotIndex !== undefined && (typeof o.slotIndex !== 'number' || o.slotIndex < 0 || o.slotIndex > 6)) return null
+  if (o.slotIndex !== undefined && (typeof o.slotIndex !== 'number' || o.slotIndex < 0 || o.slotIndex > MAX_SLOT_INDEX)) return null
   return o as PartialRow
 }
 
 function normalizeToPantryItems(partials: PartialRow[]): PantryItem[] {
   const out: PantryItem[] = []
   for (const p of partials) {
-    if (p.side && p.slotIndex !== undefined && p.slotIndex >= 0 && p.slotIndex <= 6) {
+    if (p.side && p.slotIndex !== undefined && p.slotIndex >= 0 && p.slotIndex <= MAX_SLOT_INDEX) {
       out.push(p as PantryItem)
     } else {
       const { side, slotIndex } = suggestPlacementWithBalance(p.name, p.category, out)
@@ -197,7 +198,7 @@ export class PantryStore {
     let slotIndex: number
     if (opts?.side !== undefined && opts?.slotIndex !== undefined) {
       side = opts.side
-      slotIndex = Math.max(0, Math.min(6, opts.slotIndex))
+      slotIndex = Math.max(0, Math.min(MAX_SLOT_INDEX, opts.slotIndex))
     } else {
       const p = suggestPlacementWithBalance(name, cat, this.items)
       side = p.side
@@ -220,7 +221,7 @@ export class PantryStore {
   moveItem(id: string, side: FridgeSide, slotIndex: number) {
     const idx = this.items.findIndex((i) => i.id === id)
     if (idx < 0) return
-    const slot = Math.max(0, Math.min(6, slotIndex))
+    const slot = Math.max(0, Math.min(MAX_SLOT_INDEX, slotIndex))
     this.items[idx] = { ...this.items[idx], side, slotIndex: slot }
   }
 

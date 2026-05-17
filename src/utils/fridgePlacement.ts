@@ -1,5 +1,6 @@
 import type { FoodCategory } from '../types/pantry'
-import type { FridgeSide } from '../types/fridge'
+import type { FridgeLayoutConfig, FridgeSide } from '../types/fridge'
+import { DEFAULT_FRIDGE_LAYOUT, slotCountForSide } from '../types/fridge'
 import type { PantryItem } from '../types/pantry'
 
 const FROZEN_KW = ['冻', '速冻', '冷冻', '冰', '冰淇淋', '雪糕', '冰棒', '水饺', '馄饨', '汤圆', '冰棍', '雪柜']
@@ -14,9 +15,11 @@ function prefersFreezer(name: string, category: FoodCategory): boolean {
 export function suggestPlacementWithBalance(
   name: string,
   category: FoodCategory,
-  existing: PantryItem[]
+  existing: PantryItem[],
+  layout: FridgeLayoutConfig = DEFAULT_FRIDGE_LAYOUT
 ): { side: FridgeSide; slotIndex: number } {
   const side: FridgeSide = prefersFreezer(name, category) ? 'freezer' : 'fridge'
+  const maxSlots = slotCountForSide(layout, side)
 
   let order = [2, 3, 1, 4, 0, 5, 6]
   if (category === 'dairy' || category === 'egg') order = [5, 6, 4, 3, 2, 1, 0]
@@ -24,11 +27,15 @@ export function suggestPlacementWithBalance(
   if (category === 'meat' || category === 'seafood') order = side === 'freezer' ? [5, 6, 4, 3, 2, 1, 0] : [4, 3, 5, 6, 2, 1, 0]
   if (side === 'freezer') order = [0, 1, 2, 5, 6, 3, 4]
 
+  order = order.filter((idx) => idx < maxSlots)
+  if (order.length === 0) order = [0]
+
   const counts = new Map<number, number>()
-  for (let i = 0; i < 7; i++) counts.set(i, 0)
+  for (let i = 0; i < maxSlots; i++) counts.set(i, 0)
   for (const it of existing) {
-    if (it.side === side && typeof it.slotIndex === 'number' && it.slotIndex >= 0 && it.slotIndex < 7) {
-      counts.set(it.slotIndex, (counts.get(it.slotIndex) || 0) + 1)
+    if (it.side === side && typeof it.slotIndex === 'number' && it.slotIndex >= 0) {
+      const idx = Math.min(it.slotIndex, maxSlots - 1)
+      counts.set(idx, (counts.get(idx) || 0) + 1)
     }
   }
 

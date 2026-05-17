@@ -15,6 +15,7 @@ export const STORAGE_KEYS = {
   recipeScene: 'recipeScene',
   defaultDinersCount: 'defaultDinersCount',
   pickAutoSelectIngredients: 'pickAutoSelectIngredients',
+  fridgeLayoutConfig: 'fridgeLayoutConfig',
   llmApiKey: 'LLM_API_KEY',
   deepseekApiKey: 'DEEPSEEK_API_KEY',
   pantryItems: 'pantryItems',

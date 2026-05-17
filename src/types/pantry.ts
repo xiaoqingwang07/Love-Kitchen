@@ -21,7 +21,7 @@ export interface PantryItem {
   defaultShelfLife: number
   /** 冷冻 | 冷藏；与冰箱 UI 格位对应 */
   side: FridgeSide
-  /** 0–4 抽拉层（自上而下），5–6 抽屉 */
+  /** 自上而下的格位索引；UI 支持常见 1–9 格冰箱布局 */
   slotIndex: number
 }
 

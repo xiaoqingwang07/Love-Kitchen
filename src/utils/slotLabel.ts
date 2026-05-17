@@ -4,9 +4,8 @@ import type { PantryItem } from '../types/pantry'
 function slotLabel(side: FridgeSide, slotIndex: number, withDot: boolean): string {
   const z = side === 'freezer' ? '冻' : '藏'
   const sep = withDot ? '·' : ''
-  if (slotIndex < 5) return `${z}${sep}${slotIndex + 1}层`
-  if (slotIndex === 5) return `${z}${sep}上抽`
-  return `${z}${sep}下抽`
+  if (slotIndex < 4) return `${z}${sep}${slotIndex + 1}层`
+  return `${z}${sep}${slotIndex - 3}抽`
 }
 
 /** 冰箱页 / 小票预览：「冻·1层」「藏·上抽」 */

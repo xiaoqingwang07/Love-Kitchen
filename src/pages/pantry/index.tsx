@@ -7,7 +7,15 @@ import { getCategoryForName } from '../../data/shelfLife'
 import { getFreshnessStatus, getDaysLeft } from '../../types/pantry'
 import type { PantryItem, FreshnessStatus } from '../../types/pantry'
 import type { FridgeSide } from '../../types/fridge'
-import { slotKind, slotTitle } from '../../types/fridge'
+import {
+  DEFAULT_FRIDGE_LAYOUT,
+  FRIDGE_LAYOUT_PRESETS,
+  normalizeFridgeLayout,
+  slotCountForSide,
+  slotKind,
+  slotTitle,
+  type FridgeLayoutConfig,
+} from '../../types/fridge'
 import { parseShoppingLines, suggestPlacementWithBalance } from '../../utils/fridgePlacement'
 import { D } from '../../theme/designTokens'
 import { slotShortLabel } from '../../utils/slotLabel'
@@ -24,8 +32,23 @@ const pad = D.pagePadH
 const SLOT_PULL_MIN = 56
 const SLOT_DRAWER_MIN = 62
 const SLOT_STACK_GAP = 5
-const SLOT_INDICES = [0, 1, 2, 3, 4, 5, 6] as const
 const DAY_MS = 24 * 60 * 60 * 1000
+
+function loadFridgeLayout(): FridgeLayoutConfig {
+  try {
+    return normalizeFridgeLayout(Taro.getStorageSync(STORAGE_KEYS.fridgeLayoutConfig))
+  } catch {
+    return DEFAULT_FRIDGE_LAYOUT
+  }
+}
+
+function saveFridgeLayout(layout: FridgeLayoutConfig): void {
+  try {
+    Taro.setStorageSync(STORAGE_KEYS.fridgeLayoutConfig, layout)
+  } catch {
+    /* ignore */
+  }
+}
 
 function FridgePantry() {
   const store = usePantryStore()
@@ -42,6 +65,7 @@ function FridgePantry() {
   const [editing, setEditing] = useState<PantryItem | null>(null)
   const [editAmount, setEditAmount] = useState('')
   const [editDaysLeft, setEditDaysLeft] = useState<number>(0)
+  const [layout, setLayout] = useState<FridgeLayoutConfig>(() => loadFridgeLayout())
 
   useDidShow(() => {
     const draft = readIntakeDraft()
@@ -59,6 +83,20 @@ function FridgePantry() {
     }
   }, [editing])
 
+  useEffect(() => {
+    saveFridgeLayout(layout)
+  }, [layout])
+
+  const freezerIndices = useMemo(
+    () => Array.from({ length: layout.freezerSlots }, (_, i) => i),
+    [layout.freezerSlots]
+  )
+  const fridgeIndices = useMemo(
+    () => Array.from({ length: layout.fridgeSlots }, (_, i) => i),
+    [layout.fridgeSlots]
+  )
+  const currentPreset = FRIDGE_LAYOUT_PRESETS.find((p) => p.type === layout.type) || FRIDGE_LAYOUT_PRESETS[0]
+
   // ---------- 冰箱外柜视觉 ----------
   const fridgeCabinet: CSSProperties = {
     borderRadius: 22,
@@ -66,29 +104,6 @@ function FridgePantry() {
     background: 'linear-gradient(145deg, #b8c0cc 0%, #dde3ea 38%, #c9d0da 72%, #aeb6c2 100%)',
     boxShadow: '0 12px 40px rgba(18, 22, 28, 0.14), inset 0 1px 0 rgba(255,255,255,0.65)',
   }
-  const doorMidSealFill: CSSProperties = {
-    width: 6,
-    alignSelf: 'stretch',
-    flexShrink: 0,
-    borderRadius: 2,
-    background:
-      'linear-gradient(90deg, rgba(0,0,0,0.12) 0%, rgba(255,255,255,0.55) 45%, rgba(0,0,0,0.1) 100%)',
-    boxShadow: 'inset 0 0 6px rgba(0,0,0,0.15)',
-  }
-  const doorHandle = (edge: 'left' | 'right'): CSSProperties => ({
-    position: 'absolute',
-    top: '40%',
-    zIndex: 2,
-    ...(edge === 'right' ? { right: 5 } : { left: 5 }),
-    width: 4,
-    height: 44,
-    borderRadius: 2,
-    background: 'linear-gradient(180deg, rgba(255,255,255,0.9), rgba(170,178,190,0.95))',
-    boxShadow:
-      edge === 'right'
-        ? 'inset -1px 0 2px rgba(0,0,0,0.08)'
-        : 'inset 1px 0 2px rgba(0,0,0,0.08)',
-  })
   const freezerChamber: CSSProperties = {
     flex: 1,
     minWidth: 0,
@@ -140,8 +155,18 @@ function FridgePantry() {
   })
 
   // ---------- 逻辑 ----------
+  const slotItems = (side: FridgeSide, slotIndex: number): PantryItem[] => {
+    const count = slotCountForSide(layout, side)
+    const last = count - 1
+    return store.items.filter((i) => {
+      if (i.side !== side) return false
+      if (slotIndex === last) return i.slotIndex >= last
+      return i.slotIndex === slotIndex
+    })
+  }
+
   const slotHasHighlight = (side: FridgeSide, slotIndex: number): boolean => {
-    const list = store.itemsInSlot(side, slotIndex)
+    const list = slotItems(side, slotIndex)
     if (highlight === 'all') return true
     return list.some((i) => {
       const s = getFreshnessStatus(i)
@@ -150,13 +175,13 @@ function FridgePantry() {
   }
   const slotDimmed = (side: FridgeSide, slotIndex: number): boolean => {
     if (highlight === 'all') return false
-    const list = store.itemsInSlot(side, slotIndex)
+    const list = slotItems(side, slotIndex)
     if (list.length === 0) return true
     return !slotHasHighlight(side, slotIndex)
   }
 
   const renderSlot = (side: FridgeSide, index: number) => {
-    const items = store.itemsInSlot(side, index)
+    const items = slotItems(side, index)
     const kind = slotKind(index)
     const dim = slotDimmed(side, index)
     const hasExpired = items.some((i) => getFreshnessStatus(i) === 'expired')
@@ -170,20 +195,21 @@ function FridgePantry() {
     const minH = kind === 'pull' ? SLOT_PULL_MIN : SLOT_DRAWER_MIN
     const isFz = side === 'freezer'
     const summary = items.length === 0 ? '空' : items.map((i) => i.name).join('、')
+    const sideColor = isFz ? '#4E8FC5' : '#5E9D72'
     return (
       <View
         key={`${side}-${index}`}
         style={{
           minHeight: minH,
           width: '100%',
-          borderRadius: 8,
-          backgroundColor: isFz ? 'rgba(255,255,255,0.38)' : 'rgba(255,255,255,0.52)',
+          borderRadius: 12,
+          backgroundColor: 'rgba(255,255,255,0.72)',
           border: ring
             ? `1.5px solid ${highlight === 'expiring' ? D.accentWarm : D.red}`
-            : '1px solid rgba(255,255,255,0.65)',
+            : '0.5px solid rgba(255,255,255,0.9)',
           boxShadow:
-            'inset 0 2px 6px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.7)',
-          padding: '6px 8px',
+            '0 1px 8px rgba(18,17,15,0.04), inset 0 1px 0 rgba(255,255,255,0.9)',
+          padding: '8px 9px',
           opacity: dim ? 0.35 : 1,
           display: 'flex',
           flexDirection: 'column',
@@ -229,23 +255,23 @@ function FridgePantry() {
             style={{
               fontSize: 9,
               fontWeight: '700',
-              color: isFz ? 'rgba(30,55,90,0.55)' : 'rgba(35,65,45,0.5)',
+              color: sideColor,
               letterSpacing: '0.06em',
             }}
           >
-            {kind === 'pull' ? `搁板 ${index + 1}` : index === 5 ? '果菜抽屉' : '保鲜抽屉'}
+            {kind === 'pull' ? `搁板 ${index + 1}` : `抽屉 ${index - 3}`}
           </Text>
           {items.length > 0 ? (
             <View
               style={{
-                backgroundColor: isFz ? 'rgba(255,255,255,0.55)' : D.accentMuted,
-                padding: '1px 6px',
+                backgroundColor: isFz ? 'rgba(78,143,197,0.12)' : 'rgba(94,157,114,0.12)',
+                padding: '2px 7px',
                 borderRadius: 999,
                 flexShrink: 0,
                 marginRight: hasExpired || hasExpiring ? 12 : 0,
               }}
             >
-              <Text style={{ fontSize: 9, fontWeight: '700', color: D.accent }}>
+              <Text style={{ fontSize: 9, fontWeight: '700', color: sideColor }}>
                 {items.length}
               </Text>
             </View>
@@ -262,6 +288,120 @@ function FridgePantry() {
         >
           {summary}
         </Text>
+      </View>
+    )
+  }
+
+  const renderZone = (
+    side: FridgeSide,
+    indices: number[],
+    opts: { compact?: boolean; title?: string } = {}
+  ) => {
+    const isFz = side === 'freezer'
+    const chamber = isFz ? freezerChamber : fridgeChamber
+    return (
+      <View style={{ ...chamber, minHeight: opts.compact ? 120 : 0 }}>
+        <View style={isFz ? frostOverlay : undefined} />
+        <View style={ledBar(isFz)} />
+        <View
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingRight: 2,
+            marginBottom: 6,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: D.weightBold,
+              color: isFz ? '#1e3a5c' : '#2d4a38',
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {opts.title || (isFz ? '冷冻室' : '冷藏室')}
+          </Text>
+          <Text
+            style={{
+              fontSize: 9,
+              fontWeight: D.weightSemibold,
+              color: isFz ? 'rgba(30,58,92,0.55)' : 'rgba(45,74,56,0.5)',
+            }}
+          >
+            {isFz ? '≈ −18°C' : '≈ 4°C'}
+          </Text>
+        </View>
+        <View style={{ display: 'flex', flexDirection: 'column', gap: SLOT_STACK_GAP, flex: 1 }}>
+          {indices.map((idx) => (
+            <View key={`${side}-${idx}`} style={{ display: 'flex', flex: 1 }}>
+              {renderSlot(side, idx)}
+            </View>
+          ))}
+        </View>
+      </View>
+    )
+  }
+
+  const renderFridgeBody = () => {
+    if (layout.type === 'side-by-side') {
+      const rows = Array.from({ length: Math.max(layout.freezerSlots, layout.fridgeSlots) }, (_, i) => i)
+      return (
+        <View style={{ display: 'flex', flexDirection: 'column' }}>
+          <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', padding: '6px 4px 8px', gap: 6 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              {renderZone('freezer', freezerIndices, { title: '冷冻室' })}
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              {renderZone('fridge', fridgeIndices, { title: '冷藏室' })}
+            </View>
+          </View>
+          <View style={{ display: 'none' }}>
+            {rows.length}
+          </View>
+        </View>
+      )
+    }
+
+    if (layout.type === 'top-freezer') {
+      return (
+        <View style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '6px 4px 8px' }}>
+          {renderZone('freezer', freezerIndices, { compact: true, title: '上冷冻' })}
+          {renderZone('fridge', fridgeIndices, { title: '下冷藏' })}
+        </View>
+      )
+    }
+
+    if (layout.type === 'bottom-freezer') {
+      return (
+        <View style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '6px 4px 8px' }}>
+          {renderZone('fridge', fridgeIndices, { title: '上冷藏' })}
+          {renderZone('freezer', freezerIndices, { compact: true, title: '下冷冻' })}
+        </View>
+      )
+    }
+
+    if (layout.type === 'single-door') {
+      return (
+        <View style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '6px 4px 8px' }}>
+          {renderZone('freezer', freezerIndices, { compact: true, title: '小冷冻格' })}
+          {renderZone('fridge', fridgeIndices, { title: '主冷藏区' })}
+        </View>
+      )
+    }
+
+    return (
+      <View style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '6px 4px 8px' }}>
+        {renderZone('fridge', fridgeIndices, { title: layout.type === 'french-door' ? '上层冷藏' : '上层冷藏' })}
+        <View style={{ display: 'flex', flexDirection: 'row', gap: 8 }}>
+          <View style={{ flex: 1 }}>
+            {renderZone('freezer', freezerIndices.slice(0, Math.ceil(freezerIndices.length / 2)), { compact: true, title: '下左冷冻' })}
+          </View>
+          <View style={{ flex: 1 }}>
+            {renderZone('freezer', freezerIndices.slice(Math.ceil(freezerIndices.length / 2)), { compact: true, title: '下右冷冻' })}
+          </View>
+        </View>
       </View>
     )
   }
@@ -296,7 +436,7 @@ function FridgePantry() {
     }[] = []
     for (const line of lines) {
       const cat = getCategoryForName(line.name)
-      const p = suggestPlacementWithBalance(line.name, cat, virtual)
+      const p = suggestPlacementWithBalance(line.name, cat, virtual, layout)
       const now = Date.now()
       virtual.push({
         id: 'virt',
@@ -342,8 +482,8 @@ function FridgePantry() {
 
   const activeItems = useMemo(() => {
     if (!activeSlot) return []
-    return store.itemsInSlot(activeSlot.side, activeSlot.slotIndex)
-  }, [activeSlot, store.items])
+    return slotItems(activeSlot.side, activeSlot.slotIndex)
+  }, [activeSlot, store.items, layout])
 
   const getStatusStyle = (status: FreshnessStatus): CSSProperties => {
     if (status === 'expired') return { color: D.red, backgroundColor: 'rgba(208,90,56,0.12)' }
@@ -362,30 +502,42 @@ function FridgePantry() {
   }
 
   const handleMoveItem = (item: PantryItem) => {
+    const freezerTargets = freezerIndices.map((idx) => ({
+      label: slotTitle('freezer', idx),
+      side: 'freezer' as FridgeSide,
+      slotIndex: idx,
+    }))
+    const fridgeTargets = fridgeIndices.map((idx) => ({
+      label: slotTitle('fridge', idx),
+      side: 'fridge' as FridgeSide,
+      slotIndex: idx,
+    }))
+    const targets = [...freezerTargets, ...fridgeTargets]
     Taro.showActionSheet({
-      itemList: [
-        '冷冻 · 搁板 1',
-        '冷冻 · 搁板 2-5',
-        '冷冻 · 抽屉',
-        '冷藏 · 搁板 1',
-        '冷藏 · 搁板 2-5',
-        '冷藏 · 抽屉',
-      ],
+      itemList: targets.map((t) => t.label),
       success: (res) => {
-        const slotMap: { side: FridgeSide; slotIndex: number }[] = [
-          { side: 'freezer', slotIndex: 0 },
-          { side: 'freezer', slotIndex: 2 },
-          { side: 'freezer', slotIndex: 5 },
-          { side: 'fridge', slotIndex: 0 },
-          { side: 'fridge', slotIndex: 2 },
-          { side: 'fridge', slotIndex: 5 },
-        ]
-        const dest = slotMap[res.tapIndex]
+        const dest = targets[res.tapIndex]
         if (!dest) return
         store.moveItem(item.id, dest.side, dest.slotIndex)
         setEditing(null)
         Taro.showToast({ title: '已移动', icon: 'success' })
       },
+    })
+  }
+
+  const applyPreset = (idx: number) => {
+    const preset = FRIDGE_LAYOUT_PRESETS[idx]
+    if (!preset) return
+    setLayout({ type: preset.type, freezerSlots: preset.freezerSlots, fridgeSlots: preset.fridgeSlots })
+  }
+
+  const adjustSlotCount = (side: FridgeSide, delta: number) => {
+    setLayout((prev) => {
+      const key = side === 'freezer' ? 'freezerSlots' : 'fridgeSlots'
+      return {
+        ...prev,
+        [key]: Math.max(1, Math.min(9, prev[key] + delta)),
+      }
     })
   }
 
@@ -412,7 +564,7 @@ function FridgePantry() {
               maxWidth: 340,
             }}
           >
-            左冷冻、右冷藏。点格子查看 / 添加，食材会自动标记临期（黄）和过期（红）。
+            选择你的冰箱类型并调整格数。点格子查看 / 添加，食材会自动标记临期（黄）和过期（红）。
           </Text>
         </View>
 
@@ -510,7 +662,7 @@ function FridgePantry() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 10, color: '#fff', fontWeight: '600' }}>去选菜 →</Text>
+                <Text style={{ fontSize: 10, color: '#fff', fontWeight: D.weightSemibold }}>去选菜</Text>
                 </View>
               </View>
             ) : null}
@@ -618,122 +770,133 @@ function FridgePantry() {
           ))}
         </View>
 
+        {/* 冰箱类型与格数设置 */}
+        <View style={{ padding: `0 ${pad}px 16px` }}>
+          <View
+            style={{
+              backgroundColor: D.bgElevated,
+              borderRadius: D.radiusXL,
+              border: `0.5px solid ${D.separatorLight}`,
+              padding: '16px 16px 14px',
+              boxShadow: D.shadowCard,
+            }}
+          >
+            <View style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: D.headline, fontWeight: D.weightBold, color: D.label }}>
+                  冰箱类型
+                </Text>
+                <Text style={{ display: 'block', marginTop: 4, fontSize: D.footnote, color: D.labelSecondary }}>
+                  {currentPreset.desc} · 冷冻 {layout.freezerSlots} 格 / 冷藏 {layout.fridgeSlots} 格
+                </Text>
+              </View>
+              <View
+                className="tap-scale"
+                onClick={() => {
+                  Taro.showActionSheet({
+                    itemList: FRIDGE_LAYOUT_PRESETS.map((p) => `${p.name}｜${p.desc}`),
+                    success: (res) => applyPreset(res.tapIndex),
+                  })
+                }}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: D.bgGrouped,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: `0.5px solid ${D.separatorLight}`,
+                }}
+              >
+                <Text style={{ fontSize: 18, color: D.label, lineHeight: '36px' }}>⋯</Text>
+              </View>
+            </View>
+
+            <ScrollView scrollX showScrollbar={false} style={{ marginTop: 12, whiteSpace: 'nowrap' }}>
+              <View style={{ display: 'flex', gap: 8 }}>
+                {FRIDGE_LAYOUT_PRESETS.map((preset, idx) => {
+                  const active = preset.type === layout.type
+                  return (
+                    <View
+                      key={preset.type}
+                      className="tap-scale"
+                      onClick={() => applyPreset(idx)}
+                      style={{
+                        padding: '7px 12px',
+                        borderRadius: 999,
+                        backgroundColor: active ? D.label : D.bgGrouped,
+                        border: active ? 'none' : `0.5px solid ${D.separatorLight}`,
+                      }}
+                    >
+                      <Text style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: active ? D.bgElevated : D.labelSecondary }}>
+                        {preset.name}
+                      </Text>
+                    </View>
+                  )
+                })}
+              </View>
+            </ScrollView>
+
+            <View style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+              {([
+                { side: 'freezer' as FridgeSide, title: '冷冻格数', value: layout.freezerSlots, color: '#4E8FC5' },
+                { side: 'fridge' as FridgeSide, title: '冷藏格数', value: layout.fridgeSlots, color: '#5E9D72' },
+              ]).map((item) => (
+                <View
+                  key={item.side}
+                  style={{
+                    flex: 1,
+                    backgroundColor: D.bgGrouped,
+                    borderRadius: D.radiusL,
+                    padding: '10px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    border: `0.5px solid ${D.separatorLight}`,
+                  }}
+                >
+                  <View>
+                    <Text style={{ fontSize: D.caption, color: D.labelTertiary }}>{item.title}</Text>
+                    <Text style={{ display: 'block', fontSize: D.title, fontWeight: D.weightBold, color: item.color, marginTop: 2 }}>
+                      {item.value}
+                    </Text>
+                  </View>
+                  <View style={{ display: 'flex', gap: 6 }}>
+                    {[
+                      { label: '−', delta: -1 },
+                      { label: '+', delta: 1 },
+                    ].map((btn) => (
+                      <View
+                        key={btn.label}
+                        className="tap-scale"
+                        onClick={() => adjustSlotCount(item.side, btn.delta)}
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 14,
+                          backgroundColor: '#fff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: `0.5px solid ${D.separatorLight}`,
+                          boxShadow: '0 1px 4px rgba(18,17,15,0.05)',
+                        }}
+                      >
+                        <Text style={{ fontSize: 18, lineHeight: '28px', color: D.label }}>{btn.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+
         {/* 冰箱本体 */}
         <View style={{ padding: `0 ${pad}px 28px` }}>
           <View style={fridgeCabinet}>
-            <View style={{ display: 'flex', flexDirection: 'column' }}>
-              <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch' }}>
-                <View
-                  style={{
-                    ...freezerChamber,
-                    borderRadius: 0,
-                    borderTopLeftRadius: 16,
-                    borderTopRightRadius: 6,
-                  }}
-                >
-                  <View style={frostOverlay} />
-                  <View style={doorHandle('right')} />
-                  <View style={ledBar(true)} />
-                  <View
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      paddingRight: 2,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '700',
-                        color: '#1e3a5c',
-                        letterSpacing: '-0.02em',
-                      }}
-                    >
-                      ❄ 冷冻室
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 9,
-                        fontWeight: '600',
-                        color: 'rgba(30,58,92,0.55)',
-                      }}
-                    >
-                      ≈ −18°C
-                    </Text>
-                  </View>
-                </View>
-                <View style={doorMidSealFill} />
-                <View
-                  style={{
-                    ...fridgeChamber,
-                    borderRadius: 0,
-                    borderTopRightRadius: 16,
-                    borderTopLeftRadius: 6,
-                  }}
-                >
-                  <View style={doorHandle('left')} />
-                  <View style={ledBar(false)} />
-                  <View
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      paddingRight: 2,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '700',
-                        color: '#2d4a38',
-                        letterSpacing: '-0.02em',
-                      }}
-                    >
-                      🥬 冷藏室
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 9,
-                        fontWeight: '600',
-                        color: 'rgba(45,74,56,0.5)',
-                      }}
-                    >
-                      ≈ 4°C
-                    </Text>
-                  </View>
-                </View>
-              </View>
-              <View
-                style={{
-                  padding: '6px 4px 8px',
-                  borderBottomLeftRadius: 14,
-                  borderBottomRightRadius: 14,
-                  background:
-                    'linear-gradient(90deg, #d2e2f2 0%, #d2e2f2 calc(50% - 3px), #ddece0 calc(50% + 3px), #ddece0 100%)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: SLOT_STACK_GAP,
-                }}
-              >
-                {SLOT_INDICES.map((i) => (
-                  <View
-                    key={`slot-row-${i}`}
-                    style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch' }}
-                  >
-                    <View style={{ flex: 1, minWidth: 0, display: 'flex' }}>
-                      {renderSlot('freezer', i)}
-                    </View>
-                    <View style={doorMidSealFill} />
-                    <View style={{ flex: 1, minWidth: 0, display: 'flex' }}>
-                      {renderSlot('fridge', i)}
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
+            {renderFridgeBody()}
           </View>
         </View>
 
@@ -868,7 +1031,7 @@ function FridgePantry() {
                         padding: '0 6px',
                       }}
                     >
-                      编辑 ›
+                      编辑
                     </Text>
                   </View>
                 )
@@ -1335,7 +1498,7 @@ function FridgePantry() {
                       </Text>
                     </Text>
                     <Text style={{ fontSize: D.caption, color: D.accent, marginTop: 4 }}>
-                      推荐 → {slotShortLabel(row.side, row.slotIndex)}
+                      推荐 {slotShortLabel(row.side, row.slotIndex)}
                     </Text>
                   </View>
                 ))}
