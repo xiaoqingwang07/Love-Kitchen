@@ -16,6 +16,7 @@
  */
 
 import { EXACT_DISH_IMAGE_OVERRIDES } from './exactDishImages'
+import { buildDishPhotoUrl } from './dishPhoto'
 
 const U = (id: string) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1200&q=85`
@@ -373,36 +374,14 @@ function pickFromPool(pool: string[], seed: string): string {
  */
 export function pickDishImage(title: string, tags?: string[]): string {
   const t = (title || '').trim()
-  if (!t) return GENERIC_POOL[0]
+  if (!t) return buildDishPhotoUrl('家常菜', tags)
 
-  // 1. 精确匹配
-  if (EXACT_DISH_IMAGE_OVERRIDES[t]) return EXACT_DISH_IMAGE_OVERRIDES[t]
-  if (EXACT_MATCH[t]) return EXACT_MATCH[t]
-  // 容错：去掉常见前缀「家常」「快手」等再试一次
-  const stripped = t.replace(/^(家常|快手|经典|秘制|香辣|麻辣|清香)/, '').trim()
-  if (stripped !== t && EXACT_DISH_IMAGE_OVERRIDES[stripped]) return EXACT_DISH_IMAGE_OVERRIDES[stripped]
-  if (stripped !== t && EXACT_MATCH[stripped]) return EXACT_MATCH[stripped]
-
-  // 2. 关键词规则（合并 title + tags 一起判断，命中第一条就用）
-  const haystack = `${t} ${(tags || []).join(' ')}`
-  for (const rule of KEYWORD_RULES) {
-    if (rule.keys.some((k) => haystack.includes(k))) {
-      return pickFromPool(rule.pool, t)
-    }
-  }
-
-  // 3. 兜底
-  return pickFromPool(GENERIC_POOL, t)
+  // 高标准配图：所有菜名都走菜名级写实图，避免从通用图池里错配。
+  return buildDishPhotoUrl(t, tags)
 }
 
 /** 为统计 / 调试用：返回命中的规则标签（如未命中关键词返回 'generic'） */
 export function explainDishImage(title: string, tags?: string[]): string {
   const t = (title || '').trim()
-  if (EXACT_DISH_IMAGE_OVERRIDES[t]) return 'exact'
-  if (EXACT_MATCH[t]) return 'exact'
-  const haystack = `${t} ${(tags || []).join(' ')}`
-  for (const rule of KEYWORD_RULES) {
-    if (rule.keys.some((k) => haystack.includes(k))) return rule.label
-  }
-  return 'generic'
+  return t ? 'dish-photo' : 'empty'
 }

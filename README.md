@@ -107,6 +107,7 @@ Body: { messages, model, temperature, stream }
 | request | `api.open-meteo.com` | 实时天气（按授权触发） |
 | downloadFile | `images.unsplash.com` | 菜谱配图 CDN |
 | downloadFile | `api.pexels.com` | 备用图片 CDN（如启用） |
+| downloadFile | `image.pollinations.ai` | 按菜名 / 步骤生成高可信写实菜谱图 |
 | uploadFile | `你的-vercel-proxy.vercel.app` | 图片识别上传（如接入 OCR） |
 
 > 开发阶段可在微信开发者工具勾选「不校验合法域名」临时绕过。
