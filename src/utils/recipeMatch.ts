@@ -1,5 +1,6 @@
-import { DEFAULT_RECIPES } from '../data/recipes'
+import { getCatalogRecipes } from '../data/recipeRegistry'
 import type { Recipe } from '../types/recipe'
+import { ingredientsLikelyMatch } from './ingredientMatch'
 
 export interface MatchResult {
   recipe: Recipe
@@ -28,29 +29,30 @@ export function matchRecipes(
 ): MatchResult[] {
   if (selectedIngredients.length === 0) return []
 
-  const selected = new Set(selectedIngredients.map(s => s.trim()))
-  const expiring = new Set(expiringIngredients.map(s => s.trim()))
+  const selectedArr = selectedIngredients.map((s) => s.trim()).filter(Boolean)
+  const expiringArr = expiringIngredients.map((s) => s.trim()).filter(Boolean)
+  const minSelectedHits =
+    selectedArr.length <= 1 ? 1 : Math.min(2, selectedArr.length)
 
-  const results: MatchResult[] = DEFAULT_RECIPES
+  const results: MatchResult[] = getCatalogRecipes()
     .map(recipe => {
       const recipeIngredientNames = (recipe.ingredients || []).map(i => i.name)
-      const selectedArr = Array.from(selected)
 
-      const matched = recipeIngredientNames.filter(name =>
-        selected.has(name) || selectedArr.some(s => name.includes(s) || s.includes(name))
+      const matchedSelected = selectedArr.filter((sel) =>
+        recipeIngredientNames.some((name) => ingredientsLikelyMatch(sel, name))
       )
-      const matchedExpiring = matched.filter(name => {
-        if (expiring.has(name)) return true
-        return Array.from(expiring).some(e => name.includes(e) || e.includes(name))
-      })
+      const matched = recipeIngredientNames.filter((name) =>
+        selectedArr.some((sel) => ingredientsLikelyMatch(sel, name))
+      )
+      const matchedExpiring = matched.filter((name) =>
+        expiringArr.some((e) => ingredientsLikelyMatch(e, name))
+      )
 
-      const matchCount = matched.length
-      const coverageRate = recipeIngredientNames.length > 0
-        ? matchCount / recipeIngredientNames.length
-        : 0
+      const matchCount = matchedSelected.length
+      const coverageRate = selectedArr.length > 0 ? matchCount / selectedArr.length : 0
 
-      // 临期加权：每命中一个临期食材 +3 分
-      const score = matchCount * 2 + coverageRate + matchedExpiring.length * 3
+      // 临期加权：每命中一个临期食材 +3 分；用户食材覆盖率越高越靠前
+      const score = matchCount * 4 + coverageRate * 3 + matchedExpiring.length * 3
 
       return {
         recipe,
@@ -61,7 +63,7 @@ export function matchRecipes(
         score,
       }
     })
-    .filter(r => r.matchCount > 0)
+    .filter((r) => r.matchCount >= minSelectedHits)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
 

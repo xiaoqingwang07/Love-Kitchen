@@ -4,7 +4,7 @@
   "description": "Love Kitchen WeChat Mini Program",
   "appid": "wx3bd5040d682e957f",
   "setting": {
-    "urlCheck": true,
+    "urlCheck": false,
     "es6": false,
     "enhance": false,
     "postcss": false,

@@ -85,11 +85,14 @@ function Profile() {
     Taro.hideLoading()
     setApiKeyValid(result.valid)
     if (result.valid) {
-      Taro.showToast({ title: '中转可用', icon: 'success' })
+      Taro.showToast({ title: 'AI 服务可用', icon: 'success' })
     } else {
+      const notConfigured = result.error?.includes('TARO_APP_LLM_PROXY_URL')
       Taro.showModal({
-        title: '检测失败',
-        content: result.error || '请检查 Vercel 部署与 request 合法域名',
+        title: notConfigured ? 'AI 服务未配置' : '检测失败',
+        content: notConfigured
+          ? '当前构建没有填入服务端 AI 转发地址。部署 api/llm-proxy.js 后，把完整地址写入 .env.local 并重新构建。'
+          : result.error || '请检查服务端部署与微信 request 合法域名',
         showCancel: false,
       })
     }
@@ -897,7 +900,7 @@ function Profile() {
               }}
               onClick={handleTestLlmProxy}
             >
-              检测 LLM 中转
+              检测 AI 服务
             </Button>
             <Button
               style={{

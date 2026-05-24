@@ -14,7 +14,15 @@
     "build:weapp": "taro build --type weapp",
     "dev:h5": "taro build --type h5 --watch",
     "build:h5": "taro build --type h5",
-    "smoke:minimax": "node scripts/smoke-minimax.mjs"
+    "smoke:minimax": "node scripts/smoke-minimax.mjs",
+    "setup:env": "node scripts/setup-env.mjs",
+    "dev:llm-proxy": "node scripts/llm-proxy-local.mjs",
+    "fetch:recipe-images": "node scripts/fetch-recipe-images.mjs",
+    "fetch:popular-recipes": "node scripts/fetch-popular-recipes.mjs",
+    "fix:catalog-images": "node scripts/fix-catalog-image-cache.mjs",
+    "emit:legacy-images": "node scripts/emit-legacy-images.mjs",
+    "patch:catalog-media": "node scripts/patch-catalog-media.mjs",
+    "import:recipe": "node scripts/import-recipe-from-xcf.mjs"
   },
   "browserslist": [
     "last 3 versions",

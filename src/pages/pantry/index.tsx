@@ -1,9 +1,8 @@
 import { View, Text, Input, Button, ScrollView, Textarea, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useState, useMemo, useEffect, type CSSProperties } from 'react'
+import { useState, useMemo, useEffect, useRef, type CSSProperties } from 'react'
 import { observer } from 'mobx-react-lite'
 import { usePantryStore } from '../../store/context'
-import { getCategoryForName } from '../../data/shelfLife'
 import { getFreshnessStatus, getDaysLeft } from '../../types/pantry'
 import type { PantryItem, FreshnessStatus } from '../../types/pantry'
 import type { FridgeSide } from '../../types/fridge'
@@ -16,15 +15,20 @@ import {
   slotTitle,
   type FridgeLayoutConfig,
 } from '../../types/fridge'
-import { parseShoppingLines, suggestPlacementWithBalance } from '../../utils/fridgePlacement'
-import { D } from '../../theme/designTokens'
-import { slotShortLabel } from '../../utils/slotLabel'
-import { STORAGE_KEYS } from '../../store/storageKeys'
+import { parseShoppingLines } from '../../utils/fridgePlacement'
+import { buildIntakePreview, previewToReceiptText } from '../../utils/pantryIntake'
+import { recognizePantryImage, PantryVisionError } from '../../api/pantryVision'
+import { usesLlmProxy } from '../../api/recipe'
 import {
   readIntakeDraft,
   clearIntakeDraft,
+  pickImageForIntake,
   type IntakeDraft,
+  type IntakeScene,
 } from '../../utils/mediaIntake'
+import { D } from '../../theme/designTokens'
+import { slotShortLabel } from '../../utils/slotLabel'
+import { STORAGE_KEYS } from '../../store/storageKeys'
 
 type HighlightMode = 'all' | 'expiring' | 'expired'
 
@@ -62,17 +66,28 @@ function FridgePantry() {
     { name: string; amount: string; side: FridgeSide; slotIndex: number }[] | null
   >(null)
   const [intakeDraft, setIntakeDraft] = useState<IntakeDraft | null>(null)
+  const [intakeScene, setIntakeScene] = useState<IntakeScene>('receipt')
+  const [visionLoading, setVisionLoading] = useState(false)
+  const recognizedDraftAtRef = useRef(0)
   const [editing, setEditing] = useState<PantryItem | null>(null)
   const [editAmount, setEditAmount] = useState('')
   const [editDaysLeft, setEditDaysLeft] = useState<number>(0)
   const [layout, setLayout] = useState<FridgeLayoutConfig>(() => loadFridgeLayout())
+  const [showLayoutSettings, setShowLayoutSettings] = useState(false)
 
   useDidShow(() => {
     const draft = readIntakeDraft()
-    if (draft) {
-      setIntakeDraft(draft)
-      setShowReceipt(true)
-      setReceiptPreview(null)
+    if (!draft) return
+    setIntakeDraft(draft)
+    setIntakeScene(draft.scene ?? 'ingredients')
+    setShowReceipt(true)
+    setReceiptPreview(null)
+    if (
+      (draft.kind === 'photo' || draft.kind === 'album') &&
+      draft.capturedAt !== recognizedDraftAtRef.current
+    ) {
+      recognizedDraftAtRef.current = draft.capturedAt
+      void runVisionRecognition(draft, draft.scene ?? 'auto')
     }
   })
 
@@ -427,36 +442,51 @@ function FridgePantry() {
       Taro.showToast({ title: '请先输入清单', icon: 'none' })
       return
     }
-    const virtual: PantryItem[] = [...store.items]
-    const preview: {
-      name: string
-      amount: string
-      side: FridgeSide
-      slotIndex: number
-    }[] = []
-    for (const line of lines) {
-      const cat = getCategoryForName(line.name)
-      const p = suggestPlacementWithBalance(line.name, cat, virtual, layout)
-      const now = Date.now()
-      virtual.push({
-        id: 'virt',
-        name: line.name,
-        category: cat,
-        amount: line.amount,
-        addedAt: now,
-        expiresAt: now,
-        defaultShelfLife: 1,
-        side: p.side,
-        slotIndex: p.slotIndex,
-      })
-      preview.push({
-        name: line.name,
-        amount: line.amount,
-        side: p.side,
-        slotIndex: p.slotIndex,
-      })
+    setReceiptPreview(buildIntakePreview(lines, store.items, layout))
+  }
+
+  const runVisionRecognition = async (draft: IntakeDraft, mode: IntakeScene | 'auto' = 'auto') => {
+    if (draft.kind !== 'photo' && draft.kind !== 'album') return
+    if (!usesLlmProxy()) {
+      Taro.showToast({ title: '未配置 AI，请手动输入清单', icon: 'none' })
+      return
     }
-    setReceiptPreview(preview)
+    setVisionLoading(true)
+    setShowReceipt(true)
+    try {
+      const visionMode = mode === 'auto' ? 'auto' : mode
+      const result = await recognizePantryImage(draft.filePath, visionMode)
+      setIntakeScene(result.kind)
+      setReceiptText(previewToReceiptText(result.items))
+      setReceiptPreview(buildIntakePreview(result.items, store.items, layout))
+      Taro.showToast({
+        title: result.kind === 'receipt' ? '小票识别完成' : '食材识别完成',
+        icon: 'success',
+      })
+    } catch (e) {
+      const msg =
+        e instanceof PantryVisionError ? e.message : '识别失败，请手动核对清单'
+      Taro.showToast({ title: msg, icon: 'none', duration: 2800 })
+    } finally {
+      setVisionLoading(false)
+    }
+  }
+
+  const openImageIntake = (scene: IntakeScene) => {
+    Taro.showActionSheet({
+      itemList: ['拍照', '从相册选择'],
+      success: async (res) => {
+        const source = res.tapIndex === 0 ? 'camera' : 'album'
+        const draft = await pickImageForIntake(source, scene)
+        if (!draft) return
+        setIntakeDraft(draft)
+        setIntakeScene(scene)
+        setReceiptPreview(null)
+        setReceiptText('')
+        setShowReceipt(true)
+        void runVisionRecognition(draft, scene)
+      },
+    })
   }
 
   const handleCommitReceipt = () => {
@@ -545,16 +575,35 @@ function FridgePantry() {
     <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: 120 }}>
       <ScrollView scrollY showScrollbar={false}>
         <View style={{ padding: `44px ${pad}px 12px` }}>
-          <Text
-            style={{
-              fontSize: D.titleLarge,
-              fontWeight: D.weightBold,
-              color: D.label,
-              letterSpacing: '-0.04em',
-            }}
-          >
-            冰箱
-          </Text>
+          <View style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+            <Text
+              style={{
+                fontSize: D.titleLarge,
+                fontWeight: D.weightBold,
+                color: D.label,
+                letterSpacing: '-0.04em',
+              }}
+            >
+              冰箱
+            </Text>
+            <View
+              className="tap-scale"
+              onClick={() => setShowLayoutSettings(true)}
+              style={{
+                marginTop: 3,
+                padding: '6px 10px',
+                borderRadius: 999,
+                backgroundColor: D.bgElevated,
+                border: `0.5px solid ${D.separatorLight}`,
+                boxShadow: '0 1px 6px rgba(18,17,15,0.04)',
+                flexShrink: 0,
+              }}
+            >
+              <Text style={{ fontSize: D.caption, fontWeight: D.weightSemibold, color: D.labelSecondary }}>
+                {currentPreset.name}
+              </Text>
+            </View>
+          </View>
           <Text
             style={{
               fontSize: D.footnote,
@@ -564,7 +613,7 @@ function FridgePantry() {
               maxWidth: 340,
             }}
           >
-            选择你的冰箱类型并调整格数。点格子查看 / 添加，食材会自动标记临期（黄）和过期（红）。
+            点格子查看 / 添加，食材会自动标记临期（黄）和过期（红）。
           </Text>
         </View>
 
@@ -770,50 +819,88 @@ function FridgePantry() {
           ))}
         </View>
 
-        {/* 冰箱类型与格数设置 */}
-        <View style={{ padding: `0 ${pad}px 16px` }}>
+        {/* 冰箱本体 */}
+        <View style={{ padding: `0 ${pad}px 28px` }}>
+          <View style={fridgeCabinet}>
+            {renderFridgeBody()}
+          </View>
+        </View>
+
+        <View style={{ padding: `0 ${pad}px 100px` }}>
+          <Text style={{ fontSize: D.caption, color: D.labelTertiary, lineHeight: 1.5 }}>
+            点格子手动添加；底部可拍照识别小票/食材，或粘贴清单批量入库。
+          </Text>
+        </View>
+      </ScrollView>
+
+      {/* 低频设置：冰箱类型与格数 */}
+      {showLayoutSettings ? (
+        <View
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(18,17,15,0.36)',
+            zIndex: 190,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+          }}
+          onClick={() => setShowLayoutSettings(false)}
+        >
           <View
             style={{
+              width: '100%',
               backgroundColor: D.bgElevated,
-              borderRadius: D.radiusXL,
-              border: `0.5px solid ${D.separatorLight}`,
-              padding: '16px 16px 14px',
-              boxShadow: D.shadowCard,
+              borderTopLeftRadius: D.radiusXL,
+              borderTopRightRadius: D.radiusXL,
+              padding: `18px ${pad}px`,
+              paddingBottom: 'calc(22px + env(safe-area-inset-bottom))',
+              boxShadow: D.shadowLift,
             }}
+            onClick={(e) => e.stopPropagation()}
           >
+            <View
+              style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: D.separator,
+                margin: '0 auto 16px',
+              }}
+            />
             <View style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={{ fontSize: D.headline, fontWeight: D.weightBold, color: D.label }}>
-                  冰箱类型
+                  冰箱设置
                 </Text>
                 <Text style={{ display: 'block', marginTop: 4, fontSize: D.footnote, color: D.labelSecondary }}>
-                  {currentPreset.desc} · 冷冻 {layout.freezerSlots} 格 / 冷藏 {layout.fridgeSlots} 格
+                  低频设置，选定后一般无需再改
                 </Text>
               </View>
               <View
                 className="tap-scale"
-                onClick={() => {
-                  Taro.showActionSheet({
-                    itemList: FRIDGE_LAYOUT_PRESETS.map((p) => `${p.name}｜${p.desc}`),
-                    success: (res) => applyPreset(res.tapIndex),
-                  })
-                }}
+                onClick={() => setShowLayoutSettings(false)}
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
                   backgroundColor: D.bgGrouped,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  border: `0.5px solid ${D.separatorLight}`,
                 }}
               >
-                <Text style={{ fontSize: 18, color: D.label, lineHeight: '36px' }}>⋯</Text>
+                <Text style={{ fontSize: 18, color: D.labelSecondary }}>×</Text>
               </View>
             </View>
 
-            <ScrollView scrollX showScrollbar={false} style={{ marginTop: 12, whiteSpace: 'nowrap' }}>
+            <Text style={{ display: 'block', marginTop: 16, marginBottom: 8, fontSize: D.caption, color: D.labelTertiary }}>
+              类型
+            </Text>
+            <ScrollView scrollX showScrollbar={false} style={{ whiteSpace: 'nowrap' }}>
               <View style={{ display: 'flex', gap: 8 }}>
                 {FRIDGE_LAYOUT_PRESETS.map((preset, idx) => {
                   const active = preset.type === layout.type
@@ -823,7 +910,7 @@ function FridgePantry() {
                       className="tap-scale"
                       onClick={() => applyPreset(idx)}
                       style={{
-                        padding: '7px 12px',
+                        padding: '8px 12px',
                         borderRadius: 999,
                         backgroundColor: active ? D.label : D.bgGrouped,
                         border: active ? 'none' : `0.5px solid ${D.separatorLight}`,
@@ -838,7 +925,7 @@ function FridgePantry() {
               </View>
             </ScrollView>
 
-            <View style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+            <View style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               {([
                 { side: 'freezer' as FridgeSide, title: '冷冻格数', value: layout.freezerSlots, color: '#4E8FC5' },
                 { side: 'fridge' as FridgeSide, title: '冷藏格数', value: layout.fridgeSlots, color: '#5E9D72' },
@@ -849,7 +936,7 @@ function FridgePantry() {
                     flex: 1,
                     backgroundColor: D.bgGrouped,
                     borderRadius: D.radiusL,
-                    padding: '10px 12px',
+                    padding: '11px 12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -892,20 +979,7 @@ function FridgePantry() {
             </View>
           </View>
         </View>
-
-        {/* 冰箱本体 */}
-        <View style={{ padding: `0 ${pad}px 28px` }}>
-          <View style={fridgeCabinet}>
-            {renderFridgeBody()}
-          </View>
-        </View>
-
-        <View style={{ padding: `0 ${pad}px 100px` }}>
-          <Text style={{ fontSize: D.caption, color: D.labelTertiary, lineHeight: 1.5 }}>
-            点任一格子添加或编辑；底部「采购清单」支持粘贴多条一次入库。
-          </Text>
-        </View>
-      </ScrollView>
+      ) : null}
 
       {/* 格内详情 sheet */}
       {activeSlot ? (
@@ -1359,7 +1433,7 @@ function FridgePantry() {
             }}
           >
             <Text style={{ fontSize: D.headline, fontWeight: D.weightBold, color: D.label }}>
-              采购清单
+              {intakeScene === 'receipt' ? '小票 / 采购入库' : intakeScene === 'ingredients' ? '食材识别入库' : '采购清单'}
             </Text>
             <Text
               style={{
@@ -1369,7 +1443,9 @@ function FridgePantry() {
                 lineHeight: 1.5,
               }}
             >
-              每行一件，例：西红柿 500g。系统会根据分类推荐冷冻 / 冷藏与格位，入库前可复核。
+              {visionLoading
+                ? 'AI 正在识别图片中的食材…'
+                : '拍照或粘贴清单，系统会推荐冷冻/冷藏格位，入库前可复核。'}
             </Text>
 
             {intakeDraft?.kind === 'photo' || intakeDraft?.kind === 'album' ? (
@@ -1379,24 +1455,42 @@ function FridgePantry() {
                   padding: 10,
                   borderRadius: D.radiusM,
                   backgroundColor: D.bg,
-                  display: 'flex',
-                  gap: 10,
-                  alignItems: 'center',
                 }}
               >
                 <Image
                   src={intakeDraft.filePath}
                   mode="aspectFill"
                   style={{
-                    width: 64,
-                    height: 64,
+                    width: '100%',
+                    height: 140,
                     borderRadius: D.radiusS,
                     backgroundColor: D.bgElevated,
                   }}
                 />
-                <Text style={{ flex: 1, fontSize: D.caption, color: D.labelSecondary, lineHeight: 1.45 }}>
-                  你刚才拍的照片，照着把食材写进清单即可。
-                </Text>
+                <View
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginTop: 10,
+                    gap: 8,
+                  }}
+                >
+                  <Text style={{ flex: 1, fontSize: D.caption, color: D.labelSecondary, lineHeight: 1.45 }}>
+                    {intakeScene === 'receipt' ? '购物小票' : '食材照片'}
+                    {visionLoading ? ' · 识别中…' : receiptPreview ? ' · 已识别' : ' · 可重新识别'}
+                  </Text>
+                  {usesLlmProxy() && !visionLoading ? (
+                    <Text
+                      className="tap-scale"
+                      style={{ fontSize: D.footnote, color: D.accent, fontWeight: D.weightSemibold }}
+                      onClick={() => void runVisionRecognition(intakeDraft, intakeScene)}
+                    >
+                      重新识别
+                    </Text>
+                  ) : null}
+                </View>
               </View>
             ) : null}
 
@@ -1449,7 +1543,7 @@ function FridgePantry() {
               </View>
             ) : null}
 
-            {!receiptPreview ? (
+            {!receiptPreview && !visionLoading ? (
               <Textarea
                 style={{
                   width: '100%',
@@ -1467,6 +1561,11 @@ function FridgePantry() {
                 maxlength={2000}
                 onInput={(e) => setReceiptText(e.detail.value)}
               />
+            ) : null}
+            {visionLoading ? (
+              <View style={{ marginTop: 24, alignItems: 'center', padding: 20 }}>
+                <Text style={{ fontSize: D.subheadline, color: D.labelSecondary }}>识别中，请稍候…</Text>
+              </View>
             ) : null}
             {receiptPreview ? (
               <ScrollView scrollY style={{ maxHeight: 280, marginTop: 14, flex: 1 }}>
@@ -1586,28 +1685,61 @@ function FridgePantry() {
           backgroundColor: D.bgGlassHeavy,
           backdropFilter: 'blur(20px)',
           borderTop: `0.5px solid ${D.separatorLight}`,
-          display: 'flex',
-          gap: 10,
           boxSizing: 'border-box',
         }}
       >
+        <View style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <Button
+            style={{
+              flex: 1,
+              height: 46,
+              borderRadius: 999,
+              backgroundColor: D.accent,
+              color: '#fff',
+              fontSize: D.footnote,
+              fontWeight: D.weightSemibold,
+              border: 'none',
+            }}
+            onClick={() => openImageIntake('receipt')}
+          >
+            📷 拍小票
+          </Button>
+          <Button
+            style={{
+              flex: 1,
+              height: 46,
+              borderRadius: 999,
+              backgroundColor: D.bgElevated,
+              color: D.label,
+              fontSize: D.footnote,
+              fontWeight: D.weightSemibold,
+              border: `0.5px solid ${D.separator}`,
+            }}
+            onClick={() => openImageIntake('ingredients')}
+          >
+            🥬 拍食材
+          </Button>
+        </View>
+        <View style={{ display: 'flex', gap: 10 }}>
         <Button
           style={{
             flex: 1,
-            height: 50,
+            height: 46,
             borderRadius: 999,
-            backgroundColor: D.accent,
-            color: '#fff',
-            fontSize: D.subheadline,
+            backgroundColor: D.label,
+            color: D.bgElevated,
+            fontSize: D.footnote,
             fontWeight: D.weightSemibold,
             border: 'none',
           }}
           onClick={() => {
             setReceiptPreview(null)
+            setReceiptText('')
+            setIntakeDraft(null)
             setShowReceipt(true)
           }}
         >
-          采购清单入库
+          粘贴清单
         </Button>
         {store.expiredCount > 0 ? (
           <Button
@@ -1653,6 +1785,7 @@ function FridgePantry() {
         >
           去选菜
         </Button>
+        </View>
       </View>
     </View>
   )

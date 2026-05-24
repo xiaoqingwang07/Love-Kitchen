@@ -7,6 +7,24 @@ export default defineAppConfig({
     'pages/result/index',
     'pages/detail/index'
   ],
+  subPackages: [
+    {
+      root: 'packageCatalogA',
+      name: 'catalogA',
+      pages: ['pages/stub/index'],
+    },
+    {
+      root: 'packageCatalogB',
+      name: 'catalogB',
+      pages: ['pages/stub/index'],
+    },
+  ],
+  preloadRule: {
+    'pages/index/index': {
+      network: 'all',
+      packages: ['catalogA'],
+    },
+  },
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#FAF9F7',

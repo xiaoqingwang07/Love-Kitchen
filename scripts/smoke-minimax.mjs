@@ -15,13 +15,15 @@ const envPath = path.join(root, '.env.local')
 
 function loadKey() {
   if (!fs.existsSync(envPath)) {
-    console.error('FAIL: 未找到 .env.local')
+    console.error('FAIL: 未找到 .env.local，请先运行 npm run setup:env')
     process.exit(1)
   }
   const raw = fs.readFileSync(envPath, 'utf8')
-  const m = raw.match(/^TARO_APP_MINIMAX_API_KEY=(.+)$/m)
+  const m =
+    raw.match(/^MINIMAX_API_KEY=(.+)$/m) ||
+    raw.match(/^TARO_APP_MINIMAX_API_KEY=(.+)$/m)
   if (!m?.[1]?.trim()) {
-    console.error('FAIL: .env.local 中无 TARO_APP_MINIMAX_API_KEY')
+    console.error('FAIL: .env.local 中无 MINIMAX_API_KEY')
     process.exit(1)
   }
   return m[1].trim()

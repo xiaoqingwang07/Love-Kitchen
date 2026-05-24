@@ -1,22 +1,41 @@
 /**
  * 菜谱配图智能匹配库
  *
- * 设计目标：
- * 1. 取代原 `foodStockPhotos.ts` 的「24 张完全随机」做法；
- * 2. 同一道菜的封面在跨设备 / 跨次访问下保持一致（基于稳定 hash）；
- * 3. 优先按菜名精确命中，其次按做法/食材关键词命中，最后按分类兜底。
+ * 本地菜谱库（200→2000 道）：**仅**使用下厨房 CDN 真实照片（`i2.chuimg.com`），
+ * 见 `pickRealDishImage` + `exactDishImages.ts` / `stepImages.ts`。
+ * 禁止 SVG、Unsplash 随机图、AI 生成图充当本地菜谱封面/步骤图。
  *
- * 所有 URL 均为 Unsplash 公开图（免费可商用）；
- * 使用前请确认在小程序后台「downloadFile 合法域名」中已加白：images.unsplash.com
- *
- * 维护方法（如何继续扩到 150+）：
- *   1. 在 https://unsplash.com/s/photos/<keyword> 找到合适的图；
- *   2. 复制图片 src（形如 https://images.unsplash.com/photo-XXXX）；
- *   3. 在下方对应 POOL 中追加，或在 EXACT_MATCH 中给特定菜名指定。
+ * 下方 Unsplash 池仅供历史兼容；`enrichRecipeMedia` 已不再对本地菜调用 `pickDishImage`。
  */
 
 import { EXACT_DISH_IMAGE_OVERRIDES } from './exactDishImages'
-import { buildDishPhotoUrl } from './dishPhoto'
+
+/** 是否为下厨房等真实菜品 CDN 图（非 SVG / Unsplash / 损坏 URL） */
+export function isRealDishPhotoUrl(url: string): boolean {
+  const u = String(url || '')
+  if (!/i\d+\.chuimg\.com/i.test(u)) return false
+  // srcset 解析失败产生的畸形 resize 参数
+  if (/\/w\/\d+\/h\/(?:\/|$|\?)/i.test(u)) return false
+  if (/\.(?:jpe?g|png|webp)\/interlace/i.test(u)) return false
+  return true
+}
+
+/**
+ * 本地菜谱封面：只返回下厨房真实图，无映射时不造假图。
+ * 优先精确封面表，其次该菜第一张步骤过程图。
+ */
+export function pickRealDishImage(title: string, stepImages: string[] = []): string {
+  const t = (title || '').trim()
+  if (!t) return ''
+
+  const exact = EXACT_DISH_IMAGE_OVERRIDES[t]
+  if (exact && isRealDishPhotoUrl(exact)) return exact
+
+  for (const u of stepImages) {
+    if (isRealDishPhotoUrl(u)) return u
+  }
+  return ''
+}
 
 const U = (id: string) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1200&q=85`
@@ -374,14 +393,31 @@ function pickFromPool(pool: string[], seed: string): string {
  */
 export function pickDishImage(title: string, tags?: string[]): string {
   const t = (title || '').trim()
-  if (!t) return buildDishPhotoUrl('家常菜', tags)
+  if (!t) return pickFromPool(GENERIC_POOL, tags?.join('|') || '家常菜')
 
-  // 高标准配图：所有菜名都走菜名级写实图，避免从通用图池里错配。
-  return buildDishPhotoUrl(t, tags)
+  const exactOverride = EXACT_DISH_IMAGE_OVERRIDES[t]
+  if (exactOverride) return exactOverride
+
+  const exact = EXACT_MATCH[t]
+  if (exact) return exact
+
+  for (const rule of KEYWORD_RULES) {
+    if (rule.keys.some((key) => t.includes(key) || tags?.some((tag) => tag.includes(key)))) {
+      return pickFromPool(rule.pool, `${rule.label}:${t}`)
+    }
+  }
+
+  return pickFromPool(GENERIC_POOL, t)
 }
 
 /** 为统计 / 调试用：返回命中的规则标签（如未命中关键词返回 'generic'） */
 export function explainDishImage(title: string, tags?: string[]): string {
   const t = (title || '').trim()
-  return t ? 'dish-photo' : 'empty'
+  if (!t) return 'empty'
+  if (EXACT_DISH_IMAGE_OVERRIDES[t]) return 'exact-real'
+  if (EXACT_MATCH[t]) return 'exact'
+  const rule = KEYWORD_RULES.find((item) =>
+    item.keys.some((key) => t.includes(key) || tags?.some((tag) => tag.includes(key)))
+  )
+  return rule?.label ?? 'generic'
 }

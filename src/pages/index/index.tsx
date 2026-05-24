@@ -10,6 +10,9 @@ import {
   getReasonText,
 } from '../../utils/recommend'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
+import { looksLikeIngredientList, searchRecipesByTitle } from '../../utils/recipeSearch'
+import { initCatalog } from '../../data/catalogLoader'
+import { findRecipeByTitleExact, resolveFullRecipe } from '../../data/recipeRegistry'
 import { usePantryStore } from '../../store/context'
 import { STORAGE_KEYS } from '../../store/storageKeys'
 import { getFreshnessStatus } from '../../types/pantry'
@@ -43,6 +46,7 @@ function Index() {
   const [weather, setWeather] = useState<WeatherData | null>(null)
   const [weatherLoading, setWeatherLoading] = useState(false)
   const [listVariant, setListVariant] = useState(0)
+  const [catalogTick, setCatalogTick] = useState(0)
   const [showVoice, setShowVoice] = useState(false)
 
   const skipSearchBlurRef = useRef(false)
@@ -63,9 +67,10 @@ function Index() {
       recipes: getDailyRecommendations(10, listVariant),
       reason: '每日家常 · 高分稳妥',
     }
-  }, [weather, listVariant])
+  }, [weather, listVariant, catalogTick])
 
   useDidShow(() => {
+    void initCatalog().then(() => setCatalogTick((n) => n + 1))
     const autoSearch = Taro.getStorageSync(STORAGE_KEYS.autoSearchIngredient)
     if (autoSearch) {
       setInputValue(String(autoSearch))
@@ -83,6 +88,17 @@ function Index() {
     }
   }
 
+  const openRecipeDetail = async (item: Recipe) => {
+    Taro.showLoading({ title: '加载中', mask: true })
+    try {
+      const full = await resolveFullRecipe({ ...item, source: item.source ?? 'local' })
+      Taro.setStorageSync(STORAGE_KEYS.selectedRecipeDetail, full)
+      Taro.navigateTo({ url: '/pages/detail/index' })
+    } finally {
+      Taro.hideLoading()
+    }
+  }
+
   const doSearch = (raw: string) => {
     const keyword = raw.trim()
     if (!keyword) {
@@ -92,8 +108,24 @@ function Index() {
     addSearchHistory(keyword)
     loadSearchHistory()
     setShowHistory(false)
+
     const q = encodeURIComponent(keyword)
-    Taro.navigateTo({ url: `/pages/result/index?from=ai&ingredients=${q}` })
+
+    // 食材清单（含逗号等）→ 按食材匹配 + AI
+    if (looksLikeIngredientList(keyword)) {
+      Taro.navigateTo({ url: `/pages/result/index?from=ai&ingredients=${q}` })
+      return
+    }
+
+    // 精确命中一道菜 → 直达详情
+    const exact = findRecipeByTitleExact(keyword)
+    if (exact) {
+      void openRecipeDetail(exact)
+      return
+    }
+
+    // 菜名模糊搜索 / 库中暂无 → 结果页统一处理（含 AI 生成、心愿单）
+    Taro.navigateTo({ url: `/pages/result/index?from=dish&dish=${q}` })
   }
 
   const handleGenerate = () => doSearch(inputValue)
@@ -101,11 +133,7 @@ function Index() {
   const handleRandom = () => Taro.navigateTo({ url: '/pages/result/index?from=random' })
 
   const handleCardClick = (item: Recipe) => {
-    Taro.setStorageSync(STORAGE_KEYS.selectedRecipeDetail, {
-      ...item,
-      source: item.source ?? 'local',
-    })
-    Taro.navigateTo({ url: '/pages/detail/index' })
+    void openRecipeDetail(item)
   }
 
   const handleHistoryClick = (keyword: string) => {
@@ -121,7 +149,7 @@ function Index() {
   }
 
   const handlePickImage = async (source: 'camera' | 'album') => {
-    const draft = await pickImageForIntake(source)
+    const draft = await pickImageForIntake(source, 'ingredients')
     if (!draft) return
     Taro.showToast({ title: '已采集，去冰箱核对', icon: 'none' })
     Taro.switchTab({ url: '/pages/pantry/index' })

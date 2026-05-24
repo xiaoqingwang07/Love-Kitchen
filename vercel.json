@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/llm-proxy.js": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/llm-proxy",
+      "destination": "/api/llm-proxy.js"
+    }
+  ]
+}

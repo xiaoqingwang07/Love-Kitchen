@@ -13,6 +13,9 @@ export const INTAKE_STORAGE_KEY = 'lk_intake_draft'
 
 export type IntakeKind = 'photo' | 'album' | 'voice'
 
+/** 拍照入库场景：小票批量 / 食材识别 */
+export type IntakeScene = 'receipt' | 'ingredients'
+
 export interface IntakeDraft {
   kind: IntakeKind
   /** 临时文件路径；voice 为音频文件，photo/album 为图片 */
@@ -21,6 +24,8 @@ export interface IntakeDraft {
   capturedAt: number
   /** 音频时长（ms），仅 voice 有意义 */
   durationMs?: number
+  /** 视觉识别场景，仅 photo/album */
+  scene?: IntakeScene
 }
 
 export function saveIntakeDraft(draft: IntakeDraft): void {
@@ -49,8 +54,11 @@ export function clearIntakeDraft(): void {
   }
 }
 
-/** 拍照或相册选图：统一走 chooseMedia；失败或取消返回 null */
-export async function pickImageForIntake(source: 'camera' | 'album'): Promise<IntakeDraft | null> {
+/** 拍照或相册选图；scene 用于 AI 识别小票 vs 食材 */
+export async function pickImageForIntake(
+  source: 'camera' | 'album',
+  scene: IntakeScene = 'ingredients'
+): Promise<IntakeDraft | null> {
   try {
     const res = await Taro.chooseMedia({
       count: 1,
@@ -65,6 +73,7 @@ export async function pickImageForIntake(source: 'camera' | 'album'): Promise<In
       kind: source === 'camera' ? 'photo' : 'album',
       filePath: file.tempFilePath,
       capturedAt: Date.now(),
+      scene,
     }
     saveIntakeDraft(draft)
     return draft

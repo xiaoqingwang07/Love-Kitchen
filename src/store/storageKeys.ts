@@ -9,6 +9,8 @@ export const STORAGE_KEYS = {
   sharedRecipeSnapshot: 'sharedRecipeSnapshot',
   favoriteRecipes: 'favoriteRecipes',
   favoriteRecipeDetails: 'favoriteRecipeDetails',
+  customRecipes: 'customRecipes',
+  recipeWishlist: 'recipeWishlist',
   searchHistory: 'searchHistory',
   cookedRecipes: 'cookedRecipes',
   recipeCache: 'recipeCache',

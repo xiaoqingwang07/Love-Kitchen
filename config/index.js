@@ -50,6 +50,9 @@ const config = {
         enable: false // Webpack5 cache
     },
     mini: {
+        optimizeMainPackage: {
+            enable: true,
+        },
         postcss: {
             pxtransform: {
                 enable: true,

@@ -5,7 +5,7 @@ import { observer } from 'mobx-react-lite'
 import { usePantryStore } from '../../store/context'
 import { findPantryItemForRecipeIngredient } from '../../utils/ingredientMatch'
 import { D } from '../../theme/designTokens'
-import { DEFAULT_RECIPES } from '../../data/recipes'
+import { findRecipeById, resolveFullRecipe } from '../../data/recipeRegistry'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
 import {
   markAsCooked,
@@ -57,6 +57,7 @@ function Detail() {
   const [cookingMode, setCookingMode] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [showShopping, setShowShopping] = useState(false)
+  const [failedImages, setFailedImages] = useState<Record<string, true>>({})
 
   const timers = useParallelTimers()
 
@@ -85,52 +86,64 @@ function Detail() {
   })
 
   useEffect(() => {
+    let cancelled = false
+
+    async function applyRecipe(raw: Recipe) {
+      const resolved = await resolveFullRecipe(raw)
+      if (cancelled) return
+      const enriched = enrichRecipeMedia(resolved)
+      setRecipe(enriched)
+      setIsFavState(readIsFavorite(enriched.id))
+      setShareMiss(false)
+    }
+
     const payload = router.params.payload
     if (payload) {
       try {
         const parsed = JSON.parse(decodeURIComponent(payload)) as Recipe
-        const enriched = enrichRecipeMedia(parsed)
-        setRecipe(enriched)
-        setIsFavState(readIsFavorite(enriched.id))
-        setShareMiss(false)
-        return
+        void applyRecipe(parsed)
+        return () => {
+          cancelled = true
+        }
       } catch (e) {
         console.warn('share payload parse failed', e)
       }
     }
     const shareId = router.params.shareId
     if (shareId) {
-      const preset = DEFAULT_RECIPES.find((r) => String(r.id) === String(shareId))
+      const preset = findRecipeById(shareId)
       if (preset) {
-        const enriched = enrichRecipeMedia(preset)
-        setRecipe(enriched)
-        setIsFavState(readIsFavorite(enriched.id))
-        setShareMiss(false)
-        return
+        void applyRecipe(preset)
+        return () => {
+          cancelled = true
+        }
       }
       try {
         const snap = Taro.getStorageSync(STORAGE_KEYS.sharedRecipeSnapshot) as Recipe | null
         if (snap && String(snap.id) === String(shareId)) {
-          const enriched = enrichRecipeMedia(snap)
-          setRecipe(enriched)
-          setIsFavState(readIsFavorite(enriched.id))
-          setShareMiss(false)
-          return
+          void applyRecipe(snap)
+          return () => {
+            cancelled = true
+          }
         }
       } catch (e) {
         console.warn('share snapshot read failed', e)
       }
       setRecipe(null)
       setShareMiss(true)
-      return
+      return () => {
+        cancelled = true
+      }
     }
     setShareMiss(false)
     const data = Taro.getStorageSync(STORAGE_KEYS.selectedRecipeDetail) as Recipe | null
     if (data) {
-      const enriched = enrichRecipeMedia(data)
-      setRecipe(enriched)
-      setIsFavState(readIsFavorite(enriched.id))
+      void applyRecipe(data)
     } else setRecipe(null)
+
+    return () => {
+      cancelled = true
+    }
   }, [router.params.shareId, router.params.payload])
 
   const handleToggleFavorite = () => {
@@ -276,7 +289,7 @@ function Detail() {
             </Text>
           </Text>
 
-          {step.image ? (
+          {step.image && !failedImages[`cooking-step-${currentStep}`] ? (
             <Image
               src={step.image}
               mode="aspectFill"
@@ -286,6 +299,10 @@ function Detail() {
                 borderRadius: D.radiusL,
                 marginBottom: 22,
                 backgroundColor: D.cookingSurface,
+              }}
+              onError={() => {
+                console.warn('cooking step image load failed', recipe.title, currentStep, step.image)
+                setFailedImages((prev) => ({ ...prev, [`cooking-step-${currentStep}`]: true }))
               }}
             />
           ) : null}
@@ -538,12 +555,16 @@ function Detail() {
           position: 'relative',
         }}
       >
-        {recipe.image ? (
+        {recipe.image && !failedImages.hero ? (
           <Image
             src={recipe.image}
             mode="aspectFill"
             lazyLoad
             style={{ width: '100%', height: 260, display: 'block', backgroundColor: D.bg }}
+            onError={() => {
+              console.warn('recipe hero image load failed', recipe.title, recipe.image)
+              setFailedImages((prev) => ({ ...prev, hero: true }))
+            }}
           />
         ) : (
           <View
@@ -848,7 +869,7 @@ function Detail() {
                 </Text>
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
-                {step.image ? (
+                {step.image && !failedImages[`step-${idx}`] ? (
                   <Image
                     src={step.image}
                     mode="aspectFill"
@@ -858,6 +879,10 @@ function Detail() {
                       borderRadius: D.radiusM,
                       marginBottom: 12,
                       backgroundColor: D.bgGrouped,
+                    }}
+                    onError={() => {
+                      console.warn('recipe step image load failed', recipe.title, idx, step.image)
+                      setFailedImages((prev) => ({ ...prev, [`step-${idx}`]: true }))
                     }}
                   />
                 ) : null}

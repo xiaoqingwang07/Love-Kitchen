@@ -1,26 +1,57 @@
-import { pickDishImage } from '../data/dishImages'
-import { buildStepPhotoUrl } from '../data/dishPhoto'
+import { pickRealDishImage, isRealDishPhotoUrl } from '../data/dishImages'
+import { EXACT_DISH_IMAGE_OVERRIDES } from '../data/exactDishImages'
 import type { Recipe } from '../types/recipe'
 
+/** legacy 精品（id 1–200）：仅封面精确表，步骤图为手写步骤不混用下厨房过程图 */
+function canUseLegacyCover(recipe: Recipe): boolean {
+  const id = Number(recipe.id)
+  if (Number.isFinite(id) && id >= 1 && id <= 200) return true
+  const title = (recipe.title || '').trim()
+  return Boolean(title && EXACT_DISH_IMAGE_OVERRIDES[title])
+}
+
+/** catalog / 下厨房来源：只展示逐步内嵌图（1:1 对齐后） */
+function shouldTrustInlineStepImages(recipe: Recipe): boolean {
+  const ext = recipe as Recipe & { mediaAligned?: boolean; xiachufangId?: string }
+  if (ext.mediaAligned === true || ext.xiachufangId) return true
+  const id = Number(recipe.id)
+  if (Number.isFinite(id) && id > 200) return true
+  return !canUseLegacyCover(recipe)
+}
+
+function sanitizeImage(url?: string): string | undefined {
+  return url && isRealDishPhotoUrl(url) ? url : undefined
+}
+
 /**
- * 为菜谱补全配图：
- * - 头图：优先沿用菜谱已有 image；若无，则按菜名/标签智能匹配真实食物图（不再随机）；
- * - 步骤图：保留 step 自带 image；若缺失，按「菜名 + 步骤内容」生成稳定写实过程图。
- *
- * 设计取舍：
- *   原版会给每一步配随机图，图文不符；
- *   现在每一步都基于具体菜名和步骤内容生成，避免出现泛图或错图。
+ * 配图规则（诚实、不糊弄）：
+ * - catalog（下厨房抓取）：封面 + 步骤图均来自 chunk 内嵌，逐步 1:1
+ * - legacy 200 手写精品：仅精确封面，步骤不贴图（避免与手写步骤错位）
+ * - AI 生成：无真实图 → emoji
  */
 export function enrichRecipeMedia(recipe: Recipe): Recipe {
-  const image = recipe.image?.trim()
-    ? recipe.image
-    : pickDishImage(recipe.title, recipe.tags)
+  const trustInline = shouldTrustInlineStepImages(recipe)
+
+  const inlineCover = sanitizeImage(recipe.image)
+  const legacyCover =
+    !trustInline && canUseLegacyCover(recipe)
+      ? sanitizeImage(pickRealDishImage(recipe.title, []))
+      : undefined
+  const image = inlineCover || legacyCover
+
   if (!recipe.steps?.length) {
-    return { ...recipe, image }
+    return { ...recipe, image: image || undefined }
   }
-  const steps = recipe.steps.map((step, idx) => ({
+
+  const steps = recipe.steps.map((step) => ({
     ...step,
-    image: step.image || buildStepPhotoUrl(recipe.title, step.content, idx),
+    image: trustInline ? sanitizeImage(step.image) : undefined,
   }))
-  return { ...recipe, image, steps }
+
+  const coverFromSteps = trustInline ? steps.find((s) => s.image)?.image : undefined
+  return {
+    ...recipe,
+    image: image || coverFromSteps || undefined,
+    steps,
+  }
 }

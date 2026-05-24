@@ -21,10 +21,10 @@
 |------|------|
 | 🏠 清冰箱 | 双门冰箱视图管理库存，格子上用红 / 黄点直观标注临期与过期 |
 | ✍️ 多模态入库 | 首页「拍照 / 相册 / 语音」采集后跳冰箱页，再由用户核对文本入库 |
-| 🍳 智能选菜 | 150 道本地常见菜 + AI 兜底，勾选 / 输入食材后优先匹配能消耗库存和临期食材的菜谱 |
+| 🍳 智能选菜 | 200 道本地常见菜 + AI 兜底，勾选 / 输入食材后优先匹配能消耗库存和临期食材的菜谱 |
 | 🔎 首页搜索 | 不依赖冰箱，输入食材即可 AI 推荐；历史记录可清空 |
 | 🌤 今日推荐 | 默认按家常菜评分 + 当日种子给出稳定推荐；点「接入实时天气」后才叠加天气维度（授权制） |
-| 🧑‍🍳 做菜模式 | 热门 30 道菜支持关键步骤图，全屏沉浸式，多步可 **并行计时**，后台切换也不丢失基准时间 |
+| 热门 200 道菜支持封面 + 关键步骤图，全屏沉浸式，多步可 **并行计时**，后台切换也不丢失基准时间 |
 | 🛒 采购清单 | 详情页自动对齐冰箱库存，勾选缺项 → 复制 / 分享带走 |
 | ❤️ 收藏 & 成就 | 菜谱可收藏，「我的」中查看成就进度（已做、收藏、连续入库等） |
 
@@ -79,11 +79,22 @@ npm run build:h5         # H5 构建
 
 `npm install` 后会自动执行 `postinstall`：对 `@swc/register` 做极小补丁（去掉传入 `transformSync` 的 `cwd` 字段），否则在 **Node 22+** 下 Taro 3.6 自带的 `@swc/core@1.3.23` 会报 `unknown field cwd` 并无法加载 CLI 预设。项目已将 **`@swc/core` 固定为 `1.3.23`**（与 Taro 内置 WASM 插件 ABI 一致），请勿随意升到 1.4+。
 
-本地探活 MiniMax（需项目根 `.env.local` 中配置 `TARO_APP_MINIMAX_API_KEY`）：
+本地探活 MiniMax（需 `.env.local` 中配置 `MINIMAX_API_KEY`）：
 
 ```bash
 npm run smoke:minimax
 ```
+
+### AI 菜谱生成（必配）
+
+1. 初始化环境：`npm run setup:env`
+2. 编辑 `.env.local`，填入 `MINIMAX_API_KEY=你的密钥`
+3. 确认 `TARO_APP_LLM_PROXY_URL=http://127.0.0.1:8787`
+4. 终端 1：`npm run dev:llm-proxy`（启动本地 LLM 中转）
+5. 终端 2：`npm run dev:weapp`（重新编译小程序）
+6. 微信开发者工具 → 详情 → 本地设置 → 勾选「不校验合法域名」
+
+上线部署：将 `api/llm-proxy.js` 部署到 Vercel，在 Vercel 环境变量配置 `MINIMAX_API_KEY`，客户端 `.env.local` 改为 Vercel 地址。
 
 ### 生产部署：LLM 代理
 
@@ -105,12 +116,12 @@ Body: { messages, model, temperature, stream }
 | request | `api.minimaxi.com` | MiniMax LLM 直连（开发调试用） |
 | request | `你的-vercel-proxy.vercel.app` | 生产环境 LLM 中转（推荐） |
 | request | `api.open-meteo.com` | 实时天气（按授权触发） |
-| downloadFile | `images.unsplash.com` | 菜谱配图 CDN |
-| downloadFile | `api.pexels.com` | 备用图片 CDN（如启用） |
-| downloadFile | `image.pollinations.ai` | 按菜名 / 步骤生成高可信写实菜谱图 |
+| downloadFile | `i2.chuimg.com` | 200 道本地菜谱封面与步骤图 |
+| downloadFile | `images.unsplash.com` | 关键词池兜底（仅未命中精确映射时） |
 | uploadFile | `你的-vercel-proxy.vercel.app` | 图片识别上传（如接入 OCR） |
 
 > 开发阶段可在微信开发者工具勾选「不校验合法域名」临时绕过。
+> 当前 `project.config.json` 已将 `urlCheck` 设为 `false`，方便本地预览真实菜谱图；上线前仍必须在微信公众平台配置上述合法域名。
 
 ---
 

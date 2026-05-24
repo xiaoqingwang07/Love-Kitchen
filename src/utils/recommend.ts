@@ -1,7 +1,28 @@
-import { DEFAULT_RECIPES } from '../data/recipes'
+import { getCatalogRecipes } from '../data/recipeRegistry'
 import { getMockWeather, type WeatherData } from '../api/weather'
 import type { Recipe } from '../types/recipe'
 import { shuffleWithSeed, daySeed } from './shuffleSeed'
+
+/** 从全库中 O(n) 取评分最高的 topK，避免对 5000+ 道菜全量 sort */
+function pickTopByRating(recipes: Recipe[], topK: number): Recipe[] {
+  if (recipes.length <= topK) {
+    return [...recipes].sort((a, b) => (b.rating || 0) - (a.rating || 0))
+  }
+  const top: Recipe[] = []
+  for (const r of recipes) {
+    const rating = r.rating || 0
+    if (top.length < topK) {
+      top.push(r)
+      if (top.length === topK) {
+        top.sort((a, b) => (a.rating || 0) - (b.rating || 0))
+      }
+    } else if (rating > (top[0].rating || 0)) {
+      top[0] = r
+      top.sort((a, b) => (a.rating || 0) - (b.rating || 0))
+    }
+  }
+  return top.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+}
 
 export interface RecommendResult {
   recipes: Recipe[]
@@ -54,7 +75,8 @@ export function getReasonText(weather: WeatherData): string {
 }
 
 function rankAll(weather: WeatherData): { recipe: Recipe; score: number }[] {
-  const scored = DEFAULT_RECIPES.map((recipe) => ({
+  const pool = pickTopByRating(getCatalogRecipes(), 120)
+  const scored = pool.map((recipe) => ({
     recipe,
     score: scoreRecipe(recipe, weather),
   }))
@@ -99,9 +121,7 @@ export function getWeatherRecommendations(count: number = 3): RecommendResult {
  * 仅按评分 + 日种子随机，避免用虚构天气误导用户。
  */
 export function getDailyRecommendations(total: number, variant: number = 0, topPool: number = 24): Recipe[] {
-  const ranked = [...DEFAULT_RECIPES].sort((a, b) => (b.rating || 0) - (a.rating || 0))
-  const poolSize = Math.min(topPool, ranked.length)
-  const head = ranked.slice(0, poolSize)
+  const head = pickTopByRating(getCatalogRecipes(), topPool)
   const seed = daySeed() + variant * 9973
   const shuffled = shuffleWithSeed([...head], seed)
   return shuffled.slice(0, Math.min(total, shuffled.length))

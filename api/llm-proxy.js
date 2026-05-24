@@ -14,8 +14,11 @@
 /** 允许的上游模型 */
 const ALLOWED_MODELS = ['MiniMax-M2.7']
 
-/** 每条消息最大长度 */
+/** 每条消息最大长度（纯文本） */
 const MAX_MESSAGE_LENGTH = 10_000
+
+/** 单张 base64 图最大约 4MB */
+const MAX_IMAGE_DATA_URL_LENGTH = 6_000_000
 
 /** 最多保留的消息条数 */
 const MAX_MESSAGES = 20
@@ -93,6 +96,39 @@ function checkOrigin(origin) {
 /* ───────── 请求体净化 ───────── */
 
 /**
+ * 支持纯文本或多模态（text + image_url data URL）
+ * @param {unknown} content
+ * @returns {string | object[]}
+ */
+function sanitizeMessageContent(content) {
+  if (typeof content === 'string') {
+    if (content.length === 0 || content.length > MAX_MESSAGE_LENGTH) {
+      throw new Error('invalid message content')
+    }
+    return content
+  }
+  if (!Array.isArray(content)) throw new Error('invalid message content')
+
+  return content.slice(0, 6).map((part) => {
+    if (!part || typeof part !== 'object') throw new Error('invalid content part')
+    if (part.type === 'text') {
+      const text = typeof part.text === 'string' ? part.text.slice(0, MAX_MESSAGE_LENGTH) : ''
+      if (!text) throw new Error('invalid text part')
+      return { type: 'text', text }
+    }
+    if (part.type === 'image_url') {
+      const url = part.image_url?.url
+      if (typeof url !== 'string' || !url.startsWith('data:image/')) {
+        throw new Error('invalid image url')
+      }
+      if (url.length > MAX_IMAGE_DATA_URL_LENGTH) throw new Error('image too large')
+      return { type: 'image_url', image_url: { url } }
+    }
+    throw new Error('invalid content part type')
+  })
+}
+
+/**
  * 从原始请求体中提取白名单字段，忽略其余字段。
  * @param {Record<string, unknown>} body
  * @returns {Record<string, unknown>}
@@ -120,10 +156,7 @@ function sanitizeBody(body) {
     const role = message.role
     const content = message.content
     if (!['system', 'user', 'assistant'].includes(role)) throw new Error('invalid role')
-    if (typeof content !== 'string' || content.length === 0 || content.length > MAX_MESSAGE_LENGTH) {
-      throw new Error('invalid message content')
-    }
-    return { role, content }
+    return { role, content: sanitizeMessageContent(content) }
   })
 
   if (cleanMessages.length === 0) {

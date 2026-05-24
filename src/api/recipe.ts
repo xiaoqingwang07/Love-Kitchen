@@ -7,6 +7,7 @@ import Taro from '@tarojs/taro'
 import type { Recipe, SceneType } from '../types/recipe'
 import { enrichRecipeMedia } from '../utils/enrichRecipeMedia'
 import { parseLlmRecipeArray } from '../schemas/recipeLlm'
+import { filterRecipesByUserIngredients } from '../utils/recipeIngredientFilter'
 import { STORAGE_KEYS } from '../store/storageKeys'
 
 /** OpenAI 兼容 Base URL（中国大陆：api.minimaxi.com，勿使用 api.minimax.io） */
@@ -59,6 +60,8 @@ export interface FetchRecipesOptions extends RequestConfig {
   scene?: SceneType
   /** 不传则从本地 defaultDinersCount 读取 */
   diners?: number
+  /** 更严格的食材绑定（默认已在 prompt + 校验中强制执行） */
+  strictIngredients?: boolean
 }
 
 const DEFAULT_RETRY = 2
@@ -159,6 +162,16 @@ const JSON_SCHEMA = `必须返回纯 JSON 数组，不要 Markdown、不要解�
 [{ "title": "菜名", "quote": "一句话历史或文化点评（30字以内）", "rating": 4.8, "count": 1024, "emoji": "🥘", "ingredients": [{"name": "食材1", "amount": "具体用量（含单位，如 200g/3勺/1个）"}], "steps": [{"content": "详细步骤文字", "time": 5, "tip": "可选技巧"}], "nutritionAnalysis": "营养要点（30~50字）", "time": 20, "difficulty": "简单" }]
 不要在 JSON 中加 image 字段（客户端已有智能配图）。`
 
+/** 按用户现有食材生成时：主料必须来自用户清单，禁止「瞎编菜」 */
+const INGREDIENT_BINDING_RULE = `【硬性约束 — 必须遵守】
+1. 用户列出的每一种食材，至少要在其中 1 道菜的 ingredients 里作为主材出现（可写同义词，如 番茄/西红柿）。
+2. 禁止推荐与用户食材无关的菜：例如用户只有「番茄、鸡蛋」时，不得返回「红烧肉」「可乐鸡翅」等未使用这些食材的菜。
+3. 除用户已有食材外，仅可补充常见调料（油、盐、糖、酱油、葱、姜、蒜、料酒、淀粉、醋等），不得凭空加入用户未提供的主材（如用户没给猪肉，就不能做回锅肉）。
+4. 每道菜的 title 与 steps 必须围绕上述食材展开，步骤里要真的用到这些食材。`
+
+const INGREDIENT_BINDING_STRICT = `${INGREDIENT_BINDING_RULE}
+5. 若食材较少，可做「XX炒YY」「XX汤」「XX拌YY」等简单组合，但仍须全部用到用户食材中的主料。`
+
 const SCENE_BLOCKS: Record<SceneType, string> = {
   normal: `你是专业中餐与家庭营养主厨，擅长将菜谱写得既家常又专业。
 要求：营养均衡、做法家常、用料贴近中国家庭厨房；步骤细节要足够帮助零基础厨房新手成功。`,
@@ -201,28 +214,32 @@ export const fetchRecipes = async (
 
   const scene: SceneType = config?.scene ?? getStoredScene()
   const diners = config?.diners ?? getDiners()
+  const strict = config?.strictIngredients ?? false
 
-  const systemPrompt = `${SCENE_BLOCKS[scene]}
-
-${STEP_FORMAT_RULE}
-
-${JSON_SCHEMA}
-共返回 ${count} 道菜；每道菜的 ingredients 与 steps 必须完整、可执行。steps 至少 4 步，每步必须符合上述格式规范。`
-
-  const userContent = `食材（用户现有）：${ingredients.join('、')}。
+  const userContent = `食材（用户现有，必须全部用上或作为主材）：${ingredients.join('、')}。
 就餐人数：${diners} 人（请按人数调整用料用量描述）。
 ${SCENE_USER_TAIL[scene]}
-请推荐 ${count} 道菜。`
+请推荐 ${count} 道菜。每道菜必须以上述食材为主，不得偏离。`
 
-  return requestWithRetry(async () => {
+  const runOnce = async (bindingRule: string, temperature: number) => {
     const { statusCode, data: rawData } = await llmChatCompletions(
       {
         model: DEFAULT_MODEL,
         messages: [
-          { role: 'system', content: systemPrompt },
+          {
+            role: 'system',
+            content: `${SCENE_BLOCKS[scene]}
+
+${bindingRule}
+
+${STEP_FORMAT_RULE}
+
+${JSON_SCHEMA}
+共返回 ${count} 道菜；每道菜的 ingredients 与 steps 必须完整、可执行。steps 至少 4 步，每步必须符合上述格式规范。`,
+          },
           { role: 'user', content: userContent },
         ],
-        temperature: 0.75,
+        temperature,
         max_tokens: 4000,
       },
       config?.timeout ?? DEFAULT_TIMEOUT_MS
@@ -256,7 +273,7 @@ ${SCENE_USER_TAIL[scene]}
 
     const tags = DEFAULT_TAGS[scene]
     const batchId = Date.now()
-    return validated.map((r, idx) => {
+    const mapped = validated.map((r, idx) => {
       const stableId =
         r.id != null && String(r.id).trim() !== ''
           ? String(r.id)
@@ -272,6 +289,25 @@ ${SCENE_USER_TAIL[scene]}
         steps: r.steps,
       })
     })
+
+    return filterRecipesByUserIngredients(mapped, ingredients)
+  }
+
+  return requestWithRetry(async () => {
+    let filtered = await runOnce(
+      strict ? INGREDIENT_BINDING_STRICT : INGREDIENT_BINDING_RULE,
+      strict ? 0.35 : 0.45
+    )
+    if (filtered.length === 0) {
+      filtered = await runOnce(INGREDIENT_BINDING_STRICT, 0.3)
+    }
+    if (filtered.length === 0) {
+      throw new APIError(
+        'AI 推荐的菜与所选食材不符，请调整食材后重试',
+        APIErrorType.PARSE_ERROR
+      )
+    }
+    return filtered.slice(0, count)
   }, config?.retry ?? DEFAULT_RETRY)
 }
 
@@ -304,4 +340,92 @@ export const fetchRecipesByScene = async (
   config?: FetchRecipesOptions
 ): Promise<Recipe[]> => {
   return fetchRecipes(ingredients, 1, { ...config, scene })
+}
+
+/** 库中搜不到某道菜时：按菜名请 AI 生成完整菜谱（1 道） */
+export const fetchRecipeByDishName = async (
+  dishName: string,
+  config?: FetchRecipesOptions
+): Promise<Recipe[]> => {
+  if (!usesLlmProxy()) {
+    throw new APIError(
+      '请配置 LLM 中转：填写 TARO_APP_LLM_PROXY_URL',
+      APIErrorType.NO_API_KEY
+    )
+  }
+
+  const scene: SceneType = config?.scene ?? getStoredScene()
+  const diners = config?.diners ?? getDiners()
+  const name = dishName.trim()
+  if (!name) {
+    throw new APIError('菜名不能为空', APIErrorType.PARSE_ERROR)
+  }
+
+  const systemPrompt = `${SCENE_BLOCKS[scene]}
+
+${STEP_FORMAT_RULE}
+
+${JSON_SCHEMA}
+只返回 1 道菜；菜名必须为「${name}」或非常接近的家常叫法；ingredients 与 steps 必须完整可执行。`
+
+  const userContent = `请给出「${name}」的完整家常菜谱（1 道）。
+就餐人数：${diners} 人。
+${SCENE_USER_TAIL[scene]}`
+
+  return requestWithRetry(async () => {
+    const { statusCode, data: rawData } = await llmChatCompletions(
+      {
+        model: DEFAULT_MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent },
+        ],
+        temperature: 0.7,
+        max_tokens: 4000,
+      },
+      config?.timeout ?? DEFAULT_TIMEOUT_MS
+    )
+
+    if (statusCode !== 200) {
+      const d = rawData as Record<string, unknown> | undefined
+      const errObj = d?.error as { message?: string } | undefined
+      const msg =
+        errObj?.message ||
+        (typeof d?.message === 'string' ? d.message : undefined) ||
+        (typeof d?.msg === 'string' ? d.msg : undefined)
+      throw parseError(statusCode, msg)
+    }
+
+    const dataObj = rawData as { choices?: { message?: { content?: string } }[] }
+    const content = dataObj?.choices?.[0]?.message?.content
+    if (!content || typeof content !== 'string') {
+      throw new APIError('AI 返回为空', APIErrorType.PARSE_ERROR)
+    }
+
+    const parsedJson = safeParseJSON(content)
+    if (!parsedJson) {
+      throw new APIError('无法解析 AI 返回的 JSON', APIErrorType.PARSE_ERROR)
+    }
+
+    const validated = parseLlmRecipeArray(Array.isArray(parsedJson) ? parsedJson : [parsedJson])
+    if (validated.length === 0) {
+      throw new APIError('菜谱数据未通过校验', APIErrorType.PARSE_ERROR)
+    }
+
+    const batchId = Date.now()
+    return validated.slice(0, 1).map((r, idx) => {
+      const stableId = `ai-${batchId}-${idx}`
+      return enrichRecipeMedia({
+        ...r,
+        id: stableId,
+        title: r.title?.trim() || name,
+        isFavorite: false,
+        source: 'ai' as const,
+        time: r.time ?? 25,
+        difficulty: normalizeDifficulty(r.difficulty),
+        tags: r.tags?.length ? r.tags : ['AI生成', ...(DEFAULT_TAGS[scene] || [])],
+        steps: r.steps,
+      })
+    })
+  }, config?.retry ?? DEFAULT_RETRY)
 }

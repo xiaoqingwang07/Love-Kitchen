@@ -17,7 +17,7 @@ export interface Nutrition {
 }
 
 /** 菜谱来源：用于列表角标与用户预期 */
-export type RecipeSource = 'ai' | 'local' | 'cache'
+export type RecipeSource = 'ai' | 'local' | 'cache' | 'custom'
 
 // 菜谱
 export interface Recipe {

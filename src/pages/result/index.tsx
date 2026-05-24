@@ -1,8 +1,8 @@
 import { View, Text, Image } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import { useEffect, useState, useMemo, useRef, type CSSProperties } from 'react'
-import { DEFAULT_RECIPES } from '../../data/recipes'
-import { fetchRecipes, getStoredScene, usesLlmProxy } from '../../api/recipe'
+import { getCatalogRecipes, resolveFullRecipe } from '../../data/recipeRegistry'
+import { fetchRecipes, fetchRecipeByDishName, getStoredScene, usesLlmProxy } from '../../api/recipe'
 import {
   getFavoriteIds,
   toggleFavorite,
@@ -12,6 +12,9 @@ import {
   removeCachedRecipe,
 } from '../../store/storageUtils'
 import { matchRecipesSimple, matchRecipesWithFallbackSignal } from '../../utils/recipeMatch'
+import { filterRecipesByUserIngredients } from '../../utils/recipeIngredientFilter'
+import { searchRecipesByTitle } from '../../utils/recipeSearch'
+import { addRecipeWish, saveCustomRecipe } from '../../store/customRecipes'
 import { shuffleWithSeed, daySeed } from '../../utils/shuffleSeed'
 import { D } from '../../theme/designTokens'
 import { STORAGE_KEYS } from '../../store/storageKeys'
@@ -56,6 +59,8 @@ export default function Result() {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [notice, setNotice] = useState<ErrorNotice | null>(null)
   const [reloadTick, setReloadTick] = useState(0)
+  const [failedImages, setFailedImages] = useState<Record<string, true>>({})
+  const [missDishName, setMissDishName] = useState<string | null>(null)
   const skipCacheOnceRef = useRef(false)
   const router = useRouter()
 
@@ -68,35 +73,107 @@ export default function Result() {
 
     setIsLoading(false)
     setNotice(null)
+    setMissDishName(null)
 
     const safeSetLoading = (v: boolean) => {
       if (cancelled) return
       setIsLoading(v)
     }
 
-    const fetchAI = async (ingredients: string[], scene: SceneType, bypassCache: boolean) => {
+    const fetchAI = async (
+      ingredients: string[],
+      scene: SceneType,
+      bypassCache: boolean,
+      localBase: Recipe[] = []
+    ) => {
       if (cancelled) return
       safeSetLoading(true)
 
       const cacheKey = generateCacheKey(ingredients, scene)
-      const cached = !bypassCache ? (getCachedRecipe(cacheKey) as Recipe[] | null) : null
-      if (cached) {
+      const cachedRaw = !bypassCache ? (getCachedRecipe(cacheKey) as Recipe[] | null) : null
+      const cached = cachedRaw
+        ? filterRecipesByUserIngredients(cachedRaw, ingredients)
+        : null
+
+      const mergeWithLocal = (aiList: Recipe[]) => {
+        const seen = new Set(localBase.map((r) => r.title.trim()))
+        const extra = aiList.filter((r) => !seen.has(r.title.trim()))
+        return [...localBase, ...extra].slice(0, 6)
+      }
+
+      if (cached && cached.length > 0) {
         if (cancelled) return
         setRecipes(
-          cached.map((r) => ({
+          mergeWithLocal(cached).map((r) => ({
             ...r,
-            source: 'cache' as const,
+            source: r.source ?? ('cache' as const),
             isFavorite: checkFavorite(r.id),
           }))
         )
+        setNotice({
+          tone: 'info',
+          title: localBase.length > 0 ? '已补充 AI 推荐' : 'AI 推荐',
+          detail: '均围绕你选的食材搭配，可点「换一批」重新生成。',
+        })
         safeSetLoading(false)
         return
       }
 
       try {
-        const data = await fetchRecipes(ingredients, 3, { scene })
+        const data = await fetchRecipes(ingredients, 3, { scene, strictIngredients: true })
         if (cancelled) return
         setCachedRecipe(cacheKey, data)
+        setRecipes(
+          mergeWithLocal(data).map((r) => ({
+            ...r,
+            source: 'ai' as const,
+            isFavorite: checkFavorite(r.id),
+          }))
+        )
+        setNotice({
+          tone: 'info',
+          title: localBase.length > 0 ? '已补充 AI 推荐' : 'AI 已按食材搭配',
+          detail: '每道菜都用了你选的食材，可收藏或查看详情。',
+        })
+      } catch (err: any) {
+        if (cancelled) return
+        console.error('AI Error:', err)
+        const localMatched = matchRecipesSimple(ingredients, 6)
+        const combined = localBase.length > 0 ? localBase : localMatched
+        if (combined.length > 0) {
+          setNotice({
+            tone: 'warn',
+            title: 'AI 暂不可用',
+            detail: '已展示本地库中与你食材相关的菜谱。',
+          })
+          setRecipes(
+            combined.map((r) => ({
+              ...r,
+              source: 'local' as const,
+              isFavorite: checkFavorite(r.id),
+            }))
+          )
+        } else {
+          setNotice({
+            tone: 'warn',
+            title: '暂无合适搭配',
+            detail:
+              (err as { message?: string })?.message ||
+              '本地库与 AI 都没有找到符合所选食材的菜，试试减少或更换食材。',
+          })
+          setRecipes([])
+        }
+      } finally {
+        safeSetLoading(false)
+      }
+    }
+
+    const fetchDishAi = async (dishName: string) => {
+      if (cancelled) return
+      safeSetLoading(true)
+      try {
+        const data = await fetchRecipeByDishName(dishName, { scene })
+        if (cancelled) return
         setRecipes(
           data.map((r) => ({
             ...r,
@@ -104,28 +181,24 @@ export default function Result() {
             isFavorite: checkFavorite(r.id),
           }))
         )
-      } catch (err: any) {
+        setNotice({
+          tone: 'info',
+          title: `AI 已生成「${dishName}」`,
+          detail: '可收藏或保存到「我的菜谱」；正式收录后可从下厨房导入真实图文。',
+        })
+        setMissDishName(dishName)
+      } catch (err: unknown) {
         if (cancelled) return
-        console.error('AI Error:', err)
-        const localMatched = matchRecipesSimple(ingredients, 6)
-        setNotice(buildErrorNotice((err as { message?: string })?.message, localMatched.length > 0))
-        const fallback =
-          localMatched.length > 0
-            ? localMatched
-            : shuffleWithSeed([...DEFAULT_RECIPES], daySeed()).slice(0, 6)
-        setRecipes(
-          fallback.map((r) => ({
-            ...r,
-            source: 'local' as const,
-            isFavorite: checkFavorite(r.id),
-          }))
-        )
+        const msg = (err as { message?: string })?.message || '生成失败'
+        setNotice({ tone: 'warn', title: 'AI 生成失败', detail: msg })
+        setRecipes([])
+        setMissDishName(dishName)
       } finally {
         safeSetLoading(false)
       }
     }
 
-    const { auto, ingredients, from, id: presetId, scene: sceneParam } = router.params
+    const { auto, ingredients, from, id: presetId, scene: sceneParam, dish: dishParam } = router.params
     const decodedIngredients = ingredients ? decodeURIComponent(ingredients) : ''
     const scene = parseScene(sceneParam)
 
@@ -155,13 +228,13 @@ export default function Result() {
             title: `已找到 ${matched.length} 道本地菜谱`,
             detail: '同时请 AI 为你搜寻更多…',
           })
-          void fetchAI(list, scene, false)
+          void fetchAI(list, scene, false, matched)
         }
       } else {
         setNotice({
           tone: 'info',
           title: '本地库没有直接匹配',
-          detail: '正在请 AI 帮你搭配…',
+          detail: '正在请 AI 按你选的食材搭配…',
         })
         void fetchAI(list, scene, false)
       }
@@ -172,12 +245,21 @@ export default function Result() {
       if (!hasUsableLlm()) {
         const localMatched = matchRecipesSimple(list, 6)
         if (cancelled) return
-        setNotice(buildErrorNotice('LLM unavailable', localMatched.length > 0))
+        if (localMatched.length > 0) {
+          setNotice({
+            tone: 'info',
+            title: '已为你匹配本地菜谱',
+            detail: '联网推荐不可用时的备选，均围绕所选食材。',
+          })
+        } else {
+          setNotice({
+            tone: 'warn',
+            title: '暂无匹配',
+            detail: '本地库找不到符合所选食材的菜，请配置 AI 或调整食材。',
+          })
+        }
         setRecipes(
-          (localMatched.length > 0
-            ? localMatched
-            : shuffleWithSeed([...DEFAULT_RECIPES], daySeed()).slice(0, 6)
-          ).map((r) => ({
+          localMatched.map((r) => ({
             ...r,
             source: 'local' as const,
             isFavorite: checkFavorite(r.id),
@@ -186,9 +268,56 @@ export default function Result() {
       } else {
         void fetchAI(list, scene, skip)
       }
+    } else if (from === 'dish' && dishParam) {
+      const dishName = decodeURIComponent(dishParam).trim()
+      if (!dishName) {
+        setRecipes([])
+        return
+      }
+      const hits = searchRecipesByTitle(dishName, 10)
+      if (cancelled) return
+      if (hits.length > 0) {
+        setRecipes(
+          hits.map((h) => ({
+            ...h.recipe,
+            source: (h.recipe.source ?? 'local') as Recipe['source'],
+            isFavorite: checkFavorite(h.recipe.id),
+          }))
+        )
+        const top = hits[0]
+        setNotice({
+          tone: 'info',
+          title:
+            top.score >= 0.95
+              ? `已找到「${top.recipe.title}」`
+              : `与「${dishName}」相关的 ${hits.length} 道菜`,
+          detail:
+            top.score >= 0.95
+              ? '来自本地菜谱库'
+              : '没有完全同名？可继续用 AI 生成你要的那道',
+        })
+        if (top.score < 0.95) setMissDishName(dishName)
+      } else {
+        setRecipes([])
+        setMissDishName(dishName)
+        if (hasUsableLlm()) {
+          setNotice({
+            tone: 'info',
+            title: `库里还没有「${dishName}」`,
+            detail: '正在请 AI 生成菜谱…',
+          })
+          void fetchDishAi(dishName)
+        } else {
+          setNotice({
+            tone: 'warn',
+            title: `库里还没有「${dishName}」`,
+            detail: '配置 AI 服务后可即时生成；或先加入心愿菜单等待收录。',
+          })
+        }
+      }
     } else if (from === 'random') {
       if (cancelled) return
-      const shuffled = shuffleWithSeed([...DEFAULT_RECIPES], daySeed()).slice(0, 6)
+      const shuffled = shuffleWithSeed([...getCatalogRecipes()], daySeed()).slice(0, 6)
       setRecipes(
         shuffled.map((r) => ({
           ...r,
@@ -198,7 +327,7 @@ export default function Result() {
       )
     } else if (from === 'preset' && presetId) {
       if (cancelled) return
-      const recipe = DEFAULT_RECIPES.find((r) => String(r.id) === String(presetId))
+      const recipe = getCatalogRecipes().find((r) => String(r.id) === String(presetId))
       if (recipe) {
         setRecipes([
           {
@@ -213,7 +342,7 @@ export default function Result() {
       }
     } else {
       if (cancelled) return
-      const shuffled = shuffleWithSeed([...DEFAULT_RECIPES], daySeed()).slice(0, 6)
+      const shuffled = shuffleWithSeed([...getCatalogRecipes()], daySeed()).slice(0, 6)
       setRecipes(
         shuffled.map((r) => ({
           ...r,
@@ -240,9 +369,15 @@ export default function Result() {
     })
   }
 
-  const goToDetail = (item: Recipe) => {
-    Taro.setStorageSync(STORAGE_KEYS.selectedRecipeDetail, item)
-    Taro.navigateTo({ url: '/pages/detail/index' })
+  const goToDetail = async (item: Recipe) => {
+    Taro.showLoading({ title: '加载中', mask: true })
+    try {
+      const full = await resolveFullRecipe(item)
+      Taro.setStorageSync(STORAGE_KEYS.selectedRecipeDetail, full)
+      Taro.navigateTo({ url: '/pages/detail/index' })
+    } finally {
+      Taro.hideLoading()
+    }
   }
 
   const aiIngredientsList = router.params.ingredients
@@ -261,8 +396,52 @@ export default function Result() {
     Taro.showToast({ title: '重新为你生成', icon: 'none' })
   }
 
+  const handleGenerateMissDish = async () => {
+    if (!missDishName) return
+    if (!hasUsableLlm()) {
+      Taro.showToast({ title: '请先配置 AI 服务', icon: 'none' })
+      return
+    }
+    setIsLoading(true)
+    try {
+      const data = await fetchRecipeByDishName(missDishName, { scene: aiScene })
+      setRecipes(
+        data.map((r) => ({
+          ...r,
+          source: 'ai' as const,
+          isFavorite: checkFavorite(r.id),
+        }))
+      )
+      setNotice({
+        tone: 'info',
+        title: `AI 已生成「${missDishName}」`,
+        detail: '可保存到「我的菜谱」；收录进正式库后会补上下厨房真实图文。',
+      })
+    } catch (err: unknown) {
+      const msg = (err as { message?: string })?.message || '请稍后再试'
+      Taro.showToast({ title: msg, icon: 'none' })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleAddWish = () => {
+    if (!missDishName) return
+    addRecipeWish(missDishName)
+    Taro.showToast({ title: '已加入心愿菜', icon: 'success' })
+  }
+
+  const handleSaveCustom = (recipe: Recipe) => {
+    saveCustomRecipe(recipe)
+    Taro.showToast({ title: '已保存到我的菜谱', icon: 'success' })
+  }
+
   const headerSubtitle = useMemo(() => {
+    if (!recipes.length && missDishName) return `正在找「${missDishName}」`
     if (!recipes.length) return ''
+    if (router.params.from === 'dish') {
+      return `${recipes.length} 道 · 菜名搜索`
+    }
     if (router.params.from === 'ai' || router.params.auto === 'true') {
       return `${recipes.length} 道 · 基于你给的食材由 AI 搭配`
     }
@@ -411,12 +590,38 @@ export default function Result() {
         </View>
       ) : null}
 
+      {!isLoading && missDishName ? (
+        <View style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+          {hasUsableLlm() ? (
+            <View className="tap-scale" style={S.regenBtn} onClick={handleGenerateMissDish}>
+              <Text>✨</Text>
+              <Text>用 AI 生成「{missDishName}」</Text>
+            </View>
+          ) : null}
+          <View
+            className="tap-scale"
+            style={{
+              ...S.regenBtn,
+              backgroundColor: D.bgElevated,
+              color: D.labelSecondary,
+              border: `0.5px solid ${D.separatorLight}`,
+            }}
+            onClick={handleAddWish}
+          >
+            <Text>📝</Text>
+            <Text>加入心愿菜（优先收录进正式库）</Text>
+          </View>
+        </View>
+      ) : null}
+
       {isLoading ? (
         <SkeletonRecipeList count={4} />
       ) : (
         <View style={S.listContainer}>
           {recipes.map((item, idx) => {
             const r = enrichRecipeMedia(item)
+            const imageKey = String(r.id || idx)
+            const imageFailed = failedImages[imageKey]
             const metaParts: string[] = []
             if (r.time) metaParts.push(`${r.time} 分钟`)
             if (r.difficulty) metaParts.push(r.difficulty)
@@ -428,12 +633,16 @@ export default function Result() {
                 onClick={() => goToDetail(r)}
               >
                 <View style={S.imgBox}>
-                  {r.image ? (
+                  {r.image && !imageFailed ? (
                     <Image
                       src={r.image}
                       mode="aspectFill"
                       style={{ width: '100%', height: '100%', display: 'block' }}
                       lazyLoad
+                      onError={() => {
+                        console.warn('recipe image load failed', r.title, r.image)
+                        setFailedImages((prev) => ({ ...prev, [imageKey]: true }))
+                      }}
                     />
                   ) : (
                     <Text>{r.emoji || '🥘'}</Text>
@@ -474,6 +683,16 @@ export default function Result() {
               </View>
             )
           })}
+          {!isLoading && recipes.some((r) => r.source === 'ai' || r.source === 'cache') ? (
+            <View
+              className="tap-scale"
+              style={{ ...S.regenBtn, alignSelf: 'flex-start', marginTop: 4 }}
+              onClick={() => handleSaveCustom(recipes[0])}
+            >
+              <Text>📥</Text>
+              <Text>保存到「我的菜谱」</Text>
+            </View>
+          ) : null}
         </View>
       )}
     </View>

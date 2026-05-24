@@ -7,3 +7,7 @@ dist/
 project.private.config.json
 *.log
 .idea/
+.cursor/
+scripts/*.pid
+scripts/fetch-popular-progress.json
+scripts/repair-media-progress.json
