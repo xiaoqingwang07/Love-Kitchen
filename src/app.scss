@@ -1,11 +1,11 @@
 /* app.scss — 全局基础样式。中文字体优先，保证真机与 H5 排版一致。 */
 
 page {
-    background-color: #FAF9F7;
+    background-color: #F6F8F5;
     font-family: 'PingFang SC', 'HarmonyOS Sans SC', 'Source Han Sans SC', 'Hiragino Sans GB',
         'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica,
         'Segoe UI', Roboto, sans-serif;
-    color: #12110F;
+    color: #10130F;
     line-height: 1.47;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -38,9 +38,9 @@ textarea {
 .lk-skeleton {
     background: linear-gradient(
         90deg,
-        rgba(18, 17, 15, 0.06) 0%,
-        rgba(18, 17, 15, 0.10) 40%,
-        rgba(18, 17, 15, 0.06) 100%
+        rgba(17, 24, 17, 0.06) 0%,
+        rgba(17, 24, 17, 0.10) 40%,
+        rgba(17, 24, 17, 0.06) 100%
     );
     border-radius: 12px;
     animation: lk-skeleton-pulse 1.4s ease-in-out infinite;

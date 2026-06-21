@@ -1,45 +1,49 @@
 /**
- * 苹果风格暖白 + 焦糖强调：简洁、克制、大留白 — Apple HIG 审美融入食物温度
+ * 鲜活食欲（Fresh Appetite）：干净中性白底 + 鲜绿主色 + 番茄橙高亮。
+ * 沿用 Apple HIG 的字号阶梯 / 发丝分隔线 / 圆角卡片 / 大留白，
+ * 配色换成更年轻、更通透、让食材照片更"跳"的方向。
+ * 键名与旧版完全一致，所有页面零改动即同步换肤。
  */
 export const D = {
   // ===== 背景 =====
-  bg: '#FAF9F7',
+  bg: '#F6F8F5',
   bgElevated: '#FFFFFF',
-  bgGrouped: '#F5F5F7',
+  bgGrouped: '#EFF2ED',
   bgGlass: 'rgba(255, 255, 255, 0.88)',
   bgGlassHeavy: 'rgba(255, 255, 255, 0.92)',
 
-  // ===== 分隔线 =====
-  separator: 'rgba(24, 22, 18, 0.06)',
-  separatorLight: 'rgba(24, 22, 18, 0.04)',
+  // ===== 分隔线（中性、微冷）=====
+  separator: 'rgba(17, 24, 17, 0.07)',
+  separatorLight: 'rgba(17, 24, 17, 0.045)',
 
-  // ===== 文字 =====
-  label: '#12110F',
-  labelSecondary: 'rgba(18, 17, 15, 0.55)',
-  labelTertiary: 'rgba(18, 17, 15, 0.35)',
+  // ===== 文字（近黑、中性）=====
+  label: '#10130F',
+  labelSecondary: 'rgba(16, 19, 15, 0.56)',
+  labelTertiary: 'rgba(16, 19, 15, 0.34)',
 
-  // ===== 强调色 =====
-  accent: '#A67B5B',
-  accentMuted: 'rgba(166, 123, 91, 0.12)',
-  accentLine: 'rgba(166, 123, 91, 0.18)',
-  accentWarm: '#C4944A',
-  accentWarmMuted: 'rgba(196, 148, 74, 0.14)',
+  // ===== 强调色（鲜绿主色）=====
+  accent: '#1AA251',
+  accentMuted: 'rgba(26, 162, 81, 0.12)',
+  accentLine: 'rgba(26, 162, 81, 0.20)',
+  // 番茄橙：临期高亮 / 食欲点缀
+  accentWarm: '#FF6B3D',
+  accentWarmMuted: 'rgba(255, 107, 61, 0.13)',
 
-  // ===== 语义色 =====
-  blue: '#5B8FA8',
-  green: '#4A8C6C',
-  red: '#D05A38',
-  orange: '#C4944A',
-  purple: '#8E7FC5',
+  // ===== 语义色（iOS 风格、更鲜亮）=====
+  blue: '#0A84FF',
+  green: '#1AA251',
+  red: '#F5412C',
+  orange: '#FF6B3D',
+  purple: '#7C5CFF',
 
   // ===== 标签色 =====
-  tagMutedFg: '#8e8e93',
-  tagMutedBg: '#F5F3F0',
+  tagMutedFg: '#8A8F8A',
+  tagMutedBg: '#EFF2EC',
 
   // ===== 错误 =====
-  errorBg: '#FFF5F0',
-  errorAccent: '#E8845A',
-  errorFg: '#D05A38',
+  errorBg: '#FFF1EE',
+  errorAccent: '#FF6B4A',
+  errorFg: '#E5392A',
 
   // ===== 圆角 =====
   radiusS: 12,
@@ -47,19 +51,19 @@ export const D = {
   radiusL: 20,
   radiusXL: 28,
 
-  // ===== 阴影 =====
-  shadowCard: '0 1px 10px rgba(18, 17, 15, 0.04), 0 2px 8px rgba(18, 17, 15, 0.03)',
-  shadowLift: '0 12px 40px rgba(18, 17, 15, 0.06), 0 4px 16px rgba(18, 17, 15, 0.04)',
+  // ===== 阴影（更干净、更轻、微冷）=====
+  shadowCard: '0 1px 8px rgba(18, 28, 18, 0.04), 0 1px 3px rgba(18, 28, 18, 0.03)',
+  shadowLift: '0 12px 36px rgba(18, 28, 18, 0.07), 0 4px 14px rgba(18, 28, 18, 0.05)',
 
   // ===== 间距 =====
   pagePadH: 24,
   pagePadTop: 16,
 
-  // ===== 烹饪模式 =====
-  cookingBg: '#1C1A17',
-  cookingSurface: '#2A2724',
-  cookingText: '#FAF9F7',
-  cookingMuted: 'rgba(250, 249, 247, 0.55)',
+  // ===== 烹饪模式（更冷的深色）=====
+  cookingBg: '#15171A',
+  cookingSurface: '#222528',
+  cookingText: '#F5F8F5',
+  cookingMuted: 'rgba(245, 248, 245, 0.55)',
 
   // ===== 字号 — Apple HIG =====
   titleLarge: 36,      // LargeTitle

@@ -1426,7 +1426,7 @@ function FridgePantry() {
                   Taro.showModal({
                     title: '删除',
                     content: `把「${editing.name}」从冰箱删除？`,
-                    confirmColor: '#D05A38',
+                    confirmColor: '#F5412C',
                     success: (r) => {
                       if (r.confirm) {
                         store.removeItem(id)
@@ -1845,7 +1845,7 @@ function FridgePantry() {
               Taro.showModal({
                 title: '清理过期',
                 content: `把 ${store.expiredCount} 项过期食材一次性移除？`,
-                confirmColor: '#D05A38',
+                confirmColor: '#F5412C',
                 success: (r) => {
                   if (r.confirm) {
                     store.removeExpired()

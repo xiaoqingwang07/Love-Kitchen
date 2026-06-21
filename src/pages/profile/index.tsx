@@ -177,14 +177,14 @@ function Profile() {
       title: '重置冰箱数据',
       content: '这会把冰箱清空并填入 18 条示例食材，当前库存全部丢失。继续？',
       confirmText: '重置',
-      confirmColor: '#D05A38',
+      confirmColor: '#F5412C',
       success: (res) => {
         if (res.confirm) {
           Taro.showModal({
             title: '再次确认',
             content: '此操作不可撤销',
             confirmText: '确认重置',
-            confirmColor: '#D05A38',
+            confirmColor: '#F5412C',
             success: (r2) => {
               if (r2.confirm) {
                 pantryStore.resetToMock()
