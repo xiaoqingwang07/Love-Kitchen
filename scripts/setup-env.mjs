@@ -26,6 +26,10 @@ TARO_APP_LLM_PROXY_URL=http://127.0.0.1:8787
 
 # 上线部署 Vercel 后改为：
 # TARO_APP_LLM_PROXY_URL=https://你的项目.vercel.app/api/llm-proxy
+
+# 5000 道 catalog 云端根目录（上传 catalog-cdn/ 后填写，指向 meta.json 所在目录）
+# 留空则只用主包内置的 legacy 200 道
+# TARO_APP_CATALOG_BASE_URL=https://你的cdn域名/love-kitchen/catalog
 `
 
 fs.writeFileSync(envPath, template, 'utf8')

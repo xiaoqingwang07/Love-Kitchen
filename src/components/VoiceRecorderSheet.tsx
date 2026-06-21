@@ -3,12 +3,15 @@ import Taro from '@tarojs/taro'
 import { useEffect, useRef, useState } from 'react'
 import { D } from '../theme/designTokens'
 import { createRecorder, saveIntakeDraft } from '../utils/mediaIntake'
+import { isAsrAvailable, createAsrManager, type AsrManager } from '../utils/voiceAsr'
 
 type Props = {
   visible: boolean
   onClose: () => void
-  /** 录制结束后回调：拿到音频路径与时长 */
+  /** 录制结束后回调：拿到音频路径与时长（无 ASR 时走此路） */
   onRecorded: (filePath: string, durationMs: number) => void
+  /** 识别出文本时回调（有 ASR 插件时走此路，优先） */
+  onTranscribed?: (text: string) => void
 }
 
 /**
@@ -16,25 +19,65 @@ type Props = {
  * - 按下开始，松开结束；时长 < 500ms 视为误触
  * - 微信小程序需在 app.json 中声明 scope.record 授权（授权失败会有系统弹窗）
  */
-export function VoiceRecorderSheet({ visible, onClose, onRecorded }: Props) {
+export function VoiceRecorderSheet({ visible, onClose, onRecorded, onTranscribed }: Props) {
   const [recording, setRecording] = useState(false)
   const [seconds, setSeconds] = useState(0)
+  const [liveText, setLiveText] = useState('')
   const recorderRef = useRef<ReturnType<typeof createRecorder>>(null)
+  const asrRef = useRef<AsrManager | null>(null)
+  const asrMode = onTranscribed != null && isAsrAvailable()
   const startAtRef = useRef<number>(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     if (!visible) return
+
+    const clearTimer = () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+    }
+
+    // ── ASR 路径（有同声传译插件 + onTranscribed）──
+    if (asrMode) {
+      const asr = createAsrManager()
+      asrRef.current = asr
+      if (!asr) return
+      asr.onRecognize((text) => setLiveText(text))
+      asr.onStop((text) => {
+        setRecording(false)
+        clearTimer()
+        setLiveText('')
+        if (text) {
+          onTranscribed?.(text)
+        } else {
+          Taro.showToast({ title: '没听清，再说一次试试', icon: 'none' })
+        }
+      })
+      asr.onError(() => {
+        setRecording(false)
+        clearTimer()
+        Taro.showToast({ title: '麦克风未授权或识别异常', icon: 'none' })
+      })
+      return () => {
+        clearTimer()
+        try {
+          asr.stop()
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+
+    // ── 录音路径（无 ASR，回退备忘）──
     const recorder = createRecorder()
     recorderRef.current = recorder
     if (!recorder) return
 
     const onStop = (res: { tempFilePath?: string; duration?: number }) => {
       setRecording(false)
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-        timerRef.current = null
-      }
+      clearTimer()
       const duration = Number(res.duration ?? Date.now() - startAtRef.current) || 0
       const path = res.tempFilePath || ''
       if (!path || duration < 500) {
@@ -51,56 +94,59 @@ export function VoiceRecorderSheet({ visible, onClose, onRecorded }: Props) {
     }
     const onError = () => {
       setRecording(false)
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-        timerRef.current = null
-      }
+      clearTimer()
       Taro.showToast({ title: '麦克风未授权', icon: 'none' })
     }
     recorder.onStop(onStop)
     recorder.onError(onError)
 
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-        timerRef.current = null
-      }
+      clearTimer()
       try {
         recorder.stop()
       } catch {
         /* ignore */
       }
     }
-  }, [visible])
+  }, [visible, asrMode])
 
   const handleStart = () => {
-    const recorder = recorderRef.current
-    if (!recorder) return
     setSeconds(0)
+    setLiveText('')
     startAtRef.current = Date.now()
-    try {
-      recorder.start({
-        duration: 30000,
-        sampleRate: 16000,
-        numberOfChannels: 1,
-        encodeBitRate: 48000,
-        format: 'mp3',
-      })
+    const startTimer = () => {
       setRecording(true)
       timerRef.current = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startAtRef.current) / 1000)
-        setSeconds(elapsed)
+        setSeconds(Math.floor((Date.now() - startAtRef.current) / 1000))
       }, 250)
+    }
+    try {
+      if (asrMode) {
+        const asr = asrRef.current
+        if (!asr) return
+        asr.start({ lang: 'zh_CN', duration: 30000 })
+        startTimer()
+      } else {
+        const recorder = recorderRef.current
+        if (!recorder) return
+        recorder.start({
+          duration: 30000,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          encodeBitRate: 48000,
+          format: 'mp3',
+        })
+        startTimer()
+      }
     } catch {
       Taro.showToast({ title: '启动失败', icon: 'none' })
     }
   }
 
   const handleStop = () => {
-    const recorder = recorderRef.current
-    if (!recorder) return
     try {
-      recorder.stop()
+      if (asrMode) asrRef.current?.stop()
+      else recorderRef.current?.stop()
     } catch {
       /* ignore */
     }
@@ -162,7 +208,7 @@ export function VoiceRecorderSheet({ visible, onClose, onRecorded }: Props) {
             marginTop: 6,
           }}
         >
-          例如「买了两个番茄、半斤排骨」
+          {recording && asrMode && liveText ? liveText : '例如「买了两个番茄、半斤排骨」'}
         </Text>
 
         <View
@@ -210,7 +256,7 @@ export function VoiceRecorderSheet({ visible, onClose, onRecorded }: Props) {
           }}
           onClick={onClose}
         >
-          松开保存为备忘，去冰箱继续录入
+          {asrMode ? '松开即把这句话转成文字搜索' : '松开保存为备忘，去冰箱继续录入'}
         </Text>
       </View>
     </View>

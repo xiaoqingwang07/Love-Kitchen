@@ -4,7 +4,7 @@ import Taro from '@tarojs/taro'
 import { D } from '../theme/designTokens'
 
 interface Props {
-  children: ReactNode
+  children?: ReactNode
   /** 降级 UI 标题，默认"出了点小问题" */
   title?: string
 }

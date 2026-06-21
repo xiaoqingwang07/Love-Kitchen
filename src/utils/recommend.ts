@@ -2,6 +2,7 @@ import { getCatalogRecipes } from '../data/recipeRegistry'
 import { getMockWeather, type WeatherData } from '../api/weather'
 import type { Recipe } from '../types/recipe'
 import { shuffleWithSeed, daySeed } from './shuffleSeed'
+import { getCookedRecipes } from '../store/storageUtils'
 
 /** 从全库中 O(n) 取评分最高的 topK，避免对 5000+ 道菜全量 sort */
 function pickTopByRating(recipes: Recipe[], topK: number): Recipe[] {
@@ -125,4 +126,50 @@ export function getDailyRecommendations(total: number, variant: number = 0, topP
   const seed = daySeed() + variant * 9973
   const shuffled = shuffleWithSeed([...head], seed)
   return shuffled.slice(0, Math.min(total, shuffled.length))
+}
+
+/** 从做过的菜里统计偏好标签权重（近期权重更高） */
+function preferredTagWeights(): Map<string, number> {
+  const cooked = getCookedRecipes()
+  const weights = new Map<string, number>()
+  // 越近做的权重越高（按 cookedAt 倒序，名次衰减）
+  const sorted = [...cooked].sort((a, b) => (b.cookedAt || 0) - (a.cookedAt || 0))
+  sorted.forEach((r, idx) => {
+    const recencyW = 1 / (1 + idx * 0.2)
+    for (const t of r.tags ?? []) weights.set(t, (weights.get(t) ?? 0) + recencyW)
+  })
+  return weights
+}
+
+/**
+ * 个性化「今日推荐」：在高分池上按偏好标签重排。
+ * 无烹饪历史时退回每日推荐，并通过 personalized 标志告知调用方文案该怎么写。
+ */
+export function getPersonalizedRecommendations(
+  total: number,
+  variant: number = 0
+): { recipes: Recipe[]; personalized: boolean } {
+  const weights = preferredTagWeights()
+  const seed = daySeed() + variant * 9973
+
+  // 无历史 → 退回每日推荐
+  if (weights.size === 0) {
+    return { recipes: getDailyRecommendations(total, variant), personalized: false }
+  }
+
+  // 取更大的高分池，按「偏好标签得分」重排，保留少量随机避免每天一样
+  const pool = pickTopByRating(getCatalogRecipes(), 60)
+  const jitter = shuffleWithSeed(
+    pool.map((_, i) => i),
+    seed
+  )
+  const scored = pool.map((r, i) => {
+    const tagScore = (r.tags ?? []).reduce((s, t) => s + (weights.get(t) ?? 0), 0)
+    // 主排序看标签契合度，次看评分，再叠一点种子抖动维持新鲜感
+    const score = tagScore * 10 + (r.rating ?? 0) + (jitter[i] % 7) * 0.05
+    return { r, score }
+  })
+  scored.sort((a, b) => b.score - a.score)
+  const recipes = scored.slice(0, Math.min(total, scored.length)).map((x) => x.r)
+  return { recipes, personalized: true }
 }

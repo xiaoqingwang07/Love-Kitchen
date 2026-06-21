@@ -22,6 +22,12 @@ function loadDotEnvLocal() {
 const _dotLocal = loadDotEnvLocal();
 const _llmProxyUrl =
     process.env.TARO_APP_LLM_PROXY_URL || _dotLocal.TARO_APP_LLM_PROXY_URL || '';
+const _catalogBaseUrl =
+    process.env.TARO_APP_CATALOG_BASE_URL || _dotLocal.TARO_APP_CATALOG_BASE_URL || '';
+const _expiryTmplId =
+    process.env.TARO_APP_EXPIRY_TMPL_ID || _dotLocal.TARO_APP_EXPIRY_TMPL_ID || '';
+const _reminderApiUrl =
+    process.env.TARO_APP_REMINDER_API_URL || _dotLocal.TARO_APP_REMINDER_API_URL || '';
 
 const config = {
     projectName: 'love-kitchen',
@@ -37,6 +43,9 @@ const config = {
     plugins: ['@tarojs/plugin-platform-weapp'],
     defineConstants: {
         TARO_APP_LLM_PROXY_URL: JSON.stringify(_llmProxyUrl),
+        TARO_APP_CATALOG_BASE_URL: JSON.stringify(_catalogBaseUrl),
+        TARO_APP_EXPIRY_TMPL_ID: JSON.stringify(_expiryTmplId),
+        TARO_APP_REMINDER_API_URL: JSON.stringify(_reminderApiUrl),
     },
     copy: {
         patterns: [

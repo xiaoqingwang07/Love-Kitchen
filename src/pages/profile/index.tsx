@@ -16,6 +16,14 @@ import { D } from '../../theme/designTokens'
 import type { SceneType } from '../../types/recipe'
 import type { Recipe } from '../../types/recipe'
 import { getUserStats, getAllAchievements } from '../../utils/achievements'
+import {
+  reminderConfigured,
+  getReminderState,
+  requestExpiryReminderConsent,
+  disableExpiryReminder,
+  syncExpiryReminders,
+  type ConsentResult,
+} from '../../utils/subscribeReminder'
 
 /** 仅在开发/体验版环境显示工程调试入口 */
 function isDevEnv(): boolean {
@@ -47,6 +55,36 @@ function Profile() {
   const [favoriteItems, setFavoriteItems] = useState<Recipe[]>([])
   const [aboutTaps, setAboutTaps] = useState(0)
   const [devUnlocked, setDevUnlocked] = useState(isDevEnv())
+  const [reminderOn, setReminderOn] = useState(() => getReminderState().optedIn)
+
+  const handleToggleReminder = useCallback(async () => {
+    if (!reminderConfigured()) {
+      Taro.showToast({ title: '提醒功能即将上线', icon: 'none' })
+      return
+    }
+    if (reminderOn) {
+      disableExpiryReminder()
+      setReminderOn(false)
+      Taro.showToast({ title: '已关闭临期提醒', icon: 'none' })
+      return
+    }
+    const result: ConsentResult = await requestExpiryReminderConsent()
+    if (result === 'accepted') {
+      setReminderOn(true)
+      void syncExpiryReminders(pantryStore.items, { force: true })
+      Taro.showToast({ title: '已开启，临期前会提醒你', icon: 'none' })
+    } else if (result === 'banned') {
+      Taro.showModal({
+        title: '提醒被拒收',
+        content: '请在微信「设置-订阅消息」中允许爱心厨房发送提醒',
+        showCancel: false,
+      })
+    } else if (result === 'rejected') {
+      Taro.showToast({ title: '已取消授权', icon: 'none' })
+    } else {
+      Taro.showToast({ title: '暂时无法开启', icon: 'none' })
+    }
+  }, [reminderOn, pantryStore.items])
 
   const loadFavoriteItems = useCallback(() => {
     setFavoriteItems(getFavoriteDetails())
@@ -54,6 +92,9 @@ function Profile() {
 
   useDidShow(() => {
     loadFavoriteItems()
+    if (getReminderState().optedIn) {
+      void syncExpiryReminders(pantryStore.items)
+    }
     try {
       if (Taro.getStorageSync(STORAGE_KEYS.profileOpenFavorites)) {
         Taro.removeStorageSync(STORAGE_KEYS.profileOpenFavorites)
@@ -784,6 +825,57 @@ function Profile() {
             >
               <Text style={{ fontSize: 18, color: '#fff' }}>+</Text>
             </View>
+          </View>
+        </View>
+
+        {/* 临期提醒 */}
+        <View
+          style={{
+            backgroundColor: D.bgElevated,
+            borderRadius: D.radiusM,
+            padding: 16,
+            marginBottom: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            border: `0.5px solid ${D.separatorLight}`,
+          }}
+        >
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              style={{
+                fontSize: D.subheadline,
+                fontWeight: D.weightSemibold,
+                color: D.label,
+              }}
+            >
+              临期提醒
+            </Text>
+            <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.5 }}>
+              食材快过期时，微信提醒你趁早做掉，少浪费
+            </Text>
+          </View>
+          <View
+            className="tap-scale"
+            style={{
+              padding: '7px 16px',
+              borderRadius: 999,
+              backgroundColor: reminderOn ? D.accent : D.bg,
+              border: reminderOn ? 'none' : `0.5px solid ${D.separator}`,
+            }}
+            onClick={() => {
+              void handleToggleReminder()
+            }}
+          >
+            <Text
+              style={{
+                fontSize: D.footnote,
+                fontWeight: D.weightSemibold,
+                color: reminderOn ? '#fff' : D.labelSecondary,
+              }}
+            >
+              {reminderOn ? '已开启' : '开启'}
+            </Text>
           </View>
         </View>
 

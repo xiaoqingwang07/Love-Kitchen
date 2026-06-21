@@ -7,23 +7,11 @@ export default defineAppConfig({
     'pages/result/index',
     'pages/detail/index'
   ],
-  subPackages: [
-    {
-      root: 'packageCatalogA',
-      name: 'catalogA',
-      pages: ['pages/stub/index'],
-    },
-    {
-      root: 'packageCatalogB',
-      name: 'catalogB',
-      pages: ['pages/stub/index'],
-    },
-  ],
-  preloadRule: {
-    'pages/index/index': {
-      network: 'all',
-      packages: ['catalogA'],
-    },
+  plugins: {
+    WechatSI: {
+      version: '0.3.5',
+      provider: 'wx069ba97219f66d99'
+    }
   },
   window: {
     backgroundTextStyle: 'light',

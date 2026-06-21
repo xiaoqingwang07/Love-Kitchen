@@ -6,6 +6,7 @@ import { getSearchHistory, addSearchHistory, clearSearchHistory } from '../../st
 import { fetchLiveWeather, type WeatherData } from '../../api/weather'
 import {
   getDailyRecommendations,
+  getPersonalizedRecommendations,
   getWeatherRecommendationsForWeather,
   getReasonText,
 } from '../../utils/recommend'
@@ -13,6 +14,7 @@ import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
 import { looksLikeIngredientList, searchRecipesByTitle } from '../../utils/recipeSearch'
 import { initCatalog } from '../../data/catalogLoader'
 import { findRecipeByTitleExact, resolveFullRecipe } from '../../data/recipeRegistry'
+import { usesLlmProxy } from '../../api/recipe'
 import { usePantryStore } from '../../store/context'
 import { STORAGE_KEYS } from '../../store/storageKeys'
 import { getFreshnessStatus } from '../../types/pantry'
@@ -63,9 +65,10 @@ function Index() {
         reason: getReasonText(weather),
       }
     }
+    const personalized = getPersonalizedRecommendations(10, listVariant)
     return {
-      recipes: getDailyRecommendations(10, listVariant),
-      reason: '每日家常 · 高分稳妥',
+      recipes: personalized.recipes,
+      reason: personalized.personalized ? '按你常做的口味 · 猜你想吃' : '每日家常 · 高分稳妥',
     }
   }, [weather, listVariant, catalogTick])
 
@@ -151,7 +154,10 @@ function Index() {
   const handlePickImage = async (source: 'camera' | 'album') => {
     const draft = await pickImageForIntake(source, 'ingredients')
     if (!draft) return
-    Taro.showToast({ title: '已采集，去冰箱核对', icon: 'none' })
+    Taro.showToast({
+      title: usesLlmProxy() ? '识别中，去冰箱看看' : '已采集，去冰箱核对',
+      icon: 'none',
+    })
     Taro.switchTab({ url: '/pages/pantry/index' })
   }
 
@@ -159,6 +165,14 @@ function Index() {
     setShowVoice(false)
     Taro.showToast({ title: '语音已保存', icon: 'none' })
     Taro.switchTab({ url: '/pages/pantry/index' })
+  }
+
+  const handleVoiceTranscribed = (text: string) => {
+    setShowVoice(false)
+    const t = text.trim()
+    if (!t) return
+    setInputValue(t)
+    doSearch(t)
   }
 
   const enableWeather = () => {
@@ -250,7 +264,6 @@ function Index() {
                 style={S.searchActionBtnStyle}
                 onTouchStart={() => { skipSearchBlurRef.current = true }}
                 onClick={() => {
-                  Taro.showToast({ title: '从相册选食材照片', icon: 'none', duration: 1500 })
                   handlePickImage('album')
                 }}
               >
@@ -261,7 +274,6 @@ function Index() {
                 style={S.searchActionBtnStyle}
                 onTouchStart={() => { skipSearchBlurRef.current = true }}
                 onClick={() => {
-                  Taro.showToast({ title: '拍下冰箱 / 食材识别', icon: 'none', duration: 1500 })
                   handlePickImage('camera')
                 }}
               >
@@ -518,6 +530,7 @@ function Index() {
         visible={showVoice}
         onClose={() => setShowVoice(false)}
         onRecorded={handleVoiceRecorded}
+        onTranscribed={handleVoiceTranscribed}
       />
     </View>
   )

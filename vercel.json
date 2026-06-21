@@ -2,12 +2,28 @@
   "functions": {
     "api/llm-proxy.js": {
       "maxDuration": 60
+    },
+    "api/reminder-register.js": {
+      "maxDuration": 10
+    },
+    "api/reminder-cron.js": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
     {
       "source": "/api/llm-proxy",
       "destination": "/api/llm-proxy.js"
+    },
+    {
+      "source": "/api/reminder-register",
+      "destination": "/api/reminder-register.js"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/reminder-cron",
+      "schedule": "0 1 * * *"
     }
   ]
 }

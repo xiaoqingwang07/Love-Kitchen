@@ -107,6 +107,63 @@ Body: { messages, model, temperature, stream }
 
 参考实现见仓库 `api/llm-proxy.js`，部署后在小程序后台把你的域名加入 `request` 白名单。
 
+### 生产部署：5000 道 catalog（云端）
+
+为避免主包体积超限，**5000 道 catalog 不再打进小程序包**，改为云端按需加载 + 本地文件缓存：
+
+- 主包只内置 legacy 200 道（离线可用）；
+- catalog 数据在仓库的 `catalog-cdn/` 目录（`meta.json` / `index.json` / `chunks/chunk-0..9.json`，约 19MB）；
+- 首启从云端拉索引并写入本地缓存（`USER_DATA_PATH/catalog`），之后秒开、可离线，后台按 `meta.version` 静默刷新。
+
+部署步骤：
+
+1. 把 `catalog-cdn/` 整个目录上传到 CDN 或**微信云开发 · 静态托管**，保持目录结构不变；
+2. 在 `.env.local` 配置根地址（指向 `meta.json` 所在目录，结尾不带 `/`）：
+   ```
+   TARO_APP_CATALOG_BASE_URL=https://你的cdn域名/love-kitchen/catalog
+   ```
+3. 重新 `npm run build:weapp`；
+4. 在微信公众平台把该域名加入 **request 合法域名**。
+
+> 未配置 `TARO_APP_CATALOG_BASE_URL` 时，App 全程使用 legacy 200 道，不发任何 catalog 请求——开发期可不配。
+
+### 生产部署：临期提醒（订阅消息）
+
+让用户「食材快过期时收到微信提醒」，是小程序最强的召回钩子。闭环两段式：客户端拿一次性订阅授权 + 服务端定时推送。
+
+**第 1 步 · 申请模板**：公众平台 → 订阅消息 → 选用一个含「名称 / 日期」字段的模板，记下 `template_id` 和字段名（如 `thing1` / `date2` / `thing3`）。
+
+**第 2 步 · 配客户端构建变量**（`.env.local`）：
+```
+TARO_APP_EXPIRY_TMPL_ID=你的模板id
+TARO_APP_REMINDER_API_URL=https://你的项目.vercel.app/api/reminder-register
+```
+
+**第 3 步 · 配服务端环境变量**（Vercel 控制台）：
+```
+WX_APPID=小程序appid
+WX_SECRET=小程序密钥
+UPSTASH_REDIS_REST_URL=...        # Upstash Redis（免费档够用）
+UPSTASH_REDIS_REST_TOKEN=...
+CRON_SECRET=随机串                 # 保护定时任务 URL
+```
+
+**第 4 步 · 校准模板字段**：按你的模板字段名改 `api/reminder-cron.js` 里的 `buildTemplateData`。
+
+**第 5 步**：部署后 `vercel.json` 的 `crons` 会每天 09:00（北京）触发 `/api/reminder-cron` 扫描并推送；request 合法域名加入该 Vercel 域名。
+
+> 未配置 `TARO_APP_EXPIRY_TMPL_ID` 时，「我的-临期提醒」开关会提示"即将上线"，不影响其它功能。
+
+### 生产部署：语音转文字（可选）
+
+首页 🎙 语音入口支持实时识别（说一句食材 → 自动转文字 → 搜索）。依赖微信「同声传译」插件：
+
+1. 公众平台 → 设置 → 第三方设置 → 插件管理 → 添加「微信同声传译」（appid `wx069ba97219f66d99`）；
+2. `src/app.config.ts` 的 `plugins.WechatSI.version` 改成你添加的版本号；
+3. 确保 `scope.record` 麦克风授权。
+
+> 未添加插件时，语音入口自动回退为「录音存备忘 → 冰箱页边听边写」，不报错。
+
 ### 微信小程序合法域名清单
 
 在**微信公众平台 → 开发 → 开发管理 → 服务器域名**中添加以下域名：
@@ -116,6 +173,7 @@ Body: { messages, model, temperature, stream }
 | request | `api.minimaxi.com` | MiniMax LLM 直连（开发调试用） |
 | request | `你的-vercel-proxy.vercel.app` | 生产环境 LLM 中转（推荐） |
 | request | `api.open-meteo.com` | 实时天气（按授权触发） |
+| request | `你的-catalog-cdn域名` | 5000 道 catalog 索引与分片（按需拉取） |
 | downloadFile | `i2.chuimg.com` | 200 道本地菜谱封面与步骤图 |
 | downloadFile | `images.unsplash.com` | 关键词池兜底（仅未命中精确映射时） |
 | uploadFile | `你的-vercel-proxy.vercel.app` | 图片识别上传（如接入 OCR） |

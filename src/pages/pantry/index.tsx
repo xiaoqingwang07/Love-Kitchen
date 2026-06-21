@@ -38,6 +38,12 @@ const SLOT_DRAWER_MIN = 62
 const SLOT_STACK_GAP = 5
 const DAY_MS = 24 * 60 * 60 * 1000
 
+/** 空冰箱「快速补货」候选：覆盖常见家庭食材，点选即入库 */
+const QUICK_FILL_ITEMS = [
+  '鸡蛋', '牛奶', '西红柿', '黄瓜', '土豆', '胡萝卜',
+  '青椒', '猪肉', '鸡胸肉', '豆腐', '生菜', '大葱',
+]
+
 function loadFridgeLayout(): FridgeLayoutConfig {
   try {
     return normalizeFridgeLayout(Taro.getStorageSync(STORAGE_KEYS.fridgeLayoutConfig))
@@ -74,6 +80,21 @@ function FridgePantry() {
   const [editDaysLeft, setEditDaysLeft] = useState<number>(0)
   const [layout, setLayout] = useState<FridgeLayoutConfig>(() => loadFridgeLayout())
   const [showLayoutSettings, setShowLayoutSettings] = useState(false)
+  const [quickFill, setQuickFill] = useState<string[]>([])
+
+  const toggleQuickFill = (name: string) => {
+    setQuickFill((prev) =>
+      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
+    )
+  }
+
+  const commitQuickFill = () => {
+    if (quickFill.length === 0) return
+    for (const name of quickFill) store.addItem(name, '适量')
+    const n = quickFill.length
+    setQuickFill([])
+    Taro.showToast({ title: `已加入 ${n} 样`, icon: 'success' })
+  }
 
   useDidShow(() => {
     const draft = readIntakeDraft()
@@ -616,6 +637,73 @@ function FridgePantry() {
             点格子查看 / 添加，食材会自动标记临期（黄）和过期（红）。
           </Text>
         </View>
+
+        {/* 空冰箱快速补货（仅空库时出现，压缩 time-to-value） */}
+        {store.totalCount === 0 ? (
+          <View
+            style={{
+              margin: `0 ${pad}px 14px`,
+              padding: 16,
+              backgroundColor: D.bgElevated,
+              borderRadius: D.radiusM,
+              border: `0.5px solid ${D.separatorLight}`,
+            }}
+          >
+            <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
+              30 秒建好你的冰箱
+            </Text>
+            <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.5 }}>
+              点几样常买的，先把冰箱填起来 · 也可拍照 / 小票批量导入
+            </Text>
+            <View style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+              {QUICK_FILL_ITEMS.map((name) => {
+                const on = quickFill.includes(name)
+                return (
+                  <View
+                    key={name}
+                    className="tap-scale"
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: 999,
+                      backgroundColor: on ? D.accent : D.bg,
+                      border: on ? 'none' : `0.5px solid ${D.separator}`,
+                    }}
+                    onClick={() => toggleQuickFill(name)}
+                  >
+                    <Text
+                      style={{
+                        fontSize: D.footnote,
+                        fontWeight: D.weightSemibold,
+                        color: on ? '#fff' : D.labelSecondary,
+                      }}
+                    >
+                      {name}
+                    </Text>
+                  </View>
+                )
+              })}
+            </View>
+            {quickFill.length > 0 ? (
+              <View
+                className="tap-scale"
+                style={{
+                  marginTop: 14,
+                  padding: '11px 0',
+                  borderRadius: D.radiusM,
+                  backgroundColor: D.label,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onClick={commitQuickFill}
+              >
+                <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.bgElevated }}>
+                  加入冰箱（{quickFill.length}）
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
 
         {/* 临期概览（有库存时才出现） */}
         {store.totalCount > 0 ? (

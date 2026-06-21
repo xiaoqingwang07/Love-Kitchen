@@ -22,8 +22,15 @@ import { ShoppingListSheet } from '../../components/ShoppingListSheet'
 const SHARE_PAYLOAD_LIMIT = 1500
 
 function buildSharePayload(recipe: Recipe): string | null {
+  const encode = (r: Recipe): string => encodeURIComponent(JSON.stringify(r))
+  const fits = (s: string) => s.length <= SHARE_PAYLOAD_LIMIT
+
   try {
-    const compact: Recipe = {
+    const ingredients =
+      recipe.ingredients?.map((ing) => ({ name: ing.name, amount: ing.amount })) || []
+
+    // 1) 完整 compact：含步骤
+    const full: Recipe = {
       id: recipe.id,
       title: recipe.title,
       source: recipe.source,
@@ -32,8 +39,7 @@ function buildSharePayload(recipe: Recipe): string | null {
       time: recipe.time,
       difficulty: recipe.difficulty,
       nutritionAnalysis: recipe.nutritionAnalysis,
-      ingredients:
-        recipe.ingredients?.map((ing) => ({ name: ing.name, amount: ing.amount })) || [],
+      ingredients,
       steps:
         recipe.steps?.map((step) => ({
           content: step.content,
@@ -41,8 +47,42 @@ function buildSharePayload(recipe: Recipe): string | null {
           tip: step.tip,
         })) || [],
     }
-    const encoded = encodeURIComponent(JSON.stringify(compact))
-    return encoded.length <= SHARE_PAYLOAD_LIMIT ? encoded : null
+    const fullEnc = encode(full)
+    if (fits(fullEnc)) return fullEnc
+
+    // 2) 精简：去掉 tip、营养，步骤正文截断
+    const lean: Recipe = {
+      id: recipe.id,
+      title: recipe.title,
+      source: recipe.source,
+      quote: recipe.quote,
+      emoji: recipe.emoji,
+      time: recipe.time,
+      difficulty: recipe.difficulty,
+      ingredients,
+      steps:
+        recipe.steps?.map((step) => ({
+          content: step.content.length > 60 ? `${step.content.slice(0, 60)}…` : step.content,
+          time: step.time,
+        })) || [],
+    }
+    const leanEnc = encode(lean)
+    if (fits(leanEnc)) return leanEnc
+
+    // 3) 最小：保证对方至少拿到一张「菜名 + 食材」的真实卡片，可再 AI 补全做法
+    const minimal: Recipe = {
+      id: recipe.id,
+      title: recipe.title,
+      source: recipe.source,
+      quote: recipe.quote,
+      emoji: recipe.emoji,
+      time: recipe.time,
+      difficulty: recipe.difficulty,
+      ingredients,
+      steps: [],
+    }
+    const minEnc = encode(minimal)
+    return fits(minEnc) ? minEnc : null
   } catch {
     return null
   }
