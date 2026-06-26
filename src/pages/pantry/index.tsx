@@ -17,6 +17,9 @@ import {
 } from '../../types/fridge'
 import { parseShoppingLines } from '../../utils/fridgePlacement'
 import { buildIntakePreview, previewToReceiptText } from '../../utils/pantryIntake'
+import { buildDuplicateWarning, describeExisting } from '../../utils/duplicateGuard'
+import { VoiceRecorderSheet } from '../../components/VoiceRecorderSheet'
+import { isAsrAvailable } from '../../utils/voiceAsr'
 import { recognizePantryImage, PantryVisionError } from '../../api/pantryVision'
 import { usesLlmProxy } from '../../api/recipe'
 import {
@@ -82,18 +85,74 @@ function FridgePantry() {
   const [showLayoutSettings, setShowLayoutSettings] = useState(false)
   const [quickFill, setQuickFill] = useState<string[]>([])
 
+  // 逛超市模式：站在货架前秒查"家里还有没有"
+  const [lookupQuery, setLookupQuery] = useState('')
+  const [showVoiceLookup, setShowVoiceLookup] = useState(false)
+
   const toggleQuickFill = (name: string) => {
     setQuickFill((prev) =>
       prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
     )
   }
 
+  const cleanLookup = (raw: string): string => {
+    let s = (raw || '').trim()
+    const isQuestion = /[吗呢]$|没有?$/u.test(s)
+    s = s.replace(/(吗|呢|啊|嘛|没有|没|在不在)$/u, '')
+    const LEAD = [
+      '查查', '查一下', '查下', '看一下', '看看', '看下', '帮我看看', '帮我看',
+      '我想买', '想买', '要买', '家里还', '家里', '我家', '冰箱里', '冰箱',
+      '还有没有', '有没有', '还有', '还剩', '剩没剩', '还', '剩', '查', '买',
+    ]
+    let changed = true
+    while (changed) {
+      changed = false
+      for (const t of LEAD) {
+        if (s.startsWith(t) && s.length > t.length) {
+          s = s.slice(t.length)
+          changed = true
+          break
+        }
+      }
+    }
+    // 仅在明确疑问句时才削掉开头的"有"，避免误伤"有机xx"
+    if (isQuestion && s.startsWith('有') && !s.startsWith('有机') && s.length > 1) {
+      s = s.slice(1)
+    }
+    return s.trim()
+  }
+
+  const handleLookupVoice = (text: string) => {
+    setShowVoiceLookup(false)
+    const name = cleanLookup(text)
+    if (name) setLookupQuery(name)
+  }
+
+  const lookupName = cleanLookup(lookupQuery)
+  const lookupResults = lookupName ? store.findSimilarItems(lookupName) : null
+
   const commitQuickFill = () => {
     if (quickFill.length === 0) return
-    for (const name of quickFill) store.addItem(name, '适量')
-    const n = quickFill.length
-    setQuickFill([])
-    Taro.showToast({ title: `已加入 ${n} 样`, icon: 'success' })
+    const dupNames = quickFill.filter((n) => store.findSimilarItems(n).length > 0)
+    const fresh = quickFill.filter((n) => store.findSimilarItems(n).length === 0)
+    const doAdd = (names: string[]) => {
+      for (const name of names) store.addItem(name, '适量')
+      setQuickFill([])
+      if (names.length > 0) {
+        Taro.showToast({ title: `已加入 ${names.length} 样`, icon: 'success' })
+      }
+    }
+    if (dupNames.length > 0) {
+      Taro.showModal({
+        title: '这些冰箱里已经有了',
+        content: `${dupNames.join('、')}\n\n已有的就不重复加了，只入库新的 ${fresh.length} 样？`,
+        confirmText: `只加新的`,
+        cancelText: '全部都加',
+        success: (r) => doAdd(r.confirm ? fresh : quickFill),
+      })
+      return
+    }
+    doAdd(quickFill)
   }
 
   useDidShow(() => {
@@ -448,13 +507,29 @@ function FridgePantry() {
       Taro.showToast({ title: '填写名称', icon: 'none' })
       return
     }
-    store.addItem(addName.trim(), addAmount.trim() || '适量', {
-      side: activeSlot.side,
-      slotIndex: activeSlot.slotIndex,
-    })
-    setAddName('')
-    setAddAmount('')
-    Taro.showToast({ title: '已放入', icon: 'success' })
+    const name = addName.trim()
+    const amount = addAmount.trim() || '适量'
+    const commit = () => {
+      store.addItem(name, amount, {
+        side: activeSlot.side,
+        slotIndex: activeSlot.slotIndex,
+      })
+      setAddName('')
+      setAddAmount('')
+      Taro.showToast({ title: '已放入', icon: 'success' })
+    }
+    const dups = store.findSimilarItems(name)
+    if (dups.length > 0) {
+      Taro.showModal({
+        title: '冰箱里好像已经有了',
+        content: buildDuplicateWarning(name, dups),
+        confirmText: '仍要添加',
+        cancelText: '算了不买',
+        success: (r) => { if (r.confirm) commit() },
+      })
+      return
+    }
+    commit()
   }
 
   const handleParseReceipt = () => {
@@ -512,15 +587,30 @@ function FridgePantry() {
 
   const handleCommitReceipt = () => {
     if (!receiptPreview?.length) return
-    for (const row of receiptPreview) {
-      store.addItem(row.name, row.amount, { side: row.side, slotIndex: row.slotIndex })
+    const commit = () => {
+      for (const row of receiptPreview) {
+        store.addItem(row.name, row.amount, { side: row.side, slotIndex: row.slotIndex })
+      }
+      const n = receiptPreview.length
+      setReceiptPreview(null)
+      setReceiptText('')
+      setShowReceipt(false)
+      clearIntakeDraft()
+      setIntakeDraft(null)
+      Taro.showToast({ title: `已入库 ${n} 项`, icon: 'success' })
     }
-    setReceiptPreview(null)
-    setReceiptText('')
-    setShowReceipt(false)
-    clearIntakeDraft()
-    setIntakeDraft(null)
-    Taro.showToast({ title: `已入库 ${receiptPreview.length} 项`, icon: 'success' })
+    const dupRows = receiptPreview.filter((r) => r.duplicateOf.length > 0)
+    if (dupRows.length > 0) {
+      Taro.showModal({
+        title: `${dupRows.length} 样冰箱里已经有了`,
+        content: `${dupRows.map((r) => r.name).join('、')}\n\n这些可能是重复采购，仍要全部入库吗？`,
+        confirmText: '全部入库',
+        cancelText: '我再核对',
+        success: (r) => { if (r.confirm) commit() },
+      })
+      return
+    }
+    commit()
   }
 
   const handleCloseReceipt = () => {
@@ -637,6 +727,199 @@ function FridgePantry() {
             点格子查看 / 添加，食材会自动标记临期（黄）和过期（红）。
           </Text>
         </View>
+
+        {/* 逛超市秒查：在货架前先查家里有没有，防止重复买 */}
+        {store.totalCount > 0 ? (
+          <View
+            style={{
+              margin: `0 ${pad}px 14px`,
+              padding: 14,
+              backgroundColor: D.bgElevated,
+              borderRadius: D.radiusL,
+              border: `0.5px solid ${D.separatorLight}`,
+              boxShadow: D.shadowCard,
+            }}
+          >
+            <View style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <View
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  height: 40,
+                  padding: '0 12px',
+                  borderRadius: 999,
+                  backgroundColor: D.bgGrouped,
+                }}
+              >
+                <Text style={{ fontSize: 15, color: D.labelTertiary }}>🔍</Text>
+                <Input
+                  value={lookupQuery}
+                  placeholder="逛超市先查冰箱：想买什么？"
+                  placeholderStyle={`color:${D.labelTertiary}`}
+                  confirmType="search"
+                  onInput={(e) => setLookupQuery(e.detail.value)}
+                  style={{
+                    flex: 1,
+                    fontSize: D.callout,
+                    color: D.label,
+                    height: 40,
+                  }}
+                />
+                {lookupQuery ? (
+                  <Text
+                    className="tap-scale"
+                    onClick={() => setLookupQuery('')}
+                    style={{ fontSize: 15, color: D.labelTertiary, padding: '0 2px' }}
+                  >
+                    ✕
+                  </Text>
+                ) : null}
+              </View>
+              <View
+                className="tap-scale"
+                onClick={() => {
+                  if (!isAsrAvailable()) {
+                    Taro.showToast({ title: '语音暂不可用，请手动输入', icon: 'none' })
+                    return
+                  }
+                  setShowVoiceLookup(true)
+                }}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 999,
+                  backgroundColor: D.accentMuted,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Text style={{ fontSize: 18 }}>🎤</Text>
+              </View>
+            </View>
+
+            {/* 结果区 */}
+            {!lookupName ? (
+              <Text
+                style={{
+                  fontSize: D.caption,
+                  color: D.labelTertiary,
+                  marginTop: 10,
+                  lineHeight: 1.5,
+                }}
+              >
+                拿不准家里还有没有？输入或说一句「有没有西红柿」，立刻知道在哪、放了多久。
+              </Text>
+            ) : lookupResults && lookupResults.length > 0 ? (
+              (() => {
+                const hasOld = lookupResults.some(
+                  (it) => getFreshnessStatus(it) !== 'fresh'
+                )
+                return (
+                  <View
+                    style={{
+                      marginTop: 12,
+                      padding: 12,
+                      borderRadius: D.radiusM,
+                      backgroundColor: hasOld ? D.accentWarmMuted : D.accentMuted,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: D.subheadline,
+                        fontWeight: D.weightBold,
+                        color: hasOld ? D.orange : D.accent,
+                      }}
+                    >
+                      {hasOld
+                        ? `家里有「${lookupName}」了，先别买`
+                        : `家里有「${lookupName}」`}
+                    </Text>
+                    {lookupResults.map((it) => (
+                      <View
+                        key={it.id}
+                        className="tap-scale"
+                        onClick={() =>
+                          setActiveSlot({ side: it.side, slotIndex: it.slotIndex })
+                        }
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 8,
+                          marginTop: 8,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: D.footnote,
+                            color: D.label,
+                            fontWeight: D.weightMedium,
+                          }}
+                        >
+                          {it.name}（{it.amount}）
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: D.caption,
+                            color: D.labelSecondary,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {describeExisting(it)} ›
+                        </Text>
+                      </View>
+                    ))}
+                    {hasOld ? (
+                      <Text
+                        style={{
+                          fontSize: D.caption,
+                          color: D.orange,
+                          marginTop: 8,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        有临期 / 过期的，回家先吃旧的，别再囤。
+                      </Text>
+                    ) : null}
+                  </View>
+                )
+              })()
+            ) : (
+              <View
+                style={{
+                  marginTop: 12,
+                  padding: 12,
+                  borderRadius: D.radiusM,
+                  backgroundColor: D.bgGrouped,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: D.subheadline,
+                    fontWeight: D.weightSemibold,
+                    color: D.label,
+                  }}
+                >
+                  🛒 家里没有「{lookupName}」，可以买
+                </Text>
+                <Text
+                  style={{
+                    fontSize: D.caption,
+                    color: D.labelTertiary,
+                    marginTop: 4,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  没查到同类库存（叫法不同也可能查不到，可换个常用名再试）。
+                </Text>
+              </View>
+            )}
+          </View>
+        ) : null}
 
         {/* 空冰箱快速补货（仅空库时出现，压缩 time-to-value） */}
         {store.totalCount === 0 ? (
@@ -1687,6 +1970,18 @@ function FridgePantry() {
                     <Text style={{ fontSize: D.caption, color: D.accent, marginTop: 4 }}>
                       推荐 {slotShortLabel(row.side, row.slotIndex)}
                     </Text>
+                    {row.duplicateOf.length > 0 ? (
+                      <Text
+                        style={{
+                          fontSize: D.caption,
+                          color: D.orange,
+                          marginTop: 4,
+                          fontWeight: D.weightMedium,
+                        }}
+                      >
+                        ⚠ 冰箱里已有 · {describeExisting(row.duplicateOf[0])}
+                      </Text>
+                    ) : null}
                   </View>
                 ))}
               </ScrollView>
@@ -1875,6 +2170,13 @@ function FridgePantry() {
         </Button>
         </View>
       </View>
+
+      <VoiceRecorderSheet
+        visible={showVoiceLookup}
+        onClose={() => setShowVoiceLookup(false)}
+        onRecorded={() => setShowVoiceLookup(false)}
+        onTranscribed={handleLookupVoice}
+      />
     </View>
   )
 }

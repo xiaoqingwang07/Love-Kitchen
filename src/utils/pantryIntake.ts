@@ -2,12 +2,15 @@ import { getCategoryForName } from '../data/shelfLife'
 import type { PantryItem } from '../types/pantry'
 import type { FridgeLayoutConfig, FridgeSide } from '../types/fridge'
 import { suggestPlacementWithBalance } from './fridgePlacement'
+import { findDuplicates } from './duplicateGuard'
 
 export interface IntakePreviewRow {
   name: string
   amount: string
   side: FridgeSide
   slotIndex: number
+  /** 冰箱里已有的同种食材（非空即重复采购，UI 需高亮提醒） */
+  duplicateOf: PantryItem[]
 }
 
 /** 根据分类与现有库存，为一批食材生成推荐格位预览 */
@@ -39,6 +42,7 @@ export function buildIntakePreview(
       amount: line.amount,
       side: p.side,
       slotIndex: p.slotIndex,
+      duplicateOf: findDuplicates(line.name, existing),
     })
   }
 

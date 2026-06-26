@@ -197,6 +197,21 @@ function Profile() {
     })
   }
 
+  const handleClearFridge = () => {
+    Taro.showModal({
+      title: '清空冰箱',
+      content: '把冰箱里所有食材清空（用于测试空库状态），当前库存全部丢失。继续？',
+      confirmText: '清空',
+      confirmColor: '#F5412C',
+      success: (res) => {
+        if (res.confirm) {
+          pantryStore.clearAll()
+          Taro.showToast({ title: '已清空', icon: 'success' })
+        }
+      },
+    })
+  }
+
   // ---------- 收藏列表 ----------
   if (showFavorites) {
     const isEmpty = favoriteItems.length === 0
@@ -1006,6 +1021,19 @@ function Profile() {
               onClick={handleResetMock}
             >
               重置冰箱数据
+            </Button>
+            <Button
+              style={{
+                height: 40,
+                backgroundColor: D.bgGrouped,
+                color: D.label,
+                borderRadius: 999,
+                fontSize: D.footnote,
+                border: 'none',
+              }}
+              onClick={handleClearFridge}
+            >
+              清空冰箱（测空库）
             </Button>
           </View>
         ) : null}

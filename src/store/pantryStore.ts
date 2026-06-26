@@ -6,6 +6,7 @@ import { getFreshnessStatus, getDaysLeft } from '../types/pantry'
 import { getShelfLifeDays, getCategoryForName } from '../data/shelfLife'
 import { findPantryItemForRecipeIngredient } from '../utils/ingredientMatch'
 import { suggestPlacementWithBalance } from '../utils/fridgePlacement'
+import { findDuplicates } from '../utils/duplicateGuard'
 import { STORAGE_KEYS } from './storageKeys'
 
 /** 连续改库存时合并为单次写入，避免频繁 JSON + Storage 同步 */
@@ -158,6 +159,11 @@ export class PantryStore {
     return this.items.filter((i) => i.side === side && i.slotIndex === slotIndex)
   }
 
+  /** 查重：返回冰箱里与 name 视为同一食材的全部条目（用于入库拦截、超市秒查） */
+  findSimilarItems(name: string): PantryItem[] {
+    return findDuplicates(name, this.items)
+  }
+
   get expiringItems(): PantryItem[] {
     return this.items.filter((i) => getFreshnessStatus(i) === 'expiring')
   }
@@ -250,6 +256,11 @@ export class PantryStore {
 
   removeExpired() {
     this.items = this.items.filter((i) => getFreshnessStatus(i) !== 'expired')
+  }
+
+  /** 清空冰箱（仅供测试 / 用户主动清库） */
+  clearAll() {
+    this.items = []
   }
 
   deductItems(ingredientNames: string[]) {
