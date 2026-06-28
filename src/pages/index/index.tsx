@@ -14,11 +14,10 @@ import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
 import { looksLikeIngredientList, searchRecipesByTitle } from '../../utils/recipeSearch'
 import { initCatalog } from '../../data/catalogLoader'
 import { findRecipeByTitleExact, resolveFullRecipe } from '../../data/recipeRegistry'
-import { usesLlmProxy } from '../../api/recipe'
 import { usePantryStore } from '../../store/context'
 import { STORAGE_KEYS } from '../../store/storageKeys'
 import { getFreshnessStatus } from '../../types/pantry'
-import { pickImageForIntake } from '../../utils/mediaIntake'
+import { recognizeDishCandidates, DishVisionError, type DishCandidate } from '../../api/dishVision'
 import { VoiceRecorderSheet } from '../../components/VoiceRecorderSheet'
 import type { Recipe } from '../../types/recipe'
 import { D } from '../../theme/designTokens'
@@ -50,6 +49,7 @@ function Index() {
   const [listVariant, setListVariant] = useState(0)
   const [catalogTick, setCatalogTick] = useState(0)
   const [showVoice, setShowVoice] = useState(false)
+  const [dishCandidates, setDishCandidates] = useState<DishCandidate[] | null>(null)
 
   const skipSearchBlurRef = useRef(false)
 
@@ -151,14 +151,42 @@ function Index() {
     Taro.showToast({ title: '已清空', icon: 'none' })
   }
 
-  const handlePickImage = async (source: 'camera' | 'album') => {
-    const draft = await pickImageForIntake(source, 'ingredients')
-    if (!draft) return
-    Taro.showToast({
-      title: usesLlmProxy() ? '识别中，去冰箱看看' : '已采集，去冰箱核对',
-      icon: 'none',
-    })
-    Taro.switchTab({ url: '/pages/pantry/index' })
+  const handlePickDish = async (source: 'camera' | 'album') => {
+    let filePath = ''
+    try {
+      const res = await Taro.chooseMedia({
+        count: 1,
+        mediaType: ['image'],
+        sourceType: [source],
+        sizeType: ['compressed'],
+        camera: 'back',
+      })
+      filePath = res.tempFiles?.[0]?.tempFilePath || ''
+    } catch {
+      return // 用户取消选图
+    }
+    if (!filePath) return
+
+    Taro.showLoading({ title: '识别这道菜…', mask: true })
+    try {
+      const candidates = await recognizeDishCandidates(filePath)
+      Taro.hideLoading()
+      if (candidates.length === 1) {
+        // 只有一个候选，直接走搜索
+        doSearch(candidates[0].name)
+        return
+      }
+      setDishCandidates(candidates)
+    } catch (e) {
+      Taro.hideLoading()
+      const msg = e instanceof DishVisionError ? e.message : '识别失败，换张照片试试'
+      Taro.showToast({ title: msg, icon: 'none', duration: 2200 })
+    }
+  }
+
+  const pickDishCandidate = (name: string) => {
+    setDishCandidates(null)
+    doSearch(name)
   }
 
   const handleVoiceRecorded = () => {
@@ -264,7 +292,7 @@ function Index() {
                 style={S.searchActionBtnStyle}
                 onTouchStart={() => { skipSearchBlurRef.current = true }}
                 onClick={() => {
-                  handlePickImage('album')
+                  handlePickDish('album')
                 }}
               >
                 <Text style={{ fontSize: 18 }}>🖼</Text>
@@ -274,7 +302,7 @@ function Index() {
                 style={S.searchActionBtnStyle}
                 onTouchStart={() => { skipSearchBlurRef.current = true }}
                 onClick={() => {
-                  handlePickImage('camera')
+                  handlePickDish('camera')
                 }}
               >
                 <Text style={{ fontSize: 18 }}>📷</Text>
@@ -532,6 +560,106 @@ function Index() {
         onRecorded={handleVoiceRecorded}
         onTranscribed={handleVoiceTranscribed}
       />
+
+      {dishCandidates ? (
+        <View
+          style={{
+            position: 'fixed',
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end',
+            zIndex: 1000,
+          }}
+          onClick={() => setDishCandidates(null)}
+        >
+          <View
+            style={{
+              backgroundColor: D.bgElevated,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: '20px 16px calc(20px + env(safe-area-inset-bottom))',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Text style={{ fontSize: D.headline, fontWeight: D.weightBold, color: D.label }}>
+              这道菜是哪个？
+            </Text>
+            <Text style={{ fontSize: D.footnote, color: D.labelTertiary, marginTop: 4 }}>
+              相似的菜照片上不好分，点一下确认，给你对应做法
+            </Text>
+
+            {dishCandidates.map((c, i) => (
+              <View
+                key={c.name}
+                className="tap-scale"
+                onClick={() => pickDishCandidate(c.name)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  marginTop: 12,
+                  padding: 14,
+                  borderRadius: D.radiusM,
+                  backgroundColor: i === 0 ? D.accentMuted : D.bgGrouped,
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: D.body,
+                      fontWeight: D.weightSemibold,
+                      color: D.label,
+                    }}
+                  >
+                    {c.name}
+                    {i === 0 ? (
+                      <Text style={{ fontSize: D.caption, color: D.accent }}>　最像</Text>
+                    ) : null}
+                  </Text>
+                  {c.note ? (
+                    <Text
+                      style={{
+                        fontSize: D.caption,
+                        color: D.labelSecondary,
+                        marginTop: 3,
+                      }}
+                    >
+                      {c.note}
+                    </Text>
+                  ) : null}
+                </View>
+                <Text style={{ fontSize: D.body, color: D.labelTertiary }}>›</Text>
+              </View>
+            ))}
+
+            <View
+              className="tap-scale"
+              onClick={() => setDishCandidates(null)}
+              style={{
+                marginTop: 14,
+                padding: 12,
+                borderRadius: D.radiusM,
+                backgroundColor: 'transparent',
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: D.footnote,
+                  color: D.labelTertiary,
+                  textAlign: 'center',
+                }}
+              >
+                都不是 · 关闭
+              </Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </View>
   )
 }
