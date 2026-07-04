@@ -19,6 +19,7 @@ import { STORAGE_KEYS } from '../../store/storageKeys'
 import { getFreshnessStatus } from '../../types/pantry'
 import { recognizeDishCandidates, DishVisionError, type DishCandidate } from '../../api/dishVision'
 import { VoiceRecorderSheet } from '../../components/VoiceRecorderSheet'
+import { trackEvent } from '../../utils/analytics'
 import type { Recipe } from '../../types/recipe'
 import { D } from '../../theme/designTokens'
 import * as S from './styles'
@@ -92,6 +93,7 @@ function Index() {
   }
 
   const openRecipeDetail = async (item: Recipe) => {
+    trackEvent('recipe_open', { surface: 'home', source: item.source ?? 'local' })
     Taro.showLoading({ title: '加载中', mask: true })
     try {
       const full = await resolveFullRecipe({ ...item, source: item.source ?? 'local' })
@@ -113,9 +115,16 @@ function Index() {
     setShowHistory(false)
 
     const q = encodeURIComponent(keyword)
+    const searchType = looksLikeIngredientList(keyword) ? 'ingredients' : 'dish'
+    trackEvent('search_submit', {
+      surface: 'home',
+      type: searchType,
+      keywordLength: keyword.length,
+      pantryCount: pantryStore.totalCount,
+    })
 
     // 食材清单（含逗号等）→ 按食材匹配 + AI
-    if (looksLikeIngredientList(keyword)) {
+    if (searchType === 'ingredients') {
       Taro.navigateTo({ url: `/pages/result/index?from=ai&ingredients=${q}` })
       return
     }
@@ -133,7 +142,10 @@ function Index() {
 
   const handleGenerate = () => doSearch(inputValue)
 
-  const handleRandom = () => Taro.navigateTo({ url: '/pages/result/index?from=random' })
+  const handleRandom = () => {
+    trackEvent('random_recipe', { surface: 'home' })
+    Taro.navigateTo({ url: '/pages/result/index?from=random' })
+  }
 
   const handleCardClick = (item: Recipe) => {
     void openRecipeDetail(item)
@@ -173,12 +185,15 @@ function Index() {
       Taro.hideLoading()
       if (candidates.length === 1) {
         // 只有一个候选，直接走搜索
+        trackEvent('dish_vision_success', { source, candidates: 1 })
         doSearch(candidates[0].name)
         return
       }
+      trackEvent('dish_vision_success', { source, candidates: candidates.length })
       setDishCandidates(candidates)
     } catch (e) {
       Taro.hideLoading()
+      trackEvent('dish_vision_fail', { source })
       const msg = e instanceof DishVisionError ? e.message : '识别失败，换张照片试试'
       Taro.showToast({ title: msg, icon: 'none', duration: 2200 })
     }
@@ -209,8 +224,10 @@ function Index() {
       .then((live) => {
         if (live) {
           setWeather(live)
+          trackEvent('weather_enabled', { ok: true })
           Taro.showToast({ title: '已接入实时天气', icon: 'success' })
         } else {
+          trackEvent('weather_enabled', { ok: false })
           Taro.showToast({ title: '暂时无法获取，请稍后重试', icon: 'none' })
         }
       })

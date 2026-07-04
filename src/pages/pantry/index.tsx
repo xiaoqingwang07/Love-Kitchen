@@ -16,12 +16,13 @@ import {
   type FridgeLayoutConfig,
 } from '../../types/fridge'
 import { parseShoppingLines } from '../../utils/fridgePlacement'
-import { buildIntakePreview, previewToReceiptText } from '../../utils/pantryIntake'
+import { buildIntakePreview, previewToReceiptText, type IntakePreviewRow } from '../../utils/pantryIntake'
 import { buildDuplicateWarning, describeExisting } from '../../utils/duplicateGuard'
 import { VoiceRecorderSheet } from '../../components/VoiceRecorderSheet'
 import { isAsrAvailable } from '../../utils/voiceAsr'
 import { recognizePantryImage, PantryVisionError } from '../../api/pantryVision'
 import { usesLlmProxy } from '../../api/recipe'
+import { trackEvent } from '../../utils/analytics'
 import {
   readIntakeDraft,
   clearIntakeDraft,
@@ -71,9 +72,7 @@ function FridgePantry() {
   const [addAmount, setAddAmount] = useState('')
   const [showReceipt, setShowReceipt] = useState(false)
   const [receiptText, setReceiptText] = useState('')
-  const [receiptPreview, setReceiptPreview] = useState<
-    { name: string; amount: string; side: FridgeSide; slotIndex: number }[] | null
-  >(null)
+  const [receiptPreview, setReceiptPreview] = useState<IntakePreviewRow[] | null>(null)
   const [intakeDraft, setIntakeDraft] = useState<IntakeDraft | null>(null)
   const [intakeScene, setIntakeScene] = useState<IntakeScene>('receipt')
   const [visionLoading, setVisionLoading] = useState(false)
@@ -137,6 +136,7 @@ function FridgePantry() {
     const fresh = quickFill.filter((n) => store.findSimilarItems(n).length === 0)
     const doAdd = (names: string[]) => {
       for (const name of names) store.addItem(name, '适量')
+      trackEvent('pantry_add', { method: 'quick_fill', count: names.length })
       setQuickFill([])
       if (names.length > 0) {
         Taro.showToast({ title: `已加入 ${names.length} 样`, icon: 'success' })
@@ -514,6 +514,7 @@ function FridgePantry() {
         side: activeSlot.side,
         slotIndex: activeSlot.slotIndex,
       })
+      trackEvent('pantry_add', { method: 'manual', count: 1 })
       setAddName('')
       setAddAmount('')
       Taro.showToast({ title: '已放入', icon: 'success' })
@@ -592,6 +593,7 @@ function FridgePantry() {
         store.addItem(row.name, row.amount, { side: row.side, slotIndex: row.slotIndex })
       }
       const n = receiptPreview.length
+      trackEvent('pantry_add', { method: intakeDraft?.kind ?? 'text', count: n })
       setReceiptPreview(null)
       setReceiptText('')
       setShowReceipt(false)

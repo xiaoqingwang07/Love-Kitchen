@@ -20,6 +20,7 @@ import { D } from '../../theme/designTokens'
 import { STORAGE_KEYS } from '../../store/storageKeys'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
 import { SkeletonRecipeList } from '../../components/Skeleton'
+import { trackEvent } from '../../utils/analytics'
 import type { Recipe, SceneType } from '../../types/recipe'
 
 function parseScene(s: string | undefined): SceneType {
@@ -103,6 +104,7 @@ export default function Result() {
 
       if (cached && cached.length > 0) {
         if (cancelled) return
+        trackEvent('result_loaded', { source: 'cache', count: mergeWithLocal(cached).length })
         setRecipes(
           mergeWithLocal(cached).map((r) => ({
             ...r,
@@ -123,6 +125,7 @@ export default function Result() {
         const data = await fetchRecipes(ingredients, 3, { scene, strictIngredients: true })
         if (cancelled) return
         setCachedRecipe(cacheKey, data)
+        trackEvent('result_loaded', { source: 'ai', count: mergeWithLocal(data).length })
         setRecipes(
           mergeWithLocal(data).map((r) => ({
             ...r,
@@ -141,6 +144,7 @@ export default function Result() {
         const localMatched = matchRecipesSimple(ingredients, 6)
         const combined = localBase.length > 0 ? localBase : localMatched
         if (combined.length > 0) {
+          trackEvent('result_fallback', { reason: 'ai_error', count: combined.length })
           setNotice({
             tone: 'warn',
             title: 'AI 暂不可用',
@@ -154,6 +158,7 @@ export default function Result() {
             }))
           )
         } else {
+          trackEvent('result_empty', { reason: 'ai_error' })
           setNotice({
             tone: 'warn',
             title: '暂无合适搭配',
@@ -174,6 +179,7 @@ export default function Result() {
       try {
         const data = await fetchRecipeByDishName(dishName, { scene })
         if (cancelled) return
+        trackEvent('result_loaded', { source: 'dish_ai', count: data.length })
         setRecipes(
           data.map((r) => ({
             ...r,
@@ -190,6 +196,7 @@ export default function Result() {
       } catch (err: unknown) {
         if (cancelled) return
         const msg = (err as { message?: string })?.message || '生成失败'
+        trackEvent('result_empty', { reason: 'dish_ai_error' })
         setNotice({ tone: 'warn', title: 'AI 生成失败', detail: msg })
         setRecipes([])
         setMissDishName(dishName)
@@ -201,6 +208,12 @@ export default function Result() {
     const { auto, ingredients, from, id: presetId, scene: sceneParam, dish: dishParam } = router.params
     const decodedIngredients = ingredients ? decodeURIComponent(ingredients) : ''
     const scene = parseScene(sceneParam)
+    trackEvent('result_view', {
+      from: from || (auto === 'true' ? 'auto' : 'unknown'),
+      hasIngredients: Boolean(decodedIngredients),
+      hasDish: Boolean(dishParam),
+      scene,
+    })
 
     if (from === 'pantry' && decodedIngredients) {
       const list = decodedIngredients.split(/[,、]/).filter(Boolean)

@@ -133,7 +133,17 @@ export class PantryStore {
     }, PANTRY_PERSIST_DEBOUNCE_MS)
 
     autorun(() => {
-      void this.items.length
+      this.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        amount: item.amount,
+        addedAt: item.addedAt,
+        expiresAt: item.expiresAt,
+        defaultShelfLife: item.defaultShelfLife,
+        side: item.side,
+        slotIndex: item.slotIndex,
+      }))
       schedulePersist()
     })
   }

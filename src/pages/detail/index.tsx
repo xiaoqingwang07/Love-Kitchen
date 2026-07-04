@@ -18,6 +18,7 @@ import { generateShoppingList } from '../../utils/shoppingList'
 import { detectAndSaveNewAchievements, getUserStats } from '../../utils/achievements'
 import { useParallelTimers, formatMMSS } from '../../hooks/useParallelTimers'
 import { ShoppingListSheet } from '../../components/ShoppingListSheet'
+import { trackEvent } from '../../utils/analytics'
 
 const SHARE_PAYLOAD_LIMIT = 1500
 
@@ -132,6 +133,11 @@ function Detail() {
       const resolved = await resolveFullRecipe(raw)
       if (cancelled) return
       const enriched = enrichRecipeMedia(resolved)
+      trackEvent('detail_view', {
+        source: enriched.source ?? 'local',
+        hasSteps: Boolean(enriched.steps?.length),
+        ingredientCount: enriched.ingredients?.length || 0,
+      })
       setRecipe(enriched)
       setIsFavState(readIsFavorite(enriched.id))
       setShareMiss(false)
@@ -189,12 +195,18 @@ function Detail() {
   const handleToggleFavorite = () => {
     if (!recipe) return
     const next = toggleFavorite(recipe)
+    trackEvent('favorite_toggle', { enabled: next, source: recipe.source ?? 'local' })
     setIsFavState(next)
     Taro.showToast({ title: next ? '已收藏' : '已取消', icon: 'none' })
   }
 
   const handleStartCooking = () => {
     if (!recipe?.steps || recipe.steps.length === 0) return
+    trackEvent('cooking_start', {
+      source: recipe.source ?? 'local',
+      stepCount: recipe.steps.length,
+      pantryCount: pantryStore.totalCount,
+    })
 
     const ingredientNames = (recipe.ingredients || []).map((i) => i.name)
     const hasMatchInPantry = ingredientNames.some(
@@ -231,6 +243,7 @@ function Detail() {
     if (!recipe) return
     const ok = markAsCooked(recipe)
     if (ok) {
+      trackEvent('recipe_cooked', { source: recipe.source ?? 'local' })
       const stats = getUserStats(pantryStore.items)
       const newAchievements = detectAndSaveNewAchievements(stats)
       if (newAchievements.length > 0) {
