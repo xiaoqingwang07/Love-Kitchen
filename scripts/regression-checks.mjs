@@ -8,6 +8,25 @@ function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8')
 }
 
+/** 提取 class 方法源码（按大括号配对，支持嵌套 reaction 等） */
+function methodBody(src, name) {
+  const re = new RegExp(`\\n  (?:private )?${name}\\([^)]*\\)\\s*\\{`)
+  const m = re.exec(src)
+  if (!m) return ''
+  const lineStart = m.index + 1
+  const brace = src.indexOf('{', m.index)
+  if (brace < 0) return ''
+  let depth = 0
+  for (let i = brace; i < src.length; i++) {
+    if (src[i] === '{') depth++
+    else if (src[i] === '}') {
+      depth--
+      if (depth === 0) return src.slice(lineStart, i + 1)
+    }
+  }
+  return ''
+}
+
 function expect(name, condition) {
   if (!condition) failures.push(name)
 }
@@ -18,6 +37,11 @@ const recipeApi = read('src/api/recipe.ts')
 const llmProxy = read('api/llm-proxy.js')
 const catalogLoader = read('src/data/catalogLoader.ts')
 const appConfig = read('src/app.config.ts')
+const indexPage = read('src/pages/index/index.tsx')
+const resultPage = read('src/pages/result/index.tsx')
+const mealBuilder = read('src/utils/mealPlanBuilder.ts')
+const reminderCron = read('api/reminder-cron.js')
+const catalogQuality = read('src/utils/catalogQuality.ts')
 
 expect(
   'PantryStore autorun 应观察条目字段，避免编辑/移动不落盘',
@@ -26,7 +50,8 @@ expect(
 
 expect(
   '冰箱入库预览应使用 IntakePreviewRow，确保 duplicateOf 类型存在',
-  pantryPage.includes('type IntakePreviewRow') && pantryPage.includes('useState<IntakePreviewRow[] | null>')
+  read('src/utils/pantryIntake.ts').includes('IntakePreviewRow') &&
+    (pantryPage.includes('IntakePreviewRow') || read('src/pages/pantry/usePantryIntake.ts').includes('IntakePreviewRow'))
 )
 
 expect(
@@ -54,6 +79,203 @@ expect(
     fs.existsSync(path.join(root, `src/assets/tabbar/${name}_active.png`))
   )
 )
+
+expect(
+  'tabBar 选菜页应改名为今晚',
+  appConfig.includes("text: '今晚'")
+)
+
+const homePantryBanner = read('src/pages/index/components/HomePantryBanner.tsx')
+expect(
+  '首页空冰箱应有拍小票建冰箱引导',
+  homePantryBanner.includes('拍小票建冰箱') && homePantryBanner.includes('startReceiptIntakeFromHome')
+)
+
+const resultLoader = read('src/pages/result/useResultLoader.ts')
+expect(
+  '结果页应支持 tonight meal 模式',
+  resultLoader.includes("from === 'meal'") && resultLoader.includes('buildMealPlansWithAiFallback')
+)
+
+expect(
+  'mealPlanBuilder 应能输出 MealPlan',
+  mealBuilder.includes('buildLocalMealPlans') && fs.existsSync(path.join(root, 'src/types/mealPlan.ts'))
+)
+
+expect('catalogLoader 应经 legacyFullLoader 加载内置菜谱', catalogLoader.includes('legacyFullLoader') && fs.existsSync(path.join(root, 'src/data/legacyFullLoader.ts')))
+expect(
+  'catalog 运行时质量分',
+  catalogQuality.includes('computeQualityScore') && catalogLoader.includes('applyQualityEnrichment')
+)
+
+expect(
+  '临期提醒应跳转到 meal 方案页',
+  reminderCron.includes('from=meal') && reminderCron.includes('source=reminder')
+)
+
+const householdStore = read('src/store/householdStore.ts')
+const householdApi = read('src/api/household.ts')
+const applyRemotePantryFn = methodBody(householdStore, 'applyRemotePantry')
+const bindPantryFn = methodBody(householdStore, 'bindPantry')
+expect(
+  '家庭厨房应有 HouseholdStore 与 API 抽象',
+  householdStore.includes('class HouseholdStore') &&
+    householdApi.includes('householdApiConfigured') &&
+    fs.existsSync(path.join(root, 'src/types/household.ts'))
+)
+
+expect(
+  'Profile 应包含家庭厨房入口',
+  read('src/pages/profile/index.tsx').includes('HouseholdPanel')
+)
+
+const shareLinks = read('src/utils/shareLinks.ts')
+const profilePage = read('src/pages/profile/index.tsx')
+const navPayload = read('src/utils/navigationPayload.ts')
+expect('分享链路应支持分类型 path', shareLinks.includes('primeShoppingShare') && shareLinks.includes('buildHouseholdSharePath'))
+expect('Profile 开发者区应可导出埋点', profilePage.includes('copyAnalyticsExport'))
+expect('跨页导航应使用 navigationPayload', navPayload.includes('setSelectedRecipeForDetail'))
+expect('冰箱页应拆出 FridgeCabinet 组件', fs.existsSync(path.join(root, 'src/pages/pantry/components/FridgeCabinet.tsx')))
+expect('应有 AppIcon 统一主功能图标', fs.existsSync(path.join(root, 'src/components/AppIcon.tsx')))
+expect('详情页应拆出 CookingMode 组件', fs.existsSync(path.join(root, 'src/pages/detail/components/CookingMode.tsx')))
+expect('pantry 应拆出 IntakeSheet 组件', fs.existsSync(path.join(root, 'src/pages/pantry/components/IntakeSheet.tsx')))
+expect('详情页应拆出 RecipeHero 与 PantryContextBar', fs.existsSync(path.join(root, 'src/pages/detail/components/RecipeHero.tsx')))
+expect('mealPlanBuilder 应支持 AI 补充方案', read('src/utils/mealPlanBuilder.ts').includes('buildMealPlansWithAiFallback'))
+expect('冰箱页应拆出 SupermarketLookup 与 PantryItemEditSheet', pantryPage.includes('SupermarketLookup') && pantryPage.includes('PantryItemEditSheet'))
+expect('详情页应拆出 IngredientGrid', read('src/pages/detail/index.tsx').includes('IngredientGrid'))
+expect('Profile 应拆出 AchievementsPanel 与 PreferencePanel', read('src/pages/profile/components/ProfileStatsHeader.tsx').includes('AchievementsPanel') && profilePage.includes('PreferencePanel'))
+expect('冰箱页应拆出 FridgeLayoutSettingsSheet 与 SlotDetailSheet', pantryPage.includes('FridgeLayoutSettingsSheet') && pantryPage.includes('SlotDetailSheet'))
+expect('详情页应拆出 RecipeStepsList', read('src/pages/detail/index.tsx').includes('RecipeStepsList'))
+expect('Profile 应拆出 FavoritesListPage 与 CookedHistoryPage', profilePage.includes('FavoritesListPage') && profilePage.includes('CookedHistoryPage'))
+expect('Profile 应拆出 useProfileLifecycle 与 ProfileStatsHeader', profilePage.includes('useProfileLifecycle') && fs.existsSync(path.join(root, 'src/pages/profile/components/ProfileStatsHeader.tsx')))
+expect('pantry 应拆出 ExpiryOverview 与 QuickFillPanel', pantryPage.includes('ExpiryOverview') && pantryPage.includes('QuickFillPanel'))
+expect('Profile 应拆出 AboutPage 与 DevToolsPanel', profilePage.includes('AboutPage') && profilePage.includes('DevToolsPanel'))
+expect('navigationPayload 应封装跨页导航 flag', navPayload.includes('setPantryPendingAction') && navPayload.includes('consumePickAutoSelectIngredients') && navPayload.includes('setPendingJoinCode'))
+expect('跨页导航应经 navigationPayload 读写', indexPage.includes('consumeAutoSearchIngredient') && read('src/utils/mediaIntake.ts').includes('setPantryPendingAction'))
+expect('pantry 应拆出 usePantryIntake 与 PantryBottomBar', pantryPage.includes('usePantryIntake') && pantryPage.includes('PantryBottomBar'))
+expect('result 应拆出 RecipeResultCard 与 MealPlanActions', resultPage.includes('RecipeResultCard') && resultPage.includes('MealPlanActions'))
+expect('index 应拆出 HomePantryBanner 与 HomeSearchBar', indexPage.includes('HomePantryBanner') && fs.existsSync(path.join(root, 'src/pages/index/components/HomeSearchBar.tsx')))
+expect('AppIcon 应支持 PNG 资源', fs.existsSync(path.join(root, 'src/assets/icons/camera.png')))
+expect('首页搜索栏主按钮应使用 AppIcon', read('src/pages/index/components/HomeSearchBar.tsx').includes('AppIcon') && !read('src/pages/index/components/HomeSearchBar.tsx').includes('🎙'))
+expect('result 应拆出 ResultPageHeader 与 resultUtils', resultPage.includes('ResultPageHeader') && fs.existsSync(path.join(root, 'src/pages/result/resultUtils.ts')))
+expect('result 应拆出 useResultLoader', fs.existsSync(path.join(root, 'src/pages/result/useResultLoader.ts')) && resultPage.includes('useResultLoader'))
+expect('detail 应拆出 NutritionInsight 与 DetailBottomBar', read('src/pages/detail/index.tsx').includes('NutritionInsight') && read('src/pages/detail/index.tsx').includes('DetailBottomBar'))
+const reminderEmpty = read('src/pages/result/components/ReminderMealEmptyBar.tsx')
+expect(
+  '临期无方案降级应支持延长/丢弃/采购',
+  reminderEmpty.includes('extendExpiringByNames') &&
+    reminderEmpty.includes('deductItems') &&
+    reminderEmpty.includes('addShoppingItems')
+)
+expect('verify-bundle 脚本应存在', fs.existsSync(path.join(root, 'scripts/verify-bundle.mjs')))
+expect('PantryStore 应支持延长临期', pantryStore.includes('extendExpiringByNames'))
+
+const householdSyncApi = read('api/household-sync.js')
+expect('P0-1 家庭同步 pull/push 须 memberToken 鉴权', householdSyncApi.includes('verifyMemberAuth') && householdSyncApi.includes('401'))
+expect(
+  'P0-1 pullHouseholdRemote 401 应抛出 HouseholdApiError，不得吞掉返回 null',
+  householdApi.includes('export class HouseholdApiError') &&
+    householdApi.includes('get unauthorized') &&
+    householdApi.includes('normalizeApiErrorMessage') &&
+    /pullHouseholdRemote[\s\S]*Promise<Household>/.test(householdApi) &&
+    !/pullHouseholdRemote[\s\S]*catch[\s\S]*return null/.test(householdApi)
+)
+expect(
+  'P0-1 post 应将 unauthorized 映射为中文，不得透传空 error',
+  householdApi.includes("err === 'unauthorized'") &&
+    householdApi.includes('无权访问家庭数据，请重新加入家庭') &&
+    householdApi.includes('网络异常，请稍后重试')
+)
+expect(
+  'P0-1 HouseholdStore 同步错误应有 fallback，不得显示空文案',
+  householdStore.includes('function syncErrorMessage') &&
+    householdStore.includes('failSync') &&
+    householdStore.includes("failSync(e, '拉取失败')") &&
+    householdStore.includes("failSync(e, '推送失败')") &&
+    householdStore.includes("syncErrorMessage(e, '创建失败')") &&
+    householdStore.includes("syncErrorMessage(e, '加入失败')")
+)
+expect(
+  'P0-1 pull/push 401 应清除 memberToken',
+  householdStore.includes('failSync') &&
+    /failSync[\s\S]*e\.unauthorized[\s\S]*clearUnauthorizedToken/.test(householdStore) &&
+    /pushRemote[\s\S]*缺少成员凭证/.test(householdStore)
+)
+expect('P0-3 购物清单 push 应覆盖而非 name-merge', householdSyncApi.includes('incoming.shoppingList') && !householdSyncApi.includes('mergeShoppingList(existing'))
+expect('P0-2 catalog 详情应保留 lite.id', catalogLoader.includes('attachStableCatalogDetail') && catalogLoader.includes('catalogId'))
+expect('P1 catalog 索引 id 应映射到 offset runtime id', catalogLoader.includes('toCatalogRuntimeId') && catalogLoader.includes('CATALOG_RUNTIME_OFFSET'))
+expect('P1 catalog-only 应有 catalogId 且 lite 查找优先', catalogLoader.includes('findLiteByAnyId') && catalogLoader.includes('catalogId: entry.id'))
+expect('P1 findRecipeById 应支持 catalogId 回退', read('src/data/recipeRegistry.ts').includes('catalogId'))
+expect('P1 getRecipeDetailById 不应先按 legacy id 覆盖 catalog', !catalogLoader.includes('if (legacyById?.steps?.length) return enrichRecipeMedia(legacyById)'))
+expect('P2 pull 应 cancel 待执行的 debounce push', householdStore.includes('schedulePush.cancel()'))
+expect(
+  'P0-4 applyRemotePantry 应置 suppress，由 reaction 消费复位',
+  /applyRemotePantry[\s\S]*suppressNextPantryPush = true[\s\S]*replaceItems[\s\S]*}\s*\n/.test(
+    householdStore
+  ) &&
+    /if \(this\.suppressNextPantryPush\)[\s\S]*suppressNextPantryPush = false[\s\S]*return/.test(
+      householdStore
+    )
+)
+expect(
+  'P0-4 不应使用 counter/setTimeout/snapshot 抑制 push',
+  !householdStore.includes('pantrySnapshot') &&
+    !householdStore.includes('remotePantrySnapshot') &&
+    !householdStore.includes('suppressPantryPushDepth') &&
+    !householdStore.includes('skipCounter') &&
+    !/applyRemotePantry[\s\S]*setTimeout/.test(householdStore)
+)
+expect(
+  'P0-4 PantryStore.replaceItems 应整表替换 items',
+  pantryStore.includes('replaceItems(items: PantryItem[])') &&
+    /replaceItems[\s\S]*this\.items\s*=/.test(pantryStore)
+)
+expect(
+  'P0-4 bindPantry reaction 应监听 pantry.items',
+  bindPantryFn.includes('reaction(') && bindPantryFn.includes('pantry.items.map')
+)
+expect(
+  'P2 bindPantry 应先注册 reaction 再 applyRemotePantry',
+  bindPantryFn.indexOf('this.disposer = reaction(') <
+    bindPantryFn.indexOf('this.applyRemotePantry(this.household.pantryItems)')
+)
+expect(
+  'P0-4 冰箱变更应经 reaction → schedulePush → pushRemote',
+  bindPantryFn.includes('schedulePush()') &&
+    householdStore.includes('debounce(() => void this.pushRemote()') &&
+    householdStore.includes('async pushRemote()')
+)
+expect(
+  'P0-4 applyRemotePantry 只 replaceItems，不直接 push',
+  applyRemotePantryFn.includes('this.pantry.replaceItems(items)') &&
+    !applyRemotePantryFn.includes('schedulePush') &&
+    !applyRemotePantryFn.includes('pushRemote')
+)
+expect(
+  'P0-4 pull 链路应为 applyHousehold → applyRemotePantry → replaceItems',
+  /pullRemote[\s\S]*applyHousehold\(remote,\s*true\)/.test(householdStore) &&
+    /applyHousehold[\s\S]*applyRemotePantry\(h\.pantryItems\)/.test(householdStore)
+)
+const homeKitchenStatus = read('src/pages/index/components/HomeKitchenStatus.tsx')
+expect('首页应有厨房状态面板', indexPage.includes('HomeKitchenStatus'))
+expect(
+  '示例冰箱应带 ingredients 跳转今晚方案',
+  homeKitchenStatus.includes('buildMealResultPath') &&
+    homeKitchenStatus.includes('const items = pantryStore.loadDemoPantry()') &&
+    homeKitchenStatus.includes("buildMealResultPath(items, 'demo-pantry')") &&
+    homeKitchenStatus.includes('ingredients=') &&
+    homeKitchenStatus.includes('expiring=') &&
+    pantryStore.includes('loadDemoPantry(): PantryItem[]')
+)
+expect('空冰箱应可体验示例冰箱', homePantryBanner.includes('示例冰箱') && pantryStore.includes('loadDemoPantry'))
+expect('用户可见错误不应暴露 TARO_APP', !read('src/api/dishVision.ts').includes("'TARO_APP") && read('src/api/recipe.ts').includes('智能推荐服务未就绪'))
+expect('家庭面板应支持删除已勾选采购项', read('src/pages/profile/components/HouseholdPanel.tsx').includes('removeCheckedShopping'))
+expect('烹饪完成应上报 meal_solved', read('src/utils/analyticsExport.ts').includes('meal_solved'))
+expect('Epic E 应有 mealSolved 计数与 Plus 软提示', fs.existsSync(path.join(root, 'src/utils/mealSolvedTracker.ts')) && read('src/utils/mealSolvedTracker.ts').includes('EVENTS.upgradePromptShown'))
+expect('Epic E 应有每周菜单建议', fs.existsSync(path.join(root, 'src/pages/profile/components/WeeklyMenuCard.tsx')) && read('src/utils/weeklyMenuSuggest.ts').includes('buildWeeklyMenuSuggestion'))
+expect('今晚方案应解释推荐依据', fs.existsSync(path.join(root, 'src/pages/result/components/MealPlanReasonBar.tsx')))
+expect('分享应支持三类标题', shareLinks.includes('今晚吃【') && shareLinks.includes('帮我买') && shareLinks.includes('加入我家的厨房清单'))
+expect('meal 缺货应加入采购清单', resultPage.includes('handleAddMealShopping') && resultPage.includes('addShoppingItems'))
 
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL ${failure}`)

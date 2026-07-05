@@ -9,16 +9,20 @@
     "css": "sass"
   },
   "scripts": {
-    "postinstall": "node scripts/patch-swc-register-cwd.mjs",
+    "postinstall": "node scripts/patch-swc-register-cwd.mjs && node scripts/link-catalog-public.mjs",
     "dev:weapp": "taro build --type weapp --watch",
     "build:weapp": "taro build --type weapp",
+    "dev:catalog": "node scripts/catalog-cdn-local.mjs",
+    "dev:local": "node scripts/dev-local.mjs",
     "dev:h5": "taro build --type h5 --watch",
     "build:h5": "taro build --type h5",
     "typecheck": "tsc --noEmit",
-    "test:regression": "node scripts/regression-checks.mjs",
+    "test:regression": "node scripts/regression-checks.mjs && node scripts/catalog-id-check.mjs && node scripts/demo-pantry-meal-check.mjs && node scripts/household-suppress-push-check.mjs",
     "check:release": "node scripts/check-release-readiness.mjs",
-    "verify:release": "npm run typecheck && npm run test:regression && npm run check:release && npm run build:weapp",
+    "verify:features": "node scripts/verify-features.mjs",
+    "verify:all": "npm run typecheck && npm run test:regression && npm run check:release && node scripts/verify-features.mjs && npm run build:weapp && node scripts/verify-bundle.mjs",
     "smoke:minimax": "node scripts/smoke-minimax.mjs",
+    "smoke:llm-proxy": "node scripts/smoke-llm-proxy.mjs",
     "setup:env": "node scripts/setup-env.mjs",
     "dev:llm-proxy": "node scripts/llm-proxy-local.mjs",
     "fetch:recipe-images": "node scripts/fetch-recipe-images.mjs",
@@ -26,7 +30,11 @@
     "fix:catalog-images": "node scripts/fix-catalog-image-cache.mjs",
     "emit:legacy-images": "node scripts/emit-legacy-images.mjs",
     "patch:catalog-media": "node scripts/patch-catalog-media.mjs",
-    "import:recipe": "node scripts/import-recipe-from-xcf.mjs"
+    "import:recipe": "node scripts/import-recipe-from-xcf.mjs",
+    "audit:catalog": "node scripts/audit-catalog-quality.mjs",
+    "clean:catalog": "node scripts/clean-catalog-quality.mjs",
+    "build:legacy-lite": "node scripts/build-legacy-lite.mjs",
+    "icons:generate": "node scripts/generate-app-icons.mjs"
   },
   "browserslist": [
     "last 3 versions",
