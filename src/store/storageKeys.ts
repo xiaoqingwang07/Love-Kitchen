@@ -3,7 +3,7 @@
  */
 export const STORAGE_KEYS = {
   selectedRecipeDetail: 'selectedRecipeDetail',
-  savedIngredients: 'savedIngredients',
+  savedIngredients: 'savedIngredients', // legacy，已无读写方，保留键名兼容旧数据
   profileOpenFavorites: 'profileOpenFavorites',
   autoSearchIngredient: 'autoSearchIngredient',
   sharedRecipeSnapshot: 'sharedRecipeSnapshot',
@@ -26,6 +26,22 @@ export const STORAGE_KEYS = {
   unlockedAchievements: 'unlockedAchievements',
   expiryReminder: 'expiryReminder',
   analyticsEvents: 'analyticsEvents',
+  /** 首次成功入库标记 */
+  firstIntakeCompleted: 'firstIntakeCompleted',
+  /** 冰箱页待执行动作：receipt | ingredients | paste */
+  pantryPendingAction: 'pantryPendingAction',
+  /** 家庭厨房本地状态 */
+  householdState: 'householdState',
+  householdMemberId: 'householdMemberId',
+  householdMemberToken: 'householdMemberToken',
+  /** 分享购物清单快照 */
+  sharedShoppingList: 'sharedShoppingList',
+  /** 待加入家庭的邀请码（分享链接落地） */
+  pendingJoinCode: 'pendingJoinCode',
+  /** 成功解决晚餐次数（烹饪模式完成） */
+  mealSolvedCount: 'mealSolvedCount',
+  /** Plus 软提示已展示 */
+  plusPromptShown: 'plusPromptShown',
 } as const
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS]

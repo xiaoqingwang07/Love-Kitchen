@@ -86,7 +86,7 @@ function parseCandidates(raw: unknown): { isFood: boolean; candidates: DishCandi
 /** 识别一张菜品照片，返回 2~3 个候选菜名 */
 export async function recognizeDishCandidates(filePath: string): Promise<DishCandidate[]> {
   if (!usesLlmProxy()) {
-    throw new DishVisionError('请先配置 AI 服务（TARO_APP_LLM_PROXY_URL）', 'NO_PROXY')
+    throw new DishVisionError('智能识菜服务未就绪，请稍后再试', 'NO_PROXY')
   }
 
   const dataUrl = readImageAsDataUrl(filePath)

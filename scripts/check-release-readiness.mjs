@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { execSync } from 'node:child_process'
 
 const root = process.cwd()
 const errors = []
@@ -26,7 +27,7 @@ const projectConfig = readJson('project.config.json')
 const appConfig = fs.readFileSync(path.join(root, 'src/app.config.ts'), 'utf8')
 const npmrc = exists('.npmrc') ? fs.readFileSync(path.join(root, '.npmrc'), 'utf8') : ''
 
-for (const script of ['typecheck', 'test:regression', 'check:release', 'build:weapp']) {
+for (const script of ['typecheck', 'test:regression', 'check:release', 'build:weapp', 'audit:catalog']) {
   if (!packageJson.scripts?.[script]) fail(`package.json 缺少 scripts.${script}`)
 }
 
@@ -44,7 +45,7 @@ for (const icon of [
 }
 
 if (!appConfig.includes("plugins:") || !appConfig.includes("WechatSI")) {
-  warn('未检测到微信同声传译插件配置，语音实时识别会降级')
+  warn('未启用 WechatSI 插件（默认关闭，避免未授权导致模拟器无法启动）；语音 ASR 将降级。上线前在公众平台添加插件并设 TARO_APP_ENABLE_WECHAT_SI=true')
 }
 
 const setting = projectConfig.setting || {}
@@ -82,6 +83,33 @@ if (exists('.env.local')) {
   }
 } else {
   warn('未检测到 .env.local；请在发布机确认 TARO_APP_LLM_PROXY_URL / TARO_APP_CATALOG_BASE_URL 等构建变量')
+}
+
+const indexPage = exists('src/pages/index/index.tsx') ? fs.readFileSync(path.join(root, 'src/pages/index/index.tsx'), 'utf8') : ''
+if (!indexPage.includes('拍小票建冰箱')) {
+  warn('首页空冰箱引导应包含「拍小票建冰箱」主动作')
+}
+if (!appConfig.includes("text: '今晚'")) {
+  warn('tabBar 选菜页应改名为「今晚」')
+}
+
+if (exists('catalog-cdn/index.json')) {
+  try {
+    const raw = execSync('node scripts/audit-catalog-quality.mjs --json', { cwd: root, stdio: 'pipe' }).toString()
+    const report = JSON.parse(raw)
+    if (report.displayTitleIssueRate > 0.05) {
+      errors.push(`catalog 展示标题异常率 ${(report.displayTitleIssueRate * 100).toFixed(1)}% > 5%`)
+    }
+    if (report.ingredientIssueRate > 0.01) {
+      errors.push(`catalog 食材异常率 ${(report.ingredientIssueRate * 100).toFixed(1)}% > 1%`)
+    }
+    if (report.timeIssueRate > 0.01) {
+      errors.push(`catalog 耗时异常率 ${(report.timeIssueRate * 100).toFixed(1)}% > 1%`)
+    }
+  } catch (e) {
+    if (e.status === 1) throw e
+    warn('catalog 质量审计未通过或脚本执行失败，请运行 npm run audit:catalog')
+  }
 }
 
 for (const msg of warnings) console.warn(`WARN ${msg}`)

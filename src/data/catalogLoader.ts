@@ -11,8 +11,8 @@
  */
 import type { Recipe } from '../types/recipe'
 import { enrichRecipeMedia } from '../utils/enrichRecipeMedia'
-import { RAW } from './recipesLegacy'
-import { ADDITIONAL_RECIPES } from './additionalRecipes'
+import { buildImageDupMap, enrichRecipeQuality } from '../utils/catalogQuality'
+import { loadLegacyFullRecipes } from './legacyFullLoader'
 import Taro from '@tarojs/taro'
 
 export interface CatalogIndexEntry {
@@ -27,6 +27,9 @@ export interface CatalogIndexEntry {
   emoji?: string
   quote?: string
   image?: string
+  displayTitle?: string
+  originalTitle?: string
+  qualityScore?: number
   chunk: number
 }
 
@@ -42,11 +45,57 @@ const INDEX_FILE = 'index.json'
 const META_FILE = 'meta.json'
 const REQUEST_TIMEOUT_MS = 20000
 
+/** legacy/additional 占用 1–200；catalog 索引同号菜需偏移 runtime id */
+export const LEGACY_MAX_ID = 200
+/** catalog 索引 id ≤ LEGACY_MAX_ID 时的 runtime id 命名空间 */
+export const CATALOG_RUNTIME_OFFSET = 100_000
+
+/** catalog 索引 id → 用户侧稳定 runtime id（收藏/详情/分享用） */
+export function toCatalogRuntimeId(catalogIndexId: number): number {
+  return catalogIndexId > LEGACY_MAX_ID ? catalogIndexId : CATALOG_RUNTIME_OFFSET + catalogIndexId
+}
+
+export function isLegacyRuntimeId(id: string | number): boolean {
+  const n = Number(id)
+  return Number.isFinite(n) && n >= 1 && n <= LEGACY_MAX_ID
+}
+
 let indexCache: CatalogIndexEntry[] = []
 const chunkCache = new Map<number, Recipe[]>()
-let legacyLoaded: Recipe[] | null = null
 let liteCache: Recipe[] | null = null
+let legacyQuickCache: Recipe[] | null = null
+let catalogGeneration = 0
+let buildingFullLite = false
 let initPromise: Promise<void> | null = null
+
+export function getCatalogGeneration(): number {
+  return catalogGeneration
+}
+
+function bumpCatalogGeneration() {
+  catalogGeneration += 1
+}
+
+function getLegacyQuickLite(): Recipe[] {
+  if (legacyQuickCache) return legacyQuickCache
+  legacyQuickCache = applyQualityEnrichment(loadLegacyBase())
+  return legacyQuickCache
+}
+
+function scheduleFullLiteBuild() {
+  if (buildingFullLite || liteCache) return
+  buildingFullLite = true
+  setTimeout(() => {
+    try {
+      liteCache = buildLiteCatalog()
+      bumpCatalogGeneration()
+    } catch (e) {
+      console.warn('buildLiteCatalog failed', e)
+    } finally {
+      buildingFullLite = false
+    }
+  }, 0)
+}
 
 /* ───────── 配置 ───────── */
 
@@ -194,9 +243,15 @@ function normalizeTitleKey(title: string): string {
 function indexEntryToLiteRecipe(entry: CatalogIndexEntry): Recipe {
   const image =
     entry.image && /i\d+\.chuimg\.com/i.test(entry.image) ? entry.image : undefined
+  const title = entry.displayTitle || entry.title
+  const runtimeId = toCatalogRuntimeId(entry.id)
   return {
-    id: entry.id,
-    title: entry.title,
+    id: runtimeId,
+    catalogId: entry.id,
+    title,
+    displayTitle: entry.displayTitle,
+    originalTitle: entry.originalTitle || entry.title,
+    qualityScore: entry.qualityScore,
     source: 'local',
     quote: entry.quote,
     rating: entry.rating,
@@ -212,17 +267,70 @@ function indexEntryToLiteRecipe(entry: CatalogIndexEntry): Recipe {
 }
 
 function loadLegacyBase(): Recipe[] {
-  return [...RAW, ...ADDITIONAL_RECIPES].map((r) => ({ ...r, source: 'local' as const }))
-}
-
-function loadLegacyRecipes(): Recipe[] {
-  if (legacyLoaded) return legacyLoaded
-  legacyLoaded = loadLegacyBase().map(enrichRecipeMedia)
-  return legacyLoaded
+  return loadLegacyFullRecipes()
 }
 
 function getIndexSync(): CatalogIndexEntry[] {
   return indexCache
+}
+
+function applyQualityEnrichment(recipes: Recipe[]): Recipe[] {
+  const withMedia = recipes.map((r) => enrichRecipeMedia(r))
+  const dupMap = buildImageDupMap(withMedia)
+  return withMedia.map((r) =>
+    enrichRecipeQuality(r, r.image ? dupMap.get(r.image.trim()) || 1 : 1)
+  )
+}
+
+function attachStableCatalogDetail(full: Recipe, lite: Recipe, entry?: CatalogIndexEntry): Recipe {
+  return enrichRecipeMedia({
+    ...full,
+    id: lite.id,
+    catalogId: entry?.id ?? lite.catalogId ?? full.id,
+    displayTitle: lite.displayTitle ?? full.displayTitle,
+    qualityScore: lite.qualityScore ?? full.qualityScore,
+  })
+}
+
+function findLiteByAnyId(id: string | number): Recipe | undefined {
+  const sid = String(id)
+  const recipes = getCatalogLiteRecipes()
+  return (
+    recipes.find((r) => String(r.id) === sid) ??
+    recipes.find((r) => r.catalogId != null && String(r.catalogId) === sid)
+  )
+}
+
+function findIndexEntryForLite(lite: Recipe): CatalogIndexEntry | undefined {
+  const index = getIndexSync()
+  if (lite.catalogId != null) {
+    const byCatalogId = index.find((e) => e.id === lite.catalogId)
+    if (byCatalogId) return byCatalogId
+  }
+  return index.find((e) => normalizeTitleKey(e.title) === normalizeTitleKey(lite.title))
+}
+
+function resolveLegacyDetail(lite: Recipe, legacy: Recipe[]): Recipe | undefined {
+  const legacyFull = legacy.find((r) => String(r.id) === String(lite.id))
+  if (!legacyFull) return undefined
+  return enrichRecipeMedia(legacyFull)
+}
+
+function resolveCatalogDetailFromCache(
+  lite: Recipe,
+  entry: CatalogIndexEntry,
+  legacy: Recipe[]
+): Recipe {
+  const legacyByTitle = legacy.find(
+    (r) => normalizeTitleKey(r.title) === normalizeTitleKey(lite.title)
+  )
+  if (legacyByTitle?.steps?.length) {
+    return enrichRecipeMedia({ ...legacyByTitle, id: lite.id, catalogId: lite.catalogId })
+  }
+  const cached = chunkCache.get(entry.chunk)
+  if (!cached) return enrichRecipeMedia(lite)
+  const full = cached.find((r) => normalizeTitleKey(r.title) === normalizeTitleKey(entry.title))
+  return full ? attachStableCatalogDetail(full, lite, entry) : enrichRecipeMedia(lite)
 }
 
 function buildLiteCatalog(): Recipe[] {
@@ -230,20 +338,15 @@ function buildLiteCatalog(): Recipe[] {
   const legacy = loadLegacyBase()
 
   if (index.length === 0) {
-    return legacy.map(enrichRecipeMedia)
+    return applyQualityEnrichment(legacy)
   }
 
   const legacyKeys = new Set(legacy.map((r) => normalizeTitleKey(r.title)))
-  let nextId = Math.max(...legacy.map((r) => Number(r.id) || 0), 0) + 1
-
   const catalogOnly = index
     .filter((e) => !legacyKeys.has(normalizeTitleKey(e.title)))
-    .map((e) => ({
-      ...indexEntryToLiteRecipe(e),
-      id: nextId++,
-    }))
+    .map((e) => indexEntryToLiteRecipe(e))
 
-  return [...legacy, ...catalogOnly]
+  return applyQualityEnrichment([...legacy, ...catalogOnly])
 }
 
 /* ───────── 公共 API（签名保持不变） ───────── */
@@ -251,9 +354,12 @@ function buildLiteCatalog(): Recipe[] {
 export function initCatalog(): Promise<void> {
   if (initPromise) return initPromise
   initPromise = (async () => {
-    // 未配置远端：直接走 legacy 200，不发请求
+    liteCache = null
+    legacyQuickCache = null
+
+    // 未配置远端：直接走 legacy lite，不发请求
     if (!usesRemoteCatalog()) {
-      liteCache = null
+      liteCache = buildLiteCatalog()
       return
     }
 
@@ -277,6 +383,7 @@ export function initCatalog(): Promise<void> {
       setTimeout(() => {
         try {
           liteCache = buildLiteCatalog()
+          bumpCatalogGeneration()
         } catch (e) {
           console.warn('buildLiteCatalog failed', e)
         }
@@ -292,8 +399,14 @@ export function initCatalog(): Promise<void> {
 
 export function getCatalogLiteRecipes(): Recipe[] {
   if (liteCache) return liteCache
-  liteCache = buildLiteCatalog()
-  return liteCache
+  if (indexCache.length === 0) {
+    liteCache = buildLiteCatalog()
+    bumpCatalogGeneration()
+    return liteCache
+  }
+  // 索引已就绪但全量合并未完成：先返回 legacy 200，后台合并 5000+
+  scheduleFullLiteBuild()
+  return getLegacyQuickLite()
 }
 
 export function getCatalogCount(): number {
@@ -301,67 +414,53 @@ export function getCatalogCount(): number {
 }
 
 export async function getRecipeDetailById(id: string | number): Promise<Recipe | undefined> {
-  const sid = String(id)
-  const index = getIndexSync()
   const legacy = loadLegacyBase()
+  const lite = findLiteByAnyId(id)
 
-  const legacyById = legacy.find((r) => String(r.id) === sid)
-  if (legacyById?.steps?.length) return enrichRecipeMedia(legacyById)
-
-  if (index.length > 0) {
-    const lite = getCatalogLiteRecipes().find((r) => String(r.id) === sid)
-    if (!lite) return undefined
-
-    const legacyByTitle = legacy.find(
-      (r) => normalizeTitleKey(r.title) === normalizeTitleKey(lite.title)
-    )
-    if (legacyByTitle?.steps?.length) return enrichRecipeMedia(legacyByTitle)
-
-    const entry = index.find((e) => normalizeTitleKey(e.title) === normalizeTitleKey(lite.title))
-    if (!entry) return lite
-
+  if (lite) {
+    if (lite.catalogId == null) {
+      return resolveLegacyDetail(lite, legacy) ?? enrichRecipeMedia(lite)
+    }
+    const entry = findIndexEntryForLite(lite)
+    if (!entry) return enrichRecipeMedia(lite)
     const chunk = await loadChunk(entry.chunk)
-    const full = chunk.find((r) => normalizeTitleKey(r.title) === normalizeTitleKey(entry.title))
-    return full ? enrichRecipeMedia(full) : lite
+    const chunkHit = chunk.find((r) => normalizeTitleKey(r.title) === normalizeTitleKey(entry.title))
+    return chunkHit ? attachStableCatalogDetail(chunkHit, lite, entry) : enrichRecipeMedia(lite)
   }
 
-  return loadLegacyRecipes().find((r) => String(r.id) === sid)
+  if (isLegacyRuntimeId(id)) {
+    const legacyById = legacy.find((r) => String(r.id) === String(id))
+    return legacyById ? enrichRecipeMedia(legacyById) : undefined
+  }
+
+  return undefined
 }
 
 export function getRecipeDetailByIdSync(id: string | number): Recipe | undefined {
-  const sid = String(id)
-  const index = getIndexSync()
   const legacy = loadLegacyBase()
+  const lite = findLiteByAnyId(id)
 
-  const legacyById = legacy.find((r) => String(r.id) === sid)
-  if (legacyById?.steps?.length) return enrichRecipeMedia(legacyById)
-
-  if (index.length > 0) {
-    const lite = getCatalogLiteRecipes().find((r) => String(r.id) === sid)
-    if (!lite) return undefined
-
-    const legacyByTitle = legacy.find(
-      (r) => normalizeTitleKey(r.title) === normalizeTitleKey(lite.title)
-    )
-    if (legacyByTitle?.steps?.length) return enrichRecipeMedia(legacyByTitle)
-
-    const entry = index.find((e) => normalizeTitleKey(e.title) === normalizeTitleKey(lite.title))
-    if (!entry) return lite
-
-    const cached = chunkCache.get(entry.chunk)
-    if (!cached) return lite
-    const full = cached.find((r) => normalizeTitleKey(r.title) === normalizeTitleKey(entry.title))
-    return full ? enrichRecipeMedia(full) : indexEntryToLiteRecipe(entry)
+  if (lite) {
+    if (lite.catalogId == null) {
+      return resolveLegacyDetail(lite, legacy) ?? enrichRecipeMedia(lite)
+    }
+    const entry = findIndexEntryForLite(lite)
+    if (!entry) return enrichRecipeMedia(lite)
+    return resolveCatalogDetailFromCache(lite, entry, legacy)
   }
 
-  return loadLegacyRecipes().find((r) => String(r.id) === sid)
+  if (isLegacyRuntimeId(id)) {
+    const legacyById = legacy.find((r) => String(r.id) === String(id))
+    return legacyById ? enrichRecipeMedia(legacyById) : undefined
+  }
+
+  return undefined
 }
 
 export async function preloadRecipeChunk(id: string | number): Promise<void> {
-  const index = getIndexSync()
-  const lite = getCatalogLiteRecipes().find((r) => String(r.id) === String(id))
-  if (!lite) return
-  const entry = index.find((e) => normalizeTitleKey(e.title) === normalizeTitleKey(lite.title))
+  const lite = findLiteByAnyId(id)
+  if (!lite?.catalogId) return
+  const entry = findIndexEntryForLite(lite)
   if (entry) await loadChunk(entry.chunk)
 }
 

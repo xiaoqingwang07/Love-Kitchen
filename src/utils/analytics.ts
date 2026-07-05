@@ -47,3 +47,48 @@ export function getAnalyticsEvents(): AnalyticsEvent[] {
     return []
   }
 }
+
+/** 标准化事件名（新增埋点请在此登记） */
+export const ANALYTICS_EVENTS = {
+  firstIntakeDone: 'first_intake_done',
+  mealPlanView: 'meal_plan_view',
+  sharePrepare: 'share_prepare',
+  shareSend: 'share_send',
+  shareOpen: 'share_open',
+  detailView: 'detail_view',
+  recipeCooked: 'recipe_cooked',
+} as const
+
+export function summarizeAnalytics(events = getAnalyticsEvents()): Record<string, number> {
+  const summary: Record<string, number> = {}
+  for (const e of events) {
+    summary[e.name] = (summary[e.name] || 0) + 1
+  }
+  return summary
+}
+
+export function exportAnalyticsBundle() {
+  const events = getAnalyticsEvents()
+  return {
+    exportedAt: new Date().toISOString(),
+    total: events.length,
+    summary: summarizeAnalytics(events),
+    events,
+  }
+}
+
+export function copyAnalyticsExport(): void {
+  const json = JSON.stringify(exportAnalyticsBundle(), null, 2)
+  Taro.setClipboardData({
+    data: json,
+    success: () => Taro.showToast({ title: '埋点 JSON 已复制', icon: 'success' }),
+  })
+}
+
+export function clearAnalyticsEvents(): void {
+  try {
+    Taro.removeStorageSync(STORAGE_KEYS.analyticsEvents)
+  } catch {
+    /* ignore */
+  }
+}

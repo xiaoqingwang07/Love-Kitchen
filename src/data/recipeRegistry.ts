@@ -28,7 +28,11 @@ export function findRecipeById(id: string | number): Recipe | undefined {
   const sid = String(id)
   const custom = getCustomRecipes().find((r) => String(r.id) === sid)
   if (custom) return custom
-  return getRecipeDetailByIdSync(id) ?? getCatalogRecipes().find((r) => String(r.id) === sid)
+  const detail = getRecipeDetailByIdSync(id)
+  if (detail) return detail
+  return getCatalogRecipes().find(
+    (r) => String(r.id) === sid || (r.catalogId != null && String(r.catalogId) === sid)
+  )
 }
 
 export function findRecipeByTitleExact(title: string): Recipe | undefined {

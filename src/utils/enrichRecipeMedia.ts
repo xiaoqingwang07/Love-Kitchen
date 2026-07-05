@@ -1,5 +1,6 @@
-import { pickRealDishImage, isRealDishPhotoUrl } from '../data/dishImages'
+import { pickRealDishImage } from '../data/dishImages'
 import { EXACT_DISH_IMAGE_OVERRIDES } from '../data/exactDishImages'
+import { recipeImageUrl, isRenderableRecipeImage } from './recipeImageUrl'
 import type { Recipe } from '../types/recipe'
 
 /** legacy 精品（id 1–200）：仅封面精确表，步骤图为手写步骤不混用下厨房过程图 */
@@ -20,7 +21,9 @@ function shouldTrustInlineStepImages(recipe: Recipe): boolean {
 }
 
 function sanitizeImage(url?: string): string | undefined {
-  return url && isRealDishPhotoUrl(url) ? url : undefined
+  const resolved = recipeImageUrl(url)
+  if (!resolved || !isRenderableRecipeImage(resolved)) return undefined
+  return resolved
 }
 
 /**

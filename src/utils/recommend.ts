@@ -1,8 +1,22 @@
 import { getCatalogRecipes } from '../data/recipeRegistry'
+import { getCatalogGeneration } from '../data/catalogLoader'
 import { getMockWeather, type WeatherData } from '../api/weather'
 import type { Recipe } from '../types/recipe'
 import { shuffleWithSeed, daySeed } from './shuffleSeed'
 import { getCookedRecipes } from '../store/storageUtils'
+import { isPremiumDisplayRecipe } from './catalogQuality'
+
+/** 推荐池：过滤低质量条目（按 catalog 代际缓存，避免 5000+ 条反复 filter 卡死首屏） */
+let poolCacheGen = -1
+let poolCache: Recipe[] | null = null
+
+function recommendPool(): Recipe[] {
+  const gen = getCatalogGeneration()
+  if (poolCache && poolCacheGen === gen) return poolCache
+  poolCache = getCatalogRecipes().filter(isPremiumDisplayRecipe)
+  poolCacheGen = gen
+  return poolCache
+}
 
 /** 从全库中 O(n) 取评分最高的 topK，避免对 5000+ 道菜全量 sort */
 function pickTopByRating(recipes: Recipe[], topK: number): Recipe[] {
@@ -76,7 +90,7 @@ export function getReasonText(weather: WeatherData): string {
 }
 
 function rankAll(weather: WeatherData): { recipe: Recipe; score: number }[] {
-  const pool = pickTopByRating(getCatalogRecipes(), 120)
+  const pool = pickTopByRating(recommendPool(), 120)
   const scored = pool.map((recipe) => ({
     recipe,
     score: scoreRecipe(recipe, weather),
@@ -122,7 +136,7 @@ export function getWeatherRecommendations(count: number = 3): RecommendResult {
  * 仅按评分 + 日种子随机，避免用虚构天气误导用户。
  */
 export function getDailyRecommendations(total: number, variant: number = 0, topPool: number = 24): Recipe[] {
-  const head = pickTopByRating(getCatalogRecipes(), topPool)
+  const head = pickTopByRating(recommendPool(), topPool)
   const seed = daySeed() + variant * 9973
   const shuffled = shuffleWithSeed([...head], seed)
   return shuffled.slice(0, Math.min(total, shuffled.length))
@@ -158,7 +172,7 @@ export function getPersonalizedRecommendations(
   }
 
   // 取更大的高分池，按「偏好标签得分」重排，保留少量随机避免每天一样
-  const pool = pickTopByRating(getCatalogRecipes(), 60)
+  const pool = pickTopByRating(recommendPool(), 60)
   const jitter = shuffleWithSeed(
     pool.map((_, i) => i),
     seed

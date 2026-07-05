@@ -58,7 +58,7 @@ export async function recognizePantryImage(
   mode: PantryVisionMode = 'auto'
 ): Promise<{ kind: 'receipt' | 'ingredients'; items: PantryVisionItem[] }> {
   if (!usesLlmProxy()) {
-    throw new PantryVisionError('请配置 AI 服务（TARO_APP_LLM_PROXY_URL）', 'NO_PROXY')
+    throw new PantryVisionError('智能识别服务未就绪，请稍后再试', 'NO_PROXY')
   }
 
   const dataUrl = readImageAsDataUrl(filePath)

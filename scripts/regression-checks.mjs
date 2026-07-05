@@ -85,6 +85,29 @@ expect(
   appConfig.includes("text: '今晚'")
 )
 
+expect('app.config 不应声明无效 scope.record', !appConfig.includes("'scope.record'"))
+
+expect(
+  'mealPlanBuilder 应 clamp 临期消耗比例到 1',
+  mealBuilder.includes('Math.min(1') && mealBuilder.includes('expiringConsumeRatio')
+)
+expect(
+  'mealPlanBuilder 应规范化食材名避免芋头重复计数',
+  /canonical|normalize/.test(mealBuilder) && mealBuilder.includes('expiringHit')
+)
+
+const profileLifecycle = read('src/pages/profile/useProfileLifecycle.ts')
+expect(
+  'Profile 打开时不应自动请求 AI proxy',
+  !/useEffect\(\(\) => \{[\s\S]*checkApiKey\(\)/.test(profileLifecycle)
+)
+
+expect('PantryStore 仍应持久化 pantryItems', pantryStore.includes('setStorageSync(STORAGE_KEYS.pantryItems'))
+expect(
+  'PantryStore persist 不应在 DevTools 正常启动时刷红错',
+  !pantryStore.includes("console.error('PantryStore persist failed")
+)
+
 const homePantryBanner = read('src/pages/index/components/HomePantryBanner.tsx')
 expect(
   '首页空冰箱应有拍小票建冰箱引导',
@@ -124,9 +147,11 @@ expect(
     fs.existsSync(path.join(root, 'src/types/household.ts'))
 )
 
+expect('Profile 应包含采购清单入口', read('src/pages/profile/index.tsx').includes('ShoppingListPanel'))
 expect(
-  'Profile 应包含家庭厨房入口',
-  read('src/pages/profile/index.tsx').includes('HouseholdPanel')
+  'Profile 家庭入口仅在 API 配置时渲染',
+  read('src/pages/profile/components/HouseholdPanel.tsx').includes('householdApiConfigured()') &&
+    read('src/pages/profile/components/HouseholdPanel.tsx').includes('return null')
 )
 
 const shareLinks = read('src/utils/shareLinks.ts')
@@ -269,7 +294,40 @@ expect(
 )
 expect('空冰箱应可体验示例冰箱', homePantryBanner.includes('示例冰箱') && pantryStore.includes('loadDemoPantry'))
 expect('用户可见错误不应暴露 TARO_APP', !read('src/api/dishVision.ts').includes("'TARO_APP") && read('src/api/recipe.ts').includes('智能推荐服务未就绪'))
-expect('家庭面板应支持删除已勾选采购项', read('src/pages/profile/components/HouseholdPanel.tsx').includes('removeCheckedShopping'))
+
+// ── P0 不变量：购物清单 UX 重构后须保持 ──
+const shoppingListPanel = read('src/pages/profile/components/ShoppingListPanel.tsx')
+expect(
+  'P0 采购清单 UI 须经 store 勾选/删除（不得直接改 shoppingList）',
+  shoppingListPanel.includes('toggleShoppingItem') &&
+    shoppingListPanel.includes('removeCheckedShopping') &&
+    !/this\.shoppingList\s*=/.test(shoppingListPanel) &&
+    !/shoppingList\.push/.test(shoppingListPanel)
+)
+expect(
+  'P0 购物清单增删改在 household 模式应 schedulePush',
+  /addShoppingItems[\s\S]*if \(this\.inHousehold\) this\.schedulePush\(\)/.test(householdStore) &&
+    /toggleShoppingItem[\s\S]*if \(this\.inHousehold\) this\.schedulePush\(\)/.test(householdStore) &&
+    /removeCheckedShopping[\s\S]*if \(this\.inHousehold\) this\.schedulePush\(\)/.test(householdStore)
+)
+expect(
+  'P0 pull 应 cancel debounce 且 applyRemote 不 echo push',
+  householdStore.includes('this.schedulePush.cancel()') &&
+    applyRemotePantryFn.includes('this.pantry.replaceItems(items)') &&
+    !applyRemotePantryFn.includes('schedulePush')
+)
+expect(
+  'P0 catalog runtime id 须稳定映射（无 nextId 自增）',
+  catalogLoader.includes('toCatalogRuntimeId(entry.id)') &&
+    catalogLoader.includes('catalogId: entry.id') &&
+    !catalogLoader.includes('nextId')
+)
+expect(
+  'P0 household-suppress 回归应挂在 test:regression',
+  fs.readFileSync(path.join(root, 'package.json'), 'utf8').includes('household-suppress-push-check.mjs') &&
+    fs.readFileSync(path.join(root, 'package.json'), 'utf8').includes('catalog-id-check.mjs')
+)
+expect('采购清单面板应支持删除已勾选', shoppingListPanel.includes('removeCheckedShopping'))
 expect('烹饪完成应上报 meal_solved', read('src/utils/analyticsExport.ts').includes('meal_solved'))
 expect('Epic E 应有 mealSolved 计数与 Plus 软提示', fs.existsSync(path.join(root, 'src/utils/mealSolvedTracker.ts')) && read('src/utils/mealSolvedTracker.ts').includes('EVENTS.upgradePromptShown'))
 expect('Epic E 应有每周菜单建议', fs.existsSync(path.join(root, 'src/pages/profile/components/WeeklyMenuCard.tsx')) && read('src/utils/weeklyMenuSuggest.ts').includes('buildWeeklyMenuSuggestion'))

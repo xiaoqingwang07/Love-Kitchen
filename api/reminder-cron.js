@@ -27,12 +27,18 @@ function fmtDate(ts) {
   return `${d.getFullYear()}-${mm}-${dd}`
 }
 
-/** 示例：把到期食材映射为模板字段。请按你的模板字段名修改 key。 */
-function buildTemplateData(item) {
+/** 合并同日多项临期为一则提醒 */
+function buildTemplateData(items) {
+  const names = items.map((i) => i.name).slice(0, 3).join('、')
+  const minExpiry = Math.min(...items.map((i) => i.expiresAt))
+  const expiringParam = encodeURIComponent(items.map((i) => i.name).join(','))
   return {
-    thing1: { value: item.name.slice(0, 20) },
-    date2: { value: fmtDate(item.expiresAt) },
-    thing3: { value: '快过期啦，今天做掉它~' },
+    data: {
+      thing1: { value: names.slice(0, 20) },
+      date2: { value: fmtDate(minExpiry) },
+      thing3: { value: '点击查看今晚方案' },
+    },
+    page: `pages/result/index?from=meal&source=reminder&expiring=${expiringParam}&ingredients=${expiringParam}`,
   }
 }
 
@@ -66,10 +72,12 @@ module.exports = async function handler(req, res) {
       continue
     }
 
-    // 找出即将到期、尚未过期的最紧迫一条
-    const due = schedule.items
+    // 合并窗口内所有临期食材为一次提醒
+    const dueItems = schedule.items
       .filter((i) => i.expiresAt > now && i.expiresAt <= windowEnd)
-      .sort((a, b) => a.expiresAt - b.expiresAt)[0]
+      .sort((a, b) => a.expiresAt - b.expiresAt)
+
+    const due = dueItems[0]
 
     // 全部已过期 → 计划失效，清理
     const allExpired = schedule.items.every((i) => i.expiresAt <= now)
@@ -82,16 +90,18 @@ module.exports = async function handler(req, res) {
     }
 
     try {
+      const tpl = buildTemplateData(dueItems.length > 0 ? dueItems : [due])
       const r = await wx.sendSubscribeMessage(
         openid,
         schedule.tmplId,
-        buildTemplateData(due),
-        'pages/pantry/index'
+        tpl.data,
+        tpl.page
       )
       if (r.ok) {
         sent++
-        // 一次性订阅：发完即消耗，移除已推送的那条，避免重复打扰
-        const rest = schedule.items.filter((i) => i.name !== due.name || i.expiresAt !== due.expiresAt)
+        // 一次性订阅：发完即消耗，移除已推送的那批，避免重复打扰
+        const pushedNames = new Set((dueItems.length > 0 ? dueItems : [due]).map((i) => i.name))
+        const rest = schedule.items.filter((i) => !pushedNames.has(i.name))
         if (rest.length === 0) {
           await store.removeSchedule(openid).catch(() => {})
         } else {

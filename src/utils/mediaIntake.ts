@@ -8,6 +8,7 @@
  * 3. 仅保留最近一次采集，避免 Storage 膨胀。
  */
 import Taro from '@tarojs/taro'
+import { setPantryPendingAction } from './navigationPayload'
 
 export const INTAKE_STORAGE_KEY = 'lk_intake_draft'
 
@@ -79,6 +80,31 @@ export async function pickImageForIntake(
     return draft
   } catch {
     return null
+  }
+}
+
+export function navigateToPantryAction(action: 'receipt' | 'ingredients' | 'paste'): void {
+  setPantryPendingAction(action)
+  Taro.switchTab({ url: '/pages/pantry/index' })
+}
+
+/** 首页「拍小票建冰箱」：选图后进入冰箱入库预览 */
+export async function startReceiptIntakeFromHome(): Promise<boolean> {
+  try {
+    const res = await Taro.showActionSheet({
+      itemList: ['拍照小票', '从相册选小票', '粘贴购物清单'],
+    })
+    if (res.tapIndex === 2) {
+      navigateToPantryAction('paste')
+      return true
+    }
+    const source = res.tapIndex === 0 ? 'camera' : 'album'
+    const draft = await pickImageForIntake(source, 'receipt')
+    if (!draft) return false
+    navigateToPantryAction('receipt')
+    return true
+  } catch {
+    return false
   }
 }
 

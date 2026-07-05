@@ -1,6 +1,7 @@
 import { getCatalogRecipes } from '../data/recipeRegistry'
 import type { Recipe } from '../types/recipe'
 import { ingredientsLikelyMatch } from './ingredientMatch'
+import { isRecommendable } from './catalogQuality'
 
 export interface MatchResult {
   recipe: Recipe
@@ -35,6 +36,7 @@ export function matchRecipes(
     selectedArr.length <= 1 ? 1 : Math.min(2, selectedArr.length)
 
   const results: MatchResult[] = getCatalogRecipes()
+    .filter(isRecommendable)
     .map(recipe => {
       const recipeIngredientNames = (recipe.ingredients || []).map(i => i.name)
 

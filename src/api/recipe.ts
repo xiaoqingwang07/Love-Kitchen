@@ -9,6 +9,7 @@ import { enrichRecipeMedia } from '../utils/enrichRecipeMedia'
 import { parseLlmRecipeArray } from '../schemas/recipeLlm'
 import { filterRecipesByUserIngredients } from '../utils/recipeIngredientFilter'
 import { STORAGE_KEYS } from '../store/storageKeys'
+import { getDefaultDinersCount } from '../store/userPreferences'
 
 /** OpenAI 兼容 Base URL（中国大陆：api.minimaxi.com，勿使用 api.minimax.io） */
 const API_BASE_URL = 'https://api.minimaxi.com/v1'
@@ -25,9 +26,7 @@ export function setStoredScene(scene: SceneType): void {
 }
 
 function getDiners(): number {
-  const n = Number(Taro.getStorageSync(STORAGE_KEYS.defaultDinersCount))
-  if (Number.isFinite(n) && n >= 1 && n <= 10) return n
-  return 2
+  return getDefaultDinersCount()
 }
 
 export enum APIErrorType {
@@ -85,7 +84,7 @@ async function llmChatCompletions(
   const p = proxyUrl()
   if (!p) {
     throw new APIError(
-      '请配置服务端 LLM 中转（.env.local 中 TARO_APP_LLM_PROXY_URL）',
+      '智能推荐服务未就绪，请稍后再试',
       APIErrorType.NO_API_KEY
     )
   }
@@ -207,7 +206,7 @@ export const fetchRecipes = async (
 ): Promise<Recipe[]> => {
   if (!usesLlmProxy()) {
     throw new APIError(
-      '请配置 LLM 中转：填写 TARO_APP_LLM_PROXY_URL',
+      '智能推荐服务未就绪',
       APIErrorType.NO_API_KEY
     )
   }
@@ -313,7 +312,7 @@ ${JSON_SCHEMA}
 
 export const checkApiKey = async (): Promise<{ valid: boolean; error?: string }> => {
   if (!usesLlmProxy()) {
-    return { valid: false, error: '请配置 TARO_APP_LLM_PROXY_URL' }
+    return { valid: false, error: '智能推荐服务未就绪' }
   }
   try {
     const { statusCode, data } = await llmChatCompletions(
@@ -349,7 +348,7 @@ export const fetchRecipeByDishName = async (
 ): Promise<Recipe[]> => {
   if (!usesLlmProxy()) {
     throw new APIError(
-      '请配置 LLM 中转：填写 TARO_APP_LLM_PROXY_URL',
+      '智能推荐服务未就绪',
       APIErrorType.NO_API_KEY
     )
   }

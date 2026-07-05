@@ -17,7 +17,7 @@ type Props = {
 /**
  * 按住说话弹层：iOS 风格的录音交互
  * - 按下开始，松开结束；时长 < 500ms 视为误触
- * - 微信小程序需在 app.json 中声明 scope.record 授权（授权失败会有系统弹窗）
+ * - 录音授权由微信运行时弹窗处理；不要在 app.json permission 中声明 scope.record
  */
 export function VoiceRecorderSheet({ visible, onClose, onRecorded, onTranscribed }: Props) {
   const [recording, setRecording] = useState(false)

@@ -12,6 +12,7 @@ import { STORAGE_KEYS } from './storageKeys'
 /** 连续改库存时合并为单次写入，避免频繁 JSON + Storage 同步 */
 const PANTRY_PERSIST_DEBOUNCE_MS = 400
 const MAX_SLOT_INDEX = 8
+let pantryPersistWarned = false
 
 function debounce(fn: () => void, ms: number): () => void {
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -128,7 +129,10 @@ export class PantryStore {
       try {
         Taro.setStorageSync(STORAGE_KEYS.pantryItems, JSON.stringify(this.items))
       } catch (e) {
-        console.error('PantryStore persist failed:', e)
+        if (process.env.NODE_ENV !== 'production' && !pantryPersistWarned) {
+          pantryPersistWarned = true
+          console.warn('PantryStore persist warning:', e)
+        }
       }
     }, PANTRY_PERSIST_DEBOUNCE_MS)
 
@@ -146,6 +150,12 @@ export class PantryStore {
       }))
       schedulePersist()
     })
+  }
+
+  /** 用远端或合并后的列表替换库存（家庭同步） */
+  replaceItems(items: PantryItem[]) {
+    const sanitized = sanitizeStoredItems(items)
+    this.items = sanitized ?? []
   }
 
   private loadFromStorage() {
@@ -264,6 +274,20 @@ export class PantryStore {
     this.items = this.items.filter((i) => i.id !== id)
   }
 
+  /** 按名称延长保质期（临期提醒降级用） */
+  extendExpiringByNames(names: string[], extraDays: number): number {
+    if (extraDays <= 0 || names.length === 0) return 0
+    const DAY = 24 * 60 * 60 * 1000
+    const targets = new Set(names.map((n) => n.trim()).filter(Boolean))
+    let count = 0
+    for (const item of this.items) {
+      if (!targets.has(item.name.trim())) continue
+      this.updateItem(item.id, { expiresAt: item.expiresAt + extraDays * DAY })
+      count++
+    }
+    return count
+  }
+
   removeExpired() {
     this.items = this.items.filter((i) => getFreshnessStatus(i) !== 'expired')
   }
@@ -296,6 +320,12 @@ export class PantryStore {
 
   resetToMock() {
     this.items = createMockData()
+  }
+
+  /** 新用户示例冰箱（首页 onboarding 用）；返回载入后的食材供跳转今晚方案 */
+  loadDemoPantry(): PantryItem[] {
+    this.items = createMockData()
+    return this.items
   }
 }
 

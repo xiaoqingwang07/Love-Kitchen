@@ -27,12 +27,17 @@ TARO_APP_LLM_PROXY_URL=http://127.0.0.1:8787
 # 上线部署 Vercel 后改为：
 # TARO_APP_LLM_PROXY_URL=https://你的项目.vercel.app/api/llm-proxy
 
-# 5000 道 catalog 云端根目录（上传 catalog-cdn/ 后填写，指向 meta.json 所在目录）
-# 留空则只用主包内置的 legacy 200 道
-# TARO_APP_CATALOG_BASE_URL=https://你的cdn域名/love-kitchen/catalog
+# 5000 道 catalog（先 npm run dev:catalog，再 npm run dev:weapp）
+TARO_APP_CATALOG_BASE_URL=http://127.0.0.1:8790
+
+# 上线 Vercel 后改为：
+# TARO_APP_LLM_PROXY_URL=https://你的项目.vercel.app/api/llm-proxy
+# TARO_APP_CATALOG_BASE_URL=https://你的项目.vercel.app/catalog
 `
 
 fs.writeFileSync(envPath, template, 'utf8')
-console.log('已创建 .env.local，请填入 MINIMAX_API_KEY 后执行：')
-console.log('  npm run dev:llm-proxy   # 终端 1')
-console.log('  npm run dev:weapp       # 终端 2')
+console.log('已创建 .env.local')
+console.log('本地联调：')
+console.log('  终端1: npm run dev:catalog   # 5000 道 catalog')
+console.log('  终端2: npm run dev:llm-proxy  # AI（需填 MINIMAX_API_KEY）')
+console.log('  终端3: npm run dev:weapp      # 小程序编译')

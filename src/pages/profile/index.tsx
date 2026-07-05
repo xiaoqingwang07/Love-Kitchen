@@ -1,40 +1,35 @@
-import { View, Text, Button, ScrollView, Image } from '@tarojs/components'
-import Taro, { useDidShow } from '@tarojs/taro'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { View } from '@tarojs/components'
+import Taro, { useShareAppMessage } from '@tarojs/taro'
+import { useState, useCallback, useMemo } from 'react'
 import { observer } from 'mobx-react-lite'
-import { usePantryStore } from '../../store/context'
+import { usePantryStore, useHouseholdStore } from '../../store/context'
 import {
   getFavoriteCount,
   getFavoriteDetails,
   getCookedRecipes,
   toggleFavorite,
 } from '../../store/storageUtils'
-import { STORAGE_KEYS } from '../../store/storageKeys'
-import { checkApiKey, getStoredScene, setStoredScene, usesLlmProxy } from '../../api/recipe'
-import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
+import { WeeklyMenuCard } from './components/WeeklyMenuCard'
+import { ShoppingListPanel } from './components/ShoppingListPanel'
+import { HouseholdPanel } from './components/HouseholdPanel'
+import { PreferencePanel } from './components/PreferencePanel'
+import { FavoritesListPage } from './components/FavoritesListPage'
+import { CookedHistoryPage } from './components/CookedHistoryPage'
+import { AboutPage } from './components/AboutPage'
+import { DevToolsPanel } from './components/DevToolsPanel'
+import { ProfileStatsHeader } from './components/ProfileStatsHeader'
+import { ExpiryReminderCard } from './components/ExpiryReminderCard'
+import { LlmServiceStatusCard } from './components/LlmServiceStatusCard'
+import { ProfileAboutRow } from './components/ProfileAboutRow'
+import { setSelectedRecipeForDetail } from '../../utils/navigationPayload'
+import { getStoredScene, setStoredScene, usesLlmProxy } from '../../api/recipe'
 import { D } from '../../theme/designTokens'
 import type { SceneType } from '../../types/recipe'
 import type { Recipe } from '../../types/recipe'
 import { getUserStats, getAllAchievements } from '../../utils/achievements'
-import {
-  reminderConfigured,
-  getReminderState,
-  requestExpiryReminderConsent,
-  disableExpiryReminder,
-  syncExpiryReminders,
-  type ConsentResult,
-} from '../../utils/subscribeReminder'
-
-/** 仅在开发/体验版环境显示工程调试入口 */
-function isDevEnv(): boolean {
-  try {
-    const info = Taro.getAccountInfoSync?.()
-    const env = info?.miniProgram?.envVersion
-    return env === 'develop' || env === 'trial'
-  } catch {
-    return false
-  }
-}
+import { copyAnalyticsExport, clearAnalyticsEvents } from '../../utils/analyticsExport'
+import { resolvePrimedShare } from '../../utils/shareLinks'
+import { useProfileLifecycle } from './useProfileLifecycle'
 
 const SCENE_OPTIONS: { key: SceneType; label: string }[] = [
   { key: 'normal', label: '日常' },
@@ -45,104 +40,47 @@ const SCENE_OPTIONS: { key: SceneType; label: string }[] = [
 
 function Profile() {
   const pantryStore = usePantryStore()
-  const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null)
+  const householdStore = useHouseholdStore()
+
+  useShareAppMessage(() =>
+    resolvePrimedShare({
+      title: '爱心厨房 - 一起管冰箱、定今晚吃什么',
+      path: '/pages/index/index',
+    })
+  )
+
   const [showHistory, setShowHistory] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
   const [cookedRecipes, setCookedRecipes] = useState<(Recipe & { cookedAt: number })[]>([])
-  const [dinersCount, setDinersCount] = useState(2)
   const [recipeScene, setRecipeScene] = useState<SceneType>(() => getStoredScene())
   const [showFavorites, setShowFavorites] = useState(false)
   const [favoriteItems, setFavoriteItems] = useState<Recipe[]>([])
   const [aboutTaps, setAboutTaps] = useState(0)
-  const [devUnlocked, setDevUnlocked] = useState(isDevEnv())
-  const [reminderOn, setReminderOn] = useState(() => getReminderState().optedIn)
-
-  const handleToggleReminder = useCallback(async () => {
-    if (!reminderConfigured()) {
-      Taro.showToast({ title: '提醒功能即将上线', icon: 'none' })
-      return
-    }
-    if (reminderOn) {
-      disableExpiryReminder()
-      setReminderOn(false)
-      Taro.showToast({ title: '已关闭临期提醒', icon: 'none' })
-      return
-    }
-    const result: ConsentResult = await requestExpiryReminderConsent()
-    if (result === 'accepted') {
-      setReminderOn(true)
-      void syncExpiryReminders(pantryStore.items, { force: true })
-      Taro.showToast({ title: '已开启，临期前会提醒你', icon: 'none' })
-    } else if (result === 'banned') {
-      Taro.showModal({
-        title: '提醒被拒收',
-        content: '请在微信「设置-订阅消息」中允许爱心厨房发送提醒',
-        showCancel: false,
-      })
-    } else if (result === 'rejected') {
-      Taro.showToast({ title: '已取消授权', icon: 'none' })
-    } else {
-      Taro.showToast({ title: '暂时无法开启', icon: 'none' })
-    }
-  }, [reminderOn, pantryStore.items])
 
   const loadFavoriteItems = useCallback(() => {
     setFavoriteItems(getFavoriteDetails())
   }, [])
 
-  useDidShow(() => {
+  const openFavorites = useCallback(() => {
     loadFavoriteItems()
-    if (getReminderState().optedIn) {
-      void syncExpiryReminders(pantryStore.items)
-    }
-    try {
-      if (Taro.getStorageSync(STORAGE_KEYS.profileOpenFavorites)) {
-        Taro.removeStorageSync(STORAGE_KEYS.profileOpenFavorites)
-        setShowFavorites(true)
-      }
-    } catch {
-      /* ignore */
-    }
-  })
+    setShowFavorites(true)
+  }, [loadFavoriteItems])
 
-  useEffect(() => {
-    const count = Taro.getStorageSync(STORAGE_KEYS.defaultDinersCount) || 2
-    setDinersCount(count)
-    setRecipeScene(getStoredScene())
-    if (usesLlmProxy()) {
-      void checkApiKey().then((r) => setApiKeyValid(r.valid))
-    }
-  }, [])
+  const {
+    apiKeyValid,
+    dinersCount,
+    devUnlocked,
+    setDevUnlocked,
+    reminderOn,
+    handleToggleReminder,
+    handleDinersChange,
+    handleTestLlmProxy,
+  } = useProfileLifecycle(pantryStore, householdStore, openFavorites)
 
   const applyScene = (k: SceneType) => {
     setRecipeScene(k)
     setStoredScene(k)
     Taro.showToast({ title: '已保存', icon: 'success' })
-  }
-
-  const handleTestLlmProxy = async () => {
-    Taro.showLoading({ title: '检测中…' })
-    const result = await checkApiKey()
-    Taro.hideLoading()
-    setApiKeyValid(result.valid)
-    if (result.valid) {
-      Taro.showToast({ title: 'AI 服务可用', icon: 'success' })
-    } else {
-      const notConfigured = result.error?.includes('TARO_APP_LLM_PROXY_URL')
-      Taro.showModal({
-        title: notConfigured ? 'AI 服务未配置' : '检测失败',
-        content: notConfigured
-          ? '当前构建没有填入服务端 AI 转发地址。部署 api/llm-proxy.js 后，把完整地址写入 .env.local 并重新构建。'
-          : result.error || '请检查服务端部署与微信 request 合法域名',
-        showCancel: false,
-      })
-    }
-  }
-
-  const handleDinersChange = (delta: number) => {
-    const next = Math.max(1, Math.min(10, dinersCount + delta))
-    setDinersCount(next)
-    Taro.setStorageSync(STORAGE_KEYS.defaultDinersCount, next)
   }
 
   const favCount = getFavoriteCount()
@@ -156,7 +94,6 @@ function Profile() {
 
   const userStats = useMemo(() => getUserStats(pantryStore.items), [pantryStore.items])
   const allAchievements = useMemo(() => getAllAchievements(userStats), [userStats])
-  const unlockedCount = allAchievements.filter((a) => a.unlocked).length
 
   const onStatClick = (action: 'pantry' | 'favorites' | 'cooked') => {
     if (action === 'pantry') {
@@ -164,8 +101,7 @@ function Profile() {
       return
     }
     if (action === 'favorites') {
-      loadFavoriteItems()
-      setShowFavorites(true)
+      openFavorites()
       return
     }
     setCookedRecipes(getCookedRecipes())
@@ -212,830 +148,99 @@ function Profile() {
     })
   }
 
-  // ---------- 收藏列表 ----------
   if (showFavorites) {
-    const isEmpty = favoriteItems.length === 0
     return (
-      <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
-        <View
-          style={{
-            padding: '20px 22px',
-            backgroundColor: D.bgElevated,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            borderBottom: `0.5px solid ${D.separatorLight}`,
-          }}
-        >
-          <Text
-            style={{ fontSize: D.body, color: D.accent }}
-            onClick={() => setShowFavorites(false)}
-          >
-            ← 返回
-          </Text>
-          <Text
-            style={{
-              fontSize: D.headline,
-              fontWeight: D.weightBold,
-              color: D.label,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            收藏
-          </Text>
-        </View>
-        <ScrollView scrollY style={{ padding: '16px 22px 40px' }}>
-          {isEmpty ? (
-            <View
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                paddingTop: 64,
-              }}
-            >
-              <Text style={{ fontSize: 52, marginBottom: 16 }}>♡</Text>
-              <Text
-                style={{
-                  fontSize: D.body,
-                  fontWeight: D.weightSemibold,
-                  color: D.label,
-                  marginBottom: 6,
-                }}
-              >
-                还没有收藏
-              </Text>
-              <Text
-                style={{
-                  fontSize: D.footnote,
-                  color: D.labelTertiary,
-                  textAlign: 'center',
-                  padding: '0 40px',
-                  lineHeight: 1.5,
-                }}
-              >
-                在推荐列表点 ♡ 就能收藏到这里
-              </Text>
-            </View>
-          ) : (
-            favoriteItems.map((item, idx) => {
-              const r = enrichRecipeMedia(item)
-              return (
-                <View
-                  key={String(r.id ?? idx)}
-                  className="tap-scale"
-                  style={{
-                    backgroundColor: D.bgElevated,
-                    borderRadius: D.radiusM,
-                    padding: 14,
-                    marginBottom: 10,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 14,
-                    border: `0.5px solid ${D.separatorLight}`,
-                    boxShadow: D.shadowCard,
-                  }}
-                  onClick={() => {
-                    Taro.setStorageSync(STORAGE_KEYS.selectedRecipeDetail, r)
-                    Taro.navigateTo({ url: '/pages/detail/index' })
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 60,
-                      height: 60,
-                      backgroundColor: D.bg,
-                      borderRadius: D.radiusS,
-                      overflow: 'hidden',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {r.image ? (
-                      <Image
-                        src={r.image}
-                        mode="aspectFill"
-                        style={{ width: '100%', height: '100%' }}
-                        lazyLoad
-                      />
-                    ) : (
-                      <Text style={{ fontSize: 28 }}>{r.emoji || '🥘'}</Text>
-                    )}
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text
-                      style={{
-                        fontSize: D.subheadline,
-                        fontWeight: D.weightSemibold,
-                        color: D.label,
-                      }}
-                    >
-                      {r.title}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: D.caption,
-                        color: D.labelTertiary,
-                        marginTop: 4,
-                      }}
-                      numberOfLines={1}
-                    >
-                      {r.quote || r.nutritionAnalysis || '点开查看做法'}
-                    </Text>
-                  </View>
-                  <Text
-                    style={{ fontSize: 22, color: D.accentWarm, padding: '0 6px' }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      toggleFavorite(r)
-                      loadFavoriteItems()
-                      Taro.showToast({ title: '已取消', icon: 'none' })
-                    }}
-                  >
-                    ♥
-                  </Text>
-                </View>
-              )
-            })
-          )}
-        </ScrollView>
-      </View>
+      <FavoritesListPage
+        items={favoriteItems}
+        onBack={() => setShowFavorites(false)}
+        onOpenRecipe={(r) => {
+          setSelectedRecipeForDetail(r)
+          Taro.navigateTo({ url: '/pages/detail/index' })
+        }}
+        onUnfavorite={(r) => {
+          toggleFavorite(r)
+          loadFavoriteItems()
+          Taro.showToast({ title: '已取消', icon: 'none' })
+        }}
+      />
     )
   }
 
-  // ---------- 做过的菜 ----------
   if (showHistory) {
     return (
-      <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
-        <View
-          style={{
-            padding: '20px 22px',
-            backgroundColor: D.bgElevated,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            borderBottom: `0.5px solid ${D.separatorLight}`,
-          }}
-        >
-          <Text
-            style={{ fontSize: D.body, color: D.accent }}
-            onClick={() => setShowHistory(false)}
-          >
-            ← 返回
-          </Text>
-          <Text
-            style={{
-              fontSize: D.headline,
-              fontWeight: D.weightBold,
-              color: D.label,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            做过的菜
-          </Text>
-        </View>
-        <ScrollView scrollY style={{ padding: '16px 22px 40px' }}>
-          {cookedRecipes.length === 0 ? (
-            <View
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                paddingTop: 80,
-              }}
-            >
-              <Text style={{ fontSize: 52, marginBottom: 16 }}>👨‍🍳</Text>
-              <Text style={{ fontSize: D.footnote, color: D.labelTertiary }}>
-                还没有做菜记录，做一道试试
-              </Text>
-            </View>
-          ) : (
-            cookedRecipes.map((item, idx) => (
-              <View
-                key={idx}
-                className="tap-scale"
-                style={{
-                  backgroundColor: D.bgElevated,
-                  borderRadius: D.radiusM,
-                  padding: '14px 16px',
-                  marginBottom: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 14,
-                  border: `0.5px solid ${D.separatorLight}`,
-                }}
-                onClick={() => {
-                  Taro.setStorageSync(STORAGE_KEYS.selectedRecipeDetail, item)
-                  Taro.navigateTo({ url: '/pages/detail/index' })
-                }}
-              >
-                <Text style={{ fontSize: 30 }}>{item.emoji || '🥘'}</Text>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text
-                    style={{
-                      fontSize: D.subheadline,
-                      fontWeight: D.weightSemibold,
-                      color: D.label,
-                    }}
-                  >
-                    {item.title}
-                  </Text>
-                  <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>
-                    {new Date(item.cookedAt).toLocaleDateString('zh-CN')} 做过
-                  </Text>
-                </View>
-                <Text style={{ color: D.labelTertiary }}>›</Text>
-              </View>
-            ))
-          )}
-        </ScrollView>
-      </View>
+      <CookedHistoryPage
+        items={cookedRecipes}
+        onBack={() => setShowHistory(false)}
+        onOpenRecipe={(item) => {
+          setSelectedRecipeForDetail(item)
+          Taro.navigateTo({ url: '/pages/detail/index' })
+        }}
+      />
     )
   }
 
-  // ---------- 关于 ----------
   if (showAbout) {
     return (
-      <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
-        <View
-          style={{
-            padding: '20px 22px',
-            backgroundColor: D.bgElevated,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            borderBottom: `0.5px solid ${D.separatorLight}`,
-          }}
-        >
-          <Text
-            style={{ fontSize: D.body, color: D.accent }}
-            onClick={() => {
-              setShowAbout(false)
-              setAboutTaps(0)
-            }}
-          >
-            ← 返回
-          </Text>
-          <Text
-            style={{
-              fontSize: D.headline,
-              fontWeight: D.weightBold,
-              color: D.label,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            关于
-          </Text>
-        </View>
-        <View
-          style={{
-            padding: '48px 24px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          <Text
-            style={{ fontSize: 72, marginBottom: 20 }}
-            onClick={() => {
-              const next = aboutTaps + 1
-              setAboutTaps(next)
-              if (next >= 7) {
-                setDevUnlocked(true)
-                Taro.showToast({ title: '已解锁开发者选项', icon: 'none' })
-              }
-            }}
-          >
-            🍳
-          </Text>
-          <Text
-            style={{
-              fontSize: D.title,
-              fontWeight: D.weightBold,
-              color: D.label,
-              marginBottom: 6,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            爱心厨房
-          </Text>
-          <Text style={{ fontSize: D.footnote, color: D.labelTertiary, marginBottom: 28 }}>
-            Love Kitchen · v1.1
-          </Text>
-          <View
-            style={{
-              backgroundColor: D.bgElevated,
-              borderRadius: D.radiusL,
-              padding: 20,
-              width: '100%',
-              border: `0.5px solid ${D.separatorLight}`,
-              boxShadow: D.shadowCard,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: D.subheadline,
-                color: D.labelSecondary,
-                lineHeight: 1.7,
-              }}
-            >
-              面向家庭的 AI 厨房助手。把食材管理、今天吃什么、一步一步做到完成，串成一条顺滑的路径。
-            </Text>
-            <Text
-              style={{
-                fontSize: D.footnote,
-                color: D.labelTertiary,
-                marginTop: 14,
-                lineHeight: 1.6,
-              }}
-            >
-              让每一餐都有爱。
-            </Text>
-          </View>
-        </View>
-      </View>
+      <AboutPage
+        onBack={() => {
+          setShowAbout(false)
+          setAboutTaps(0)
+        }}
+        onLogoTap={() => {
+          const next = aboutTaps + 1
+          setAboutTaps(next)
+          if (next >= 7) {
+            setDevUnlocked(true)
+            Taro.showToast({ title: '已解锁开发者选项', icon: 'none' })
+          }
+        }}
+      />
     )
   }
 
-  // ---------- 主页 ----------
   return (
     <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: 40 }}>
-      <View style={{ padding: '44px 22px 20px' }}>
-        <Text
-          style={{
-            fontSize: D.titleLarge,
-            fontWeight: D.weightBold,
-            color: D.label,
-            letterSpacing: '-0.04em',
-          }}
-        >
-          我的
-        </Text>
-        <Text
-          style={{
-            fontSize: D.footnote,
-            color: D.labelSecondary,
-            marginTop: 8,
-          }}
-        >
-          爱心厨房 · 你的家庭饭桌助理
-        </Text>
+      <ProfileStatsHeader stats={stats} achievements={allAchievements} onStatClick={onStatClick} />
 
-        {/* 数据三联卡 */}
-        <View style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-          {stats.map((s, i) => (
-            <View
-              key={i}
-              className="tap-scale"
-              style={{
-                flex: 1,
-                backgroundColor: D.bgElevated,
-                borderRadius: D.radiusM,
-                padding: '14px 12px',
-                border: `0.5px solid ${D.separatorLight}`,
-                boxShadow: D.shadowCard,
-              }}
-              onClick={() => onStatClick(s.action)}
-            >
-              <Text
-                style={{
-                  fontSize: D.title,
-                  fontWeight: D.weightBold,
-                  color: D.label,
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                {s.value}
-              </Text>
-              <Text
-                style={{
-                  fontSize: D.caption,
-                  color: D.labelSecondary,
-                  marginTop: 4,
-                }}
-              >
-                {s.label}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        {/* 成就 */}
-        <View style={{ marginTop: 28 }}>
-          <View
-            style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              justifyContent: 'space-between',
-              marginBottom: 12,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: D.caption,
-                fontWeight: D.weightSemibold,
-                color: D.labelSecondary,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase' as const,
-              }}
-            >
-              成就
-            </Text>
-            <Text style={{ fontSize: D.caption, color: D.labelTertiary }}>
-              {unlockedCount}/{allAchievements.length}
-            </Text>
-          </View>
-          <View
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 8,
-            }}
-          >
-            {allAchievements.map((a) => (
-              <View
-                key={a.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '10px 12px',
-                  borderRadius: D.radiusM,
-                  backgroundColor: a.unlocked ? D.accentMuted : D.bgElevated,
-                  border: `0.5px solid ${
-                    a.unlocked ? D.accentLine : D.separatorLight
-                  }`,
-                  opacity: a.unlocked ? 1 : 0.55,
-                }}
-              >
-                <Text style={{ fontSize: 22 }}>{a.emoji}</Text>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text
-                    style={{
-                      fontSize: D.footnote,
-                      fontWeight: D.weightSemibold,
-                      color: a.unlocked ? D.label : D.labelSecondary,
-                    }}
-                  >
-                    {a.title}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 10,
-                      color: D.labelTertiary,
-                      marginTop: 2,
-                      lineHeight: 1.3,
-                    }}
-                    numberOfLines={1}
-                  >
-                    {a.description}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-      </View>
-
-      {/* 偏好设置 */}
       <View style={{ padding: '0 22px 32px' }}>
-        <Text
-          style={{
-            fontSize: D.caption,
-            fontWeight: D.weightSemibold,
-            color: D.labelSecondary,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase' as const,
-            marginBottom: 10,
+        <PreferencePanel
+          recipeScene={recipeScene}
+          dinersCount={dinersCount}
+          sceneOptions={SCENE_OPTIONS}
+          onSceneChange={applyScene}
+          onDinersChange={handleDinersChange}
+        />
+
+        <ShoppingListPanel />
+
+        <HouseholdPanel />
+
+        <WeeklyMenuCard pantryItems={pantryStore.items} />
+
+        <ExpiryReminderCard
+          enabled={reminderOn}
+          onToggle={() => {
+            void handleToggleReminder()
           }}
-        >
-          偏好
-        </Text>
+        />
 
-        {/* 场景 */}
-        <View
-          style={{
-            backgroundColor: D.bgElevated,
-            borderRadius: D.radiusM,
-            padding: 16,
-            marginBottom: 10,
-            border: `0.5px solid ${D.separatorLight}`,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: D.subheadline,
-              fontWeight: D.weightSemibold,
-              color: D.label,
-            }}
-          >
-            推荐场景
-          </Text>
-          <Text
-            style={{
-              fontSize: D.caption,
-              color: D.labelTertiary,
-              marginTop: 4,
-              lineHeight: 1.5,
-            }}
-          >
-            AI 出菜时会按这个场景调整语气、步骤和营养侧重
-          </Text>
-          <View style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-            {SCENE_OPTIONS.map(({ key, label }) => (
-              <View
-                key={key}
-                className="tap-scale"
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 999,
-                  backgroundColor: recipeScene === key ? D.label : D.bg,
-                  border:
-                    recipeScene === key ? 'none' : `0.5px solid ${D.separator}`,
-                }}
-                onClick={() => applyScene(key)}
-              >
-                <Text
-                  style={{
-                    fontSize: D.footnote,
-                    fontWeight: D.weightSemibold,
-                    color: recipeScene === key ? D.bgElevated : D.labelSecondary,
-                  }}
-                >
-                  {label}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
+        {usesLlmProxy() ? <LlmServiceStatusCard valid={apiKeyValid} /> : null}
 
-        {/* 就餐人数 */}
-        <View
-          style={{
-            backgroundColor: D.bgElevated,
-            borderRadius: D.radiusM,
-            padding: 16,
-            marginBottom: 10,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            border: `0.5px solid ${D.separatorLight}`,
-          }}
-        >
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text
-              style={{
-                fontSize: D.subheadline,
-                fontWeight: D.weightSemibold,
-                color: D.label,
-              }}
-            >
-              默认就餐人数
-            </Text>
-            <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4 }}>
-              份量推荐时的参考值
-            </Text>
-          </View>
-          <View style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <View
-              className="tap-scale"
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                backgroundColor: D.bg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: `0.5px solid ${D.separator}`,
-              }}
-              onClick={() => handleDinersChange(-1)}
-            >
-              <Text style={{ fontSize: 18, color: D.label }}>−</Text>
-            </View>
-            <Text
-              style={{
-                fontSize: D.headline,
-                fontWeight: D.weightBold,
-                color: D.label,
-                minWidth: 24,
-                textAlign: 'center',
-              }}
-            >
-              {dinersCount}
-            </Text>
-            <View
-              className="tap-scale"
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                backgroundColor: D.accent,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              onClick={() => handleDinersChange(1)}
-            >
-              <Text style={{ fontSize: 18, color: '#fff' }}>+</Text>
-            </View>
-          </View>
-        </View>
+        <ProfileAboutRow onOpen={() => setShowAbout(true)} />
 
-        {/* 临期提醒 */}
-        <View
-          style={{
-            backgroundColor: D.bgElevated,
-            borderRadius: D.radiusM,
-            padding: 16,
-            marginBottom: 10,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            border: `0.5px solid ${D.separatorLight}`,
-          }}
-        >
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text
-              style={{
-                fontSize: D.subheadline,
-                fontWeight: D.weightSemibold,
-                color: D.label,
-              }}
-            >
-              临期提醒
-            </Text>
-            <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.5 }}>
-              食材快过期时，微信提醒你趁早做掉，少浪费
-            </Text>
-          </View>
-          <View
-            className="tap-scale"
-            style={{
-              padding: '7px 16px',
-              borderRadius: 999,
-              backgroundColor: reminderOn ? D.accent : D.bg,
-              border: reminderOn ? 'none' : `0.5px solid ${D.separator}`,
-            }}
-            onClick={() => {
-              void handleToggleReminder()
-            }}
-          >
-            <Text
-              style={{
-                fontSize: D.footnote,
-                fontWeight: D.weightSemibold,
-                color: reminderOn ? '#fff' : D.labelSecondary,
-              }}
-            >
-              {reminderOn ? '已开启' : '开启'}
-            </Text>
-          </View>
-        </View>
-
-        {/* 联网状态 */}
-        {usesLlmProxy() ? (
-          <View
-            style={{
-              backgroundColor: D.bgElevated,
-              borderRadius: D.radiusM,
-              padding: 16,
-              marginBottom: 10,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              border: `0.5px solid ${D.separatorLight}`,
-            }}
-          >
-            <View
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 5,
-                backgroundColor:
-                  apiKeyValid === false
-                    ? D.red
-                    : apiKeyValid === true
-                    ? D.green
-                    : D.labelTertiary,
-              }}
-            />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text
-                style={{
-                  fontSize: D.subheadline,
-                  fontWeight: D.weightSemibold,
-                  color: D.label,
-                }}
-              >
-                智能推荐
-              </Text>
-              <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>
-                {apiKeyValid === false
-                  ? '暂不可用，稍后 AI 会自动回退到本地库'
-                  : apiKeyValid === true
-                  ? '已启用，密钥保存在服务端'
-                  : '正在检测…'}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        {/* 关于 */}
-        <View
-          className="tap-scale"
-          style={{
-            backgroundColor: D.bgElevated,
-            borderRadius: D.radiusM,
-            padding: 16,
-            marginBottom: 10,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            border: `0.5px solid ${D.separatorLight}`,
-          }}
-          onClick={() => setShowAbout(true)}
-        >
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontSize: D.subheadline,
-                fontWeight: D.weightSemibold,
-                color: D.label,
-              }}
-            >
-              关于
-            </Text>
-            <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>
-              爱心厨房 v1.1
-            </Text>
-          </View>
-          <Text style={{ color: D.labelTertiary }}>›</Text>
-        </View>
-
-        {/* 开发者调试（仅开发/体验版 or 关于页 7 连击解锁） */}
         {devUnlocked ? (
-          <View
-            style={{
-              marginTop: 24,
-              padding: '14px 16px',
-              borderRadius: D.radiusM,
-              border: `0.5px dashed ${D.separator}`,
+          <DevToolsPanel
+            onCopyAnalytics={copyAnalyticsExport}
+            onClearAnalytics={() => {
+              clearAnalyticsEvents()
+              Taro.showToast({ title: '埋点已清空', icon: 'none' })
             }}
-          >
-            <Text
-              style={{
-                fontSize: D.caption,
-                color: D.labelTertiary,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase' as const,
-                marginBottom: 10,
-              }}
-            >
-              开发者选项
-            </Text>
-            <Button
-              style={{
-                height: 40,
-                backgroundColor: D.bg,
-                color: D.label,
-                borderRadius: 999,
-                fontSize: D.footnote,
-                border: `0.5px solid ${D.separator}`,
-                marginBottom: 10,
-              }}
-              onClick={handleTestLlmProxy}
-            >
-              检测 AI 服务
-            </Button>
-            <Button
-              style={{
-                height: 40,
-                backgroundColor: D.errorBg,
-                color: D.errorFg,
-                borderRadius: 999,
-                fontSize: D.footnote,
-                border: 'none',
-              }}
-              onClick={handleResetMock}
-            >
-              重置冰箱数据
-            </Button>
-            <Button
-              style={{
-                height: 40,
-                backgroundColor: D.bgGrouped,
-                color: D.label,
-                borderRadius: 999,
-                fontSize: D.footnote,
-                border: 'none',
-              }}
-              onClick={handleClearFridge}
-            >
-              清空冰箱（测空库）
-            </Button>
-          </View>
+            onTestLlmProxy={() => {
+              void handleTestLlmProxy()
+            }}
+            onResetMock={handleResetMock}
+            onClearFridge={handleClearFridge}
+          />
         ) : null}
       </View>
     </View>

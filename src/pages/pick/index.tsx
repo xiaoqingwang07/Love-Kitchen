@@ -6,7 +6,7 @@ import { usePantryStore } from '../../store/context'
 import { addSearchHistory } from '../../store/storageUtils'
 import { getDaysLeft } from '../../types/pantry'
 import { getStoredScene } from '../../api/recipe'
-import { STORAGE_KEYS } from '../../store/storageKeys'
+import { consumePickAutoSelectIngredients } from '../../utils/navigationPayload'
 import { D } from '../../theme/designTokens'
 import { slotHint } from '../../utils/slotLabel'
 
@@ -34,12 +34,7 @@ function Pick() {
   }, [pantryStore.expiringItems])
 
   const applyAutoSelect = () => {
-    const raw = Taro.getStorageSync(STORAGE_KEYS.pickAutoSelectIngredients)
-    if (!raw) return
-    Taro.removeStorageSync(STORAGE_KEYS.pickAutoSelectIngredients)
-    const names = Array.isArray(raw)
-      ? raw.map(String).filter(Boolean)
-      : String(raw).split(',').filter(Boolean)
+    const names = consumePickAutoSelectIngredients()
     if (names.length > 0) {
       setSelected(prev => Array.from(new Set([...prev, ...names])))
     }
@@ -87,7 +82,6 @@ function Pick() {
       Taro.showToast({ title: '先选些食材吧~', icon: 'none' })
       return
     }
-    Taro.setStorageSync(STORAGE_KEYS.savedIngredients, selected)
     addSearchHistory(selected.join('、'))
     const scene = getStoredScene()
     // 将临期食材名称也传给 result 页，用于临期加权排序
@@ -95,7 +89,7 @@ function Pick() {
       ? `&expiring=${encodeURIComponent(expiringNames.join(','))}`
       : ''
     Taro.navigateTo({
-      url: `/pages/result/index?from=pantry&ingredients=${encodeURIComponent(selected.join(','))}&scene=${scene}${expiringParam}`
+      url: `/pages/result/index?from=meal&ingredients=${encodeURIComponent(selected.join(','))}&scene=${scene}${expiringParam}`,
     })
   }
 
@@ -124,9 +118,9 @@ function Pick() {
   return (
     <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: '120px' }}>
       <View style={{ padding: '44px 22px 8px' }}>
-        <Text style={{ fontSize: D.titleLarge, fontWeight: D.weightBold, color: D.label, display: 'block', marginBottom: 6, letterSpacing: '-0.04em' }}>选菜</Text>
+        <Text style={{ fontSize: D.titleLarge, fontWeight: D.weightBold, color: D.label, display: 'block', marginBottom: 6, letterSpacing: '-0.04em' }}>今晚</Text>
         <Text style={{ fontSize: D.footnote, color: D.labelSecondary, lineHeight: 1.5 }}>
-          勾选要用的食材，按需加入临期优先处理
+          勾选食材，生成一顿饭方案
         </Text>
       </View>
 
@@ -361,7 +355,7 @@ function Pick() {
           onClick={handleMatch}
           disabled={selected.length === 0}
         >
-          {selected.length > 0 ? `匹配菜谱 · ${selected.length} 种` : '请选择食材'}
+          {selected.length > 0 ? `生成今晚方案 · ${selected.length} 种` : '请选择食材'}
         </Button>
       </View>
     </View>

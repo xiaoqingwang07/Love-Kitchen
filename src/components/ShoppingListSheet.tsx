@@ -4,17 +4,21 @@ import { useEffect, useState } from 'react'
 import { D } from '../theme/designTokens'
 import type { ShoppingItem } from '../utils/shoppingList'
 import { formatShoppingListText } from '../utils/shoppingList'
+import { primeShoppingShare } from '../utils/shareLinks'
+import { householdApiConfigured } from '../api/household'
 
 type Props = {
   visible: boolean
   items: ShoppingItem[]
   onClose: () => void
+  /** 将勾选的缺失项加入本地采购清单 */
+  onAddToList?: (items: { name: string; amount: string }[]) => void
 }
 
 /**
  * 采购清单底部 Sheet：默认把「缺少」项勾上，允许用户改动后复制 / 分享
  */
-export function ShoppingListSheet({ visible, items, onClose }: Props) {
+export function ShoppingListSheet({ visible, items, onClose, onAddToList }: Props) {
   const [checked, setChecked] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
@@ -39,6 +43,29 @@ export function ShoppingListSheet({ visible, items, onClose }: Props) {
     Taro.setClipboardData({ data: text }).then(() => {
       Taro.showToast({ title: '已复制', icon: 'success' })
     })
+  }
+
+  const prepareShare = () => {
+    const picked = items
+      .filter((i) => checked[i.name])
+      .map((i) => ({ name: i.name, amount: i.amount || '适量' }))
+    if (picked.length === 0) {
+      Taro.showToast({ title: '请先勾选要分享的', icon: 'none' })
+      return
+    }
+    primeShoppingShare({ title: '爱心厨房采购', items: picked })
+  }
+
+  const addToList = () => {
+    const missing = items
+      .filter((i) => checked[i.name] && !i.haveIt)
+      .map((i) => ({ name: i.name, amount: i.amount }))
+    if (missing.length === 0) {
+      Taro.showToast({ title: '请先勾选要买的', icon: 'none' })
+      return
+    }
+    onAddToList?.(missing)
+    Taro.showToast({ title: '已加入采购清单', icon: 'success' })
   }
 
   return (
@@ -143,7 +170,16 @@ export function ShoppingListSheet({ visible, items, onClose }: Props) {
                   }}
                 >
                   {on ? (
-                    <Text style={{ color: '#fff', fontSize: 12, lineHeight: 1 }}>✓</Text>
+                    <View
+                      style={{
+                        width: 8,
+                        height: 5,
+                        borderLeft: '2px solid #fff',
+                        borderBottom: '2px solid #fff',
+                        transform: 'rotate(-45deg)',
+                        marginTop: -2,
+                      }}
+                    />
                   ) : null}
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -185,10 +221,11 @@ export function ShoppingListSheet({ visible, items, onClose }: Props) {
           ) : null}
         </View>
 
-        <View style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+        <View style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
           <Button
             style={{
               flex: 1,
+              minWidth: 80,
               height: 48,
               borderRadius: 999,
               backgroundColor: D.bgGrouped,
@@ -201,6 +238,24 @@ export function ShoppingListSheet({ visible, items, onClose }: Props) {
           >
             关闭
           </Button>
+          {onAddToList ? (
+            <Button
+              style={{
+                flex: 1.2,
+                minWidth: 100,
+                height: 48,
+                borderRadius: 999,
+                backgroundColor: D.label,
+                color: D.bgElevated,
+                fontSize: D.footnote,
+                fontWeight: D.weightSemibold,
+                border: 'none',
+              }}
+              onClick={addToList}
+            >
+              {householdApiConfigured() ? '加入清单' : '加入采购清单'}
+            </Button>
+          ) : null}
           <Button
             style={{
               flex: 1.4,
@@ -218,6 +273,7 @@ export function ShoppingListSheet({ visible, items, onClose }: Props) {
           </Button>
           <Button
             openType="share"
+            onClick={prepareShare}
             style={{
               flex: 1,
               height: 48,

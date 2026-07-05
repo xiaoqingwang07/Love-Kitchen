@@ -6,3 +6,7 @@ declare const TARO_APP_CATALOG_BASE_URL: string
 declare const TARO_APP_EXPIRY_TMPL_ID: string
 /** 临期提醒：服务端登记接口 URL；为空则只授权不登记 */
 declare const TARO_APP_REMINDER_API_URL: string
+/** 家庭厨房同步 API；为空则仅本地家庭模式 */
+declare const TARO_APP_HOUSEHOLD_API_URL: string
+/** 设为 true 时启用微信同声传译插件（须先在公众平台添加插件授权） */
+declare const TARO_APP_ENABLE_WECHAT_SI: string

@@ -28,6 +28,11 @@ const _expiryTmplId =
     process.env.TARO_APP_EXPIRY_TMPL_ID || _dotLocal.TARO_APP_EXPIRY_TMPL_ID || '';
 const _reminderApiUrl =
     process.env.TARO_APP_REMINDER_API_URL || _dotLocal.TARO_APP_REMINDER_API_URL || '';
+const _householdApiUrl =
+    process.env.TARO_APP_HOUSEHOLD_API_URL || _dotLocal.TARO_APP_HOUSEHOLD_API_URL || '';
+const _enableWechatSi =
+    process.env.TARO_APP_ENABLE_WECHAT_SI === 'true' ||
+    _dotLocal.TARO_APP_ENABLE_WECHAT_SI === 'true';
 
 const config = {
     projectName: 'love-kitchen',
@@ -46,6 +51,8 @@ const config = {
         TARO_APP_CATALOG_BASE_URL: JSON.stringify(_catalogBaseUrl),
         TARO_APP_EXPIRY_TMPL_ID: JSON.stringify(_expiryTmplId),
         TARO_APP_REMINDER_API_URL: JSON.stringify(_reminderApiUrl),
+        TARO_APP_HOUSEHOLD_API_URL: JSON.stringify(_householdApiUrl),
+        TARO_APP_ENABLE_WECHAT_SI: JSON.stringify(_enableWechatSi ? 'true' : ''),
     },
     copy: {
         patterns: [
@@ -85,6 +92,8 @@ const config = {
         }
     },
     h5: {
+        /** 与 weapp 的 dist/ 分离，避免 build:h5 覆盖小程序产物 */
+        outputRoot: 'dist-h5',
         publicPath: '/',
         staticDirectory: 'static',
         devServer: {

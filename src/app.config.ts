@@ -7,12 +7,12 @@ export default defineAppConfig({
     'pages/result/index',
     'pages/detail/index'
   ],
-  plugins: {
-    WechatSI: {
-      version: '0.3.5',
-      provider: 'wx069ba97219f66d99'
-    }
-  },
+  // 微信同声传译插件默认不声明：未在公众平台授权时会导致模拟器无法启动。
+  // 语音 ASR 见 voiceAsr.ts，不可用时自动降级为录音备忘。
+  // 上线前在公众平台添加插件后，取消下方注释并 rebuild：
+  // plugins: {
+  //   WechatSI: { version: '0.3.5', provider: 'wx069ba97219f66d99' },
+  // },
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#F6F8F5',
@@ -33,7 +33,7 @@ export default defineAppConfig({
       },
       {
         pagePath: 'pages/pick/index',
-        text: '选菜',
+        text: '今晚',
         iconPath: 'assets/tabbar/pick.png',
         selectedIconPath: 'assets/tabbar/pick_active.png'
       },
@@ -57,9 +57,6 @@ export default defineAppConfig({
   permission: {
     'scope.userLocation': {
       desc: '用于获取当地天气，推荐时令菜谱'
-    },
-    'scope.record': {
-      desc: '用于语音记录食材，便于快速整理冰箱库存'
     }
   }
 })

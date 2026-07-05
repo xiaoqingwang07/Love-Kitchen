@@ -23,6 +23,12 @@ export type RecipeSource = 'ai' | 'local' | 'cache' | 'custom'
 export interface Recipe {
   id: string | number
   title: string
+  /** 清洗后的展示标题 */
+  displayTitle?: string
+  /** 原始标题（catalog 清洗保留） */
+  originalTitle?: string
+  /** 数据质量分 0–100，推荐排序用 */
+  qualityScore?: number
   /** 列表/详情展示：AI 生成、本地库、命中缓存 */
   source?: RecipeSource
   quote?: string
@@ -38,6 +44,8 @@ export interface Recipe {
   difficulty?: '简单' | '中等' | '复杂'
   time?: number       // 烹饪时间（分钟）
   tags?: string[]     // 标签：家常、快手、运动加餐等
+  /** 下厨房 catalog 原始 ID（运行时 id 可能与 chunk 内 id 不同） */
+  catalogId?: string | number
   /** 收藏入库时间戳（仅本地存储用） */
   savedAt?: number
 }
