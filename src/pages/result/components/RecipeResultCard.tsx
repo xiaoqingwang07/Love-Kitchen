@@ -49,12 +49,15 @@ export function RecipeResultCard({
         style={{
           width: 92,
           height: 92,
-          backgroundColor: D.bg,
+          background:
+            imageSrc && !imageFailed
+              ? D.bg
+              : `linear-gradient(135deg, ${D.accentMuted} 0%, ${D.bgElevated} 100%)`,
           borderRadius: D.radiusM,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 34,
+          fontSize: 44,
           flexShrink: 0,
           overflow: 'hidden',
         }}
@@ -68,7 +71,7 @@ export function RecipeResultCard({
             onError={onImageError}
           />
         ) : (
-          <Text>{recipe.emoji || '🥘'}</Text>
+          <Text style={{ lineHeight: 1 }}>{recipe.emoji || '🥘'}</Text>
         )}
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>

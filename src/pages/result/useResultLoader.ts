@@ -13,7 +13,7 @@ import { searchRecipesByTitle } from '../../utils/recipeSearch'
 import { shuffleWithSeed, daySeed } from '../../utils/shuffleSeed'
 import { trackEvent } from '../../utils/analytics'
 import { decodeMealShare } from '../../utils/shareLinks'
-import { buildMealPlansWithAiFallback } from '../../utils/mealPlanBuilder'
+import { buildMealPlansWithAiFallback, buildMealPlansResilient } from '../../utils/mealPlanBuilder'
 import type { MealConstraint, MealPlan } from '../../types/mealPlan'
 import type { Recipe, SceneType } from '../../types/recipe'
 import { parseScene, hasUsableLlm, buildSharedMealPlans, type ErrorNotice } from './resultUtils'
@@ -215,34 +215,66 @@ export function useResultLoader(
         ? (decodeURIComponent(constraintsRaw).split(',') as MealConstraint[])
         : []
       const servings = Number(params.servings) || 3
-      void buildMealPlansWithAiFallback({
+      const fromReminder = params.source === 'reminder'
+      const buildOpts = {
         pantryNames: list,
         expiringNames: expiringList,
         constraints,
         servings,
         limit: 3,
-      }).then((plans) => {
+      }
+
+      if (fromReminder) {
+        // 临期召回场景保留「诚实空态」：空结果时展示延长保存/标记用完/列入采购的操作条
+        void buildMealPlansWithAiFallback(buildOpts).then((plans) => {
+          if (cancelled) return
+          trackEvent('meal_plan_view', { count: plans.length, source: 'reminder' })
+          setMealPlans(plans)
+          setRecipes([])
+          setNotice(
+            plans.length === 0
+              ? {
+                  tone: 'warn',
+                  title: '临期食材暂无搭配方案',
+                  detail: '建议尽快清掉、延长保存，或列入采购后再做。',
+                }
+              : { tone: 'info', title: '优先消耗临期食材', detail: plans[0].reason }
+          )
+        })
+        return cleanup
+      }
+
+      void buildMealPlansResilient(buildOpts).then(({ plans, degraded }) => {
         if (cancelled) return
-        trackEvent('meal_plan_view', { count: plans.length, source: params.source ?? 'unknown' })
+        trackEvent('meal_plan_view', {
+          count: plans.length,
+          source: params.source ?? 'unknown',
+          degraded,
+        })
         setMealPlans(plans)
         setRecipes([])
         if (plans.length === 0) {
-          if (list.length === 0) {
-            setNotice({
-              tone: 'info',
-              title: '先告诉我要用什么食材',
-              detail: '在首页搜索、去冰箱录入，或在本页勾选食材后再来。',
-            })
-          } else {
-            const fromReminder = params.source === 'reminder'
-            setNotice({
-              tone: 'warn',
-              title: fromReminder ? '临期食材暂无搭配方案' : '暂时拼不出完整方案',
-              detail: fromReminder
-                ? '建议尽快清掉、延长保存，或列入采购后再做。'
-                : '试试换几种食材，或放宽约束条件。',
-            })
-          }
+          // 仅在 catalog 尚未加载等极端情况才会走到
+          setNotice({
+            tone: 'warn',
+            title: '菜谱库还没准备好',
+            detail: '请检查网络后下拉重试。',
+          })
+        } else if (degraded === 'relaxed') {
+          setNotice({
+            tone: 'info',
+            title: '放宽筛选后拼出了方案',
+            detail: '严格满足全部筛选时没有完整组合，先按最接近的搭配给你。',
+          })
+        } else if (degraded === 'generic') {
+          setNotice({
+            tone: 'info',
+            title: list.length > 0 ? '换个思路：先来三套家常搭配' : '今晚一餐方案',
+            detail:
+              list.length > 0
+                ? '你选的食材暂时拼不出完整一餐，这三套是家常稳妥组合；也可以减少食材种类再试。'
+                : plans[0].reason,
+          })
         } else {
           setNotice({
             tone: 'info',

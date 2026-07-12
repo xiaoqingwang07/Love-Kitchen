@@ -332,6 +332,41 @@ export async function buildMealPlansWithAiFallback(
   }
 }
 
+export type MealPlanDegradeLevel = 'none' | 'relaxed' | 'generic'
+
+export type MealPlanBuildOutcome = {
+  plans: MealPlan[]
+  /** none=正常；relaxed=放宽了筛选条件；generic=所选食材拼不出，改为家常兜底 */
+  degraded: MealPlanDegradeLevel
+}
+
+/**
+ * 永不空手的方案生成：
+ * 1. 按用户所选食材 + 约束正常拼；
+ * 2. 拼不出则去掉约束重试（放宽）；
+ * 3. 仍拼不出则退回「热门家常搭配」，保证结果页永远给得出可做的一餐。
+ */
+export async function buildMealPlansResilient(
+  opts: Parameters<typeof buildLocalMealPlans>[0]
+): Promise<MealPlanBuildOutcome> {
+  const strict = await buildMealPlansWithAiFallback(opts)
+  if (strict.length > 0) return { plans: strict, degraded: 'none' }
+
+  if ((opts.constraints?.length ?? 0) > 0) {
+    const relaxed = await buildMealPlansWithAiFallback({ ...opts, constraints: [] })
+    if (relaxed.length > 0) return { plans: relaxed, degraded: 'relaxed' }
+  }
+
+  const generic = buildLocalMealPlans({
+    pantryNames: [],
+    expiringNames: [],
+    constraints: [],
+    servings: opts.servings,
+    limit: opts.limit,
+  })
+  return { plans: generic, degraded: 'generic' }
+}
+
 export function mealRoleLabel(role: MealRecipeRole): string {
   switch (role) {
     case 'main':

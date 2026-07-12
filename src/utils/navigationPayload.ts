@@ -16,7 +16,6 @@ export type NavPayloadKey =
   | 'pickAutoSelectIngredients'
   | 'profileOpenFavorites'
   | 'profileOpenShopping'
-  | 'profileOpenShopping'
   | 'autoSearchIngredient'
   | 'pendingJoinCode'
 

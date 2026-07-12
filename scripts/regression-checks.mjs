@@ -372,6 +372,19 @@ expect(
 )
 expect('AI 生成菜谱提示不应出现对内话术', !resultPage.includes('收录进正式库'))
 
+expect(
+  '今晚方案必须永不空手：约束放宽 + 家常兜底三级降级',
+  mealBuilder.includes('buildMealPlansResilient') &&
+    mealBuilder.includes("degraded: 'relaxed'") &&
+    mealBuilder.includes("degraded: 'generic'") &&
+    resultLoader.includes('buildMealPlansResilient')
+)
+expect(
+  '临期召回场景保留诚实空态（不套家常兜底）',
+  resultLoader.includes("params.source === 'reminder'") &&
+    resultLoader.includes('临期食材暂无搭配方案')
+)
+
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL ${failure}`)
   console.error(`\nRegression checks failed: ${failures.length}`)
