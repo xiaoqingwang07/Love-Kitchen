@@ -5,7 +5,11 @@ import type { HouseholdStore } from '../../store/householdStore'
 import { checkApiKey } from '../../api/recipe'
 import { householdApiConfigured } from '../../api/household'
 import { getDefaultDinersCount, setDefaultDinersCount } from '../../store/userPreferences'
-import { consumeProfileOpenFavorites, consumePendingJoinCode } from '../../utils/navigationPayload'
+import {
+  consumeProfileOpenFavorites,
+  consumeProfileOpenShopping,
+  consumePendingJoinCode,
+} from '../../utils/navigationPayload'
 import {
   reminderConfigured,
   getReminderState,
@@ -29,7 +33,8 @@ export function isDevEnv(): boolean {
 export function useProfileLifecycle(
   pantryStore: PantryStore,
   householdStore: HouseholdStore,
-  onOpenFavorites: () => void
+  onOpenFavorites: () => void,
+  onOpenShopping?: () => void
 ) {
   const router = useRouter()
   const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null)
@@ -84,6 +89,9 @@ export function useProfileLifecycle(
     }
     if (consumeProfileOpenFavorites()) {
       onOpenFavorites()
+    }
+    if (consumeProfileOpenShopping()) {
+      onOpenShopping?.()
     }
   })
 

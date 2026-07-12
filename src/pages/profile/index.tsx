@@ -31,12 +31,15 @@ import { copyAnalyticsExport, clearAnalyticsEvents } from '../../utils/analytics
 import { resolvePrimedShare } from '../../utils/shareLinks'
 import { useProfileLifecycle } from './useProfileLifecycle'
 
+/** 只保留贴合「给家人做饭」主场景的两档；runner/muscle 与家庭场景错位，已从 UI 收敛 */
 const SCENE_OPTIONS: { key: SceneType; label: string }[] = [
   { key: 'normal', label: '日常' },
-  { key: 'runner', label: '运动后' },
   { key: 'quick', label: '快手' },
-  { key: 'muscle', label: '高蛋白' },
 ]
+
+function normalizeScene(s: SceneType): SceneType {
+  return SCENE_OPTIONS.some((o) => o.key === s) ? s : 'normal'
+}
 
 function Profile() {
   const pantryStore = usePantryStore()
@@ -52,7 +55,7 @@ function Profile() {
   const [showHistory, setShowHistory] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
   const [cookedRecipes, setCookedRecipes] = useState<(Recipe & { cookedAt: number })[]>([])
-  const [recipeScene, setRecipeScene] = useState<SceneType>(() => getStoredScene())
+  const [recipeScene, setRecipeScene] = useState<SceneType>(() => normalizeScene(getStoredScene()))
   const [showFavorites, setShowFavorites] = useState(false)
   const [favoriteItems, setFavoriteItems] = useState<Recipe[]>([])
   const [aboutTaps, setAboutTaps] = useState(0)
@@ -66,6 +69,16 @@ function Profile() {
     setShowFavorites(true)
   }, [loadFavoriteItems])
 
+  const openShoppingPanel = useCallback(() => {
+    // 退出可能盖在上面的子页面，再滚动定位到采购清单
+    setShowFavorites(false)
+    setShowHistory(false)
+    setShowAbout(false)
+    setTimeout(() => {
+      void Taro.pageScrollTo({ selector: '#shopping-panel', duration: 300 })
+    }, 120)
+  }, [])
+
   const {
     apiKeyValid,
     dinersCount,
@@ -75,7 +88,7 @@ function Profile() {
     handleToggleReminder,
     handleDinersChange,
     handleTestLlmProxy,
-  } = useProfileLifecycle(pantryStore, householdStore, openFavorites)
+  } = useProfileLifecycle(pantryStore, householdStore, openFavorites, openShoppingPanel)
 
   const applyScene = (k: SceneType) => {
     setRecipeScene(k)
@@ -211,7 +224,9 @@ function Profile() {
           onDinersChange={handleDinersChange}
         />
 
-        <ShoppingListPanel />
+        <View id="shopping-panel">
+          <ShoppingListPanel />
+        </View>
 
         <HouseholdPanel />
 

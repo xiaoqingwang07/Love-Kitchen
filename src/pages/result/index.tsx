@@ -1,6 +1,7 @@
 import { View, Text } from '@tarojs/components'
 import Taro, { useRouter, useShareAppMessage } from '@tarojs/taro'
 import { useMemo, useRef, useState } from 'react'
+import { observer } from 'mobx-react-lite'
 import { resolveFullRecipe } from '../../data/recipeRegistry'
 import { fetchRecipeByDishName } from '../../api/recipe'
 import {
@@ -25,13 +26,16 @@ import { ReminderMealEmptyBar } from './components/ReminderMealEmptyBar'
 import { MealPlanReasonBar } from './components/MealPlanReasonBar'
 import { MissDishPanel } from './components/MissDishPanel'
 import { householdStore } from '../../store/householdStore'
+import { usePantryStore } from '../../store/context'
+import { getRecipePantryContext } from '../../utils/recipePantryContext'
 import type { Recipe } from '../../types/recipe'
 import { parseScene, hasUsableLlm } from './resultUtils'
 import { resultPageStyles as S } from './resultPageStyles'
 import { D } from '../../theme/designTokens'
 import { useResultLoader } from './useResultLoader'
 
-export default function Result() {
+function Result() {
+  const pantryStore = usePantryStore()
   const [reloadTick, setReloadTick] = useState(0)
   const [failedImages, setFailedImages] = useState<Record<string, true>>({})
   const [mainCtaLoading, setMainCtaLoading] = useState(false)
@@ -132,7 +136,7 @@ export default function Result() {
       setNotice({
         tone: 'info',
         title: `AI 已生成「${missDishName}」`,
-        detail: '可保存到「我的菜谱」；收录进正式库后会补上下厨房真实图文。',
+        detail: '做法已备好，可保存到「我的菜谱」，下次一键再做。',
       })
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message || '请稍后再试'
@@ -284,11 +288,17 @@ export default function Result() {
           {recipes.map((item, idx) => {
             const r = enrichRecipeMedia(item)
             const imageKey = String(r.id || idx)
+            let pantryHint: string | undefined
+            if (pantryStore.totalCount > 0 && r.ingredients?.length) {
+              const ctx = getRecipePantryContext(r, pantryStore.items)
+              if (ctx.hits.length > 0) pantryHint = ctx.reason
+            }
             return (
               <RecipeResultCard
                 key={r.id || idx}
                 recipe={r}
                 imageKey={imageKey}
+                pantryHint={pantryHint}
                 imageFailed={Boolean(failedImages[imageKey])}
                 onOpen={() => goToDetail(r)}
                 onToggleFavorite={() => handleToggleFavorite(r)}
@@ -314,3 +324,5 @@ export default function Result() {
     </View>
   )
 }
+
+export default observer(Result)

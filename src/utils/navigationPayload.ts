@@ -15,6 +15,8 @@ export type NavPayloadKey =
   | 'pantryPendingAction'
   | 'pickAutoSelectIngredients'
   | 'profileOpenFavorites'
+  | 'profileOpenShopping'
+  | 'profileOpenShopping'
   | 'autoSearchIngredient'
   | 'pendingJoinCode'
 
@@ -166,6 +168,15 @@ export function setProfileOpenFavorites(): void {
 
 export function consumeProfileOpenFavorites(): boolean {
   return consumeFlagWithLegacy('profileOpenFavorites', STORAGE_KEYS.profileOpenFavorites)
+}
+
+/** 首页「待采购」→ 我的页定位到采购清单 */
+export function setProfileOpenShopping(): void {
+  setNavPayload('profileOpenShopping', true)
+}
+
+export function consumeProfileOpenShopping(): boolean {
+  return Boolean(consumeNavPayload<boolean>('profileOpenShopping'))
 }
 
 /** 外部落地首页时预填搜索框 */

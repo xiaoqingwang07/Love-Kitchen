@@ -335,6 +335,43 @@ expect('今晚方案应解释推荐依据', fs.existsSync(path.join(root, 'src/p
 expect('分享应支持三类标题', shareLinks.includes('今晚吃【') && shareLinks.includes('帮我买') && shareLinks.includes('加入我家的厨房清单'))
 expect('meal 缺货应加入采购清单', resultPage.includes('handleAddMealShopping') && resultPage.includes('addShoppingItems'))
 
+// ── 2026-07-06 整改不变量：扣减确认 / 采购直达 / 结果页冰箱联动 / 精简 ──
+const detailPage = read('src/pages/detail/index.tsx')
+expect(
+  '扣减应做完后经确认清单，不再开做前整项静默删除',
+  fs.existsSync(path.join(root, 'src/pages/detail/components/DeductConfirmSheet.tsx')) &&
+    detailPage.includes('previewDeduction') &&
+    detailPage.includes('DeductConfirmSheet') &&
+    !detailPage.includes('要自动扣减这道菜用掉的食材吗')
+)
+expect(
+  'PantryStore 应支持 previewDeduction 与 removeItemsByIds',
+  pantryStore.includes('previewDeduction') && pantryStore.includes('removeItemsByIds')
+)
+expect(
+  '首页「待采购」应直达我的页采购清单',
+  homeKitchenStatus.includes('setProfileOpenShopping') &&
+    profileLifecycle.includes('consumeProfileOpenShopping') &&
+    profilePage.includes('shopping-panel')
+)
+expect(
+  '非 meal 结果卡应展示冰箱联动提示',
+  resultPage.includes('getRecipePantryContext') &&
+    read('src/pages/result/components/RecipeResultCard.tsx').includes('pantryHint')
+)
+expect(
+  '场景偏好应收敛为家庭主场景两档',
+  !profilePage.includes('运动后') &&
+    !profilePage.includes('高蛋白') &&
+    profilePage.includes('normalizeScene')
+)
+expect(
+  '首页推荐区不应保留与换一批重复的随机入口',
+  !indexPage.includes('handleRandom') &&
+    !read('src/pages/index/components/HomeRecommendSection.tsx').includes('onRandom')
+)
+expect('AI 生成菜谱提示不应出现对内话术', !resultPage.includes('收录进正式库'))
+
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL ${failure}`)
   console.error(`\nRegression checks failed: ${failures.length}`)

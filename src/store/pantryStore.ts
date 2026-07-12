@@ -297,25 +297,36 @@ export class PantryStore {
     this.items = []
   }
 
-  deductItems(ingredientNames: string[]) {
+  /** 预览扣减：返回每个菜谱食材匹配到的冰箱条目（每个条目最多匹配一次），不改库存 */
+  previewDeduction(ingredientNames: string[]): { ingredient: string; item: PantryItem }[] {
     let pool = [...this.items]
-    const toRemoveIds: string[] = []
+    const matches: { ingredient: string; item: PantryItem }[] = []
 
     for (const raw of ingredientNames) {
       const name = raw.trim()
       if (!name) continue
       const match = findPantryItemForRecipeIngredient(pool, name)
       if (match) {
-        toRemoveIds.push(match.id)
+        matches.push({ ingredient: name, item: match })
         pool = pool.filter((i) => i.id !== match.id)
       }
     }
 
-    if (toRemoveIds.length > 0) {
-      this.items = this.items.filter((i) => !toRemoveIds.includes(i.id))
-    }
+    return matches
+  }
 
-    return toRemoveIds.length
+  /** 按 id 批量移除（扣减确认后调用）；返回实际移除数 */
+  removeItemsByIds(ids: string[]): number {
+    if (ids.length === 0) return 0
+    const set = new Set(ids)
+    const before = this.items.length
+    this.items = this.items.filter((i) => !set.has(i.id))
+    return before - this.items.length
+  }
+
+  deductItems(ingredientNames: string[]) {
+    const matches = this.previewDeduction(ingredientNames)
+    return this.removeItemsByIds(matches.map((m) => m.item.id))
   }
 
   resetToMock() {

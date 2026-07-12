@@ -178,8 +178,7 @@ CRON_SECRET=随机串                 # 保护定时任务 URL
 | downloadFile | `images.unsplash.com` | 关键词池兜底（仅未命中精确映射时） |
 | uploadFile | `你的-vercel-proxy.vercel.app` | 图片识别上传（如接入 OCR） |
 
-> 开发阶段可在微信开发者工具勾选「不校验合法域名」临时绕过。
-> 当前 `project.config.json` 已将 `urlCheck` 设为 `false`，方便本地预览真实菜谱图；上线前仍必须在微信公众平台配置上述合法域名。
+> 开发阶段可在微信开发者工具勾选「不校验合法域名」临时绕过（`project.config.json` 的 `urlCheck` 保持 `true`，不要为图省事改成 `false` 提交）。上线前必须在微信公众平台配置上述合法域名。
 
 ---
 

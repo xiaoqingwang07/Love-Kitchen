@@ -3,7 +3,6 @@ import Taro, { useRouter, useShareAppMessage, useShareTimeline } from '@tarojs/t
 import { useState, useEffect, useMemo } from 'react'
 import { observer } from 'mobx-react-lite'
 import { usePantryStore, useHouseholdStore } from '../../store/context'
-import { findPantryItemForRecipeIngredient } from '../../utils/ingredientMatch'
 import { D } from '../../theme/designTokens'
 import { findRecipeById, resolveFullRecipe } from '../../data/recipeRegistry'
 import { enrichRecipeMedia } from '../../utils/enrichRecipeMedia'
@@ -23,6 +22,7 @@ import { recordMealSolved } from '../../utils/mealSolvedTracker'
 import { resolvePrimedShare, getPendingShare } from '../../utils/shareLinks'
 import { consumeSelectedRecipeForDetail, setSharedRecipeSnapshot, peekSharedRecipeSnapshot } from '../../utils/navigationPayload'
 import { CookingMode } from './components/CookingMode'
+import { DeductConfirmSheet, type DeductMatch } from './components/DeductConfirmSheet'
 import { RecipeHero } from './components/RecipeHero'
 import { PantryContextBar } from './components/PantryContextBar'
 import { IngredientGrid } from './components/IngredientGrid'
@@ -110,6 +110,7 @@ function Detail() {
   const [cookingMode, setCookingMode] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [showShopping, setShowShopping] = useState(false)
+  const [deductMatches, setDeductMatches] = useState<DeductMatch[] | null>(null)
   const [failedImages, setFailedImages] = useState<Record<string, true>>({})
 
   const timers = useParallelTimers()
@@ -230,33 +231,28 @@ function Detail() {
       stepCount: recipe.steps.length,
       pantryCount: pantryStore.totalCount,
     })
+    // 直接进入烹饪模式；扣减放在做完之后确认，那时才知道实际用掉了什么
+    setCookingMode(true)
+    setCurrentStep(0)
+  }
 
+  /** 做完后弹扣减确认清单；没有匹配食材则什么都不弹 */
+  const offerDeduction = () => {
+    if (!recipe) return
     const ingredientNames = (recipe.ingredients || []).map((i) => i.name)
-    const hasMatchInPantry = ingredientNames.some(
-      (name) => !!findPantryItemForRecipeIngredient(pantryStore.items, name)
-    )
+    const matches = pantryStore.previewDeduction(ingredientNames)
+    if (matches.length > 0) {
+      setDeductMatches(matches)
+    }
+  }
 
-    if (hasMatchInPantry) {
-      Taro.showModal({
-        title: '联动冰箱',
-        content: '要自动扣减这道菜用掉的食材吗？',
-        confirmText: '扣减',
-        cancelText: '跳过',
-        success: (res) => {
-          if (res.confirm) {
-            const count = pantryStore.deductItems(ingredientNames)
-            if (count > 0) {
-              reportEvent(EVENTS.pantryDeduct, { count, source: recipe.source ?? 'local' })
-            }
-            Taro.showToast({ title: `已扣减 ${count} 项`, icon: 'success' })
-          }
-          setCookingMode(true)
-          setCurrentStep(0)
-        },
-      })
-    } else {
-      setCookingMode(true)
-      setCurrentStep(0)
+  const handleConfirmDeduction = (ids: string[]) => {
+    setDeductMatches(null)
+    if (!recipe || ids.length === 0) return
+    const count = pantryStore.removeItemsByIds(ids)
+    if (count > 0) {
+      reportEvent(EVENTS.pantryDeduct, { count, source: recipe.source ?? 'local' })
+      Taro.showToast({ title: `冰箱已扣掉 ${count} 项`, icon: 'success' })
     }
   }
 
@@ -307,6 +303,7 @@ function Detail() {
           recordMealSolved({ recipeId: String(recipe.id), title: recipe.title })
           handleMarkCooked()
           exitCookingMode()
+          offerDeduction()
         }}
         timers={timers}
         failedImages={failedImages}
@@ -363,8 +360,18 @@ function Detail() {
 
       <DetailBottomBar
         hasSteps={steps.length > 0}
-        onMarkCooked={handleMarkCooked}
+        onMarkCooked={() => {
+          handleMarkCooked()
+          offerDeduction()
+        }}
         onStartCooking={handleStartCooking}
+      />
+
+      <DeductConfirmSheet
+        visible={deductMatches !== null}
+        matches={deductMatches ?? []}
+        onConfirm={handleConfirmDeduction}
+        onClose={() => setDeductMatches(null)}
       />
 
       <ShoppingListSheet

@@ -5,6 +5,7 @@ import { AppIcon } from '../../../components/AppIcon'
 import { trackEvent } from '../../../utils/analytics'
 import { usePantryStore, useHouseholdStore } from '../../../store/context'
 import { getFreshnessStatus } from '../../../types/pantry'
+import { setProfileOpenShopping } from '../../../utils/navigationPayload'
 import type { PantryItem } from '../../../types/pantry'
 
 /** 跳转今晚方案页，携带冰箱食材与临期列表 */
@@ -60,9 +61,9 @@ export function HomeKitchenStatus({ expiringCount, onTonightMeal }: Props) {
           style={{ flex: 1, alignItems: 'center' }}
           className="tap-scale"
           onClick={() => {
-            if (shoppingCount > 0) {
-              Taro.switchTab({ url: '/pages/profile/index' })
-            }
+            trackEvent('home_shopping_entry', { shoppingCount })
+            setProfileOpenShopping()
+            Taro.switchTab({ url: '/pages/profile/index' })
           }}
         >
           <Text style={{ fontSize: 26, fontWeight: D.weightBold, color: D.label }}>{shoppingCount}</Text>

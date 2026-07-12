@@ -7,6 +7,8 @@ type Props = {
   recipe: Recipe
   imageKey: string
   imageFailed: boolean
+  /** 冰箱联动提示：能用上几样 / 消耗临期 / 还缺什么 */
+  pantryHint?: string
   onOpen: () => void
   onToggleFavorite: () => void
   onImageError: () => void
@@ -16,6 +18,7 @@ export function RecipeResultCard({
   recipe,
   imageKey,
   imageFailed,
+  pantryHint,
   onOpen,
   onToggleFavorite,
   onImageError,
@@ -83,6 +86,20 @@ export function RecipeResultCard({
         {recipe.quote ? (
           <Text style={{ fontSize: D.caption, color: D.labelSecondary, marginBottom: 8, lineHeight: 1.5 }} numberOfLines={2}>
             {recipe.quote}
+          </Text>
+        ) : null}
+        {pantryHint ? (
+          <Text
+            style={{
+              fontSize: D.caption,
+              color: D.accent,
+              fontWeight: D.weightMedium,
+              marginBottom: 6,
+              lineHeight: 1.4,
+            }}
+            numberOfLines={1}
+          >
+            {pantryHint}
           </Text>
         ) : null}
         {metaParts.length > 0 ? (

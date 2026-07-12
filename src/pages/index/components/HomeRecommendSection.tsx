@@ -13,7 +13,6 @@ type Props = {
   weatherLoading: boolean
   onEnableWeather: () => void
   onRefresh: () => void
-  onRandom: () => void
   onCardClick: (item: Recipe) => void
 }
 
@@ -24,7 +23,6 @@ export function HomeRecommendSection({
   weatherLoading,
   onEnableWeather,
   onRefresh,
-  onRandom,
   onCardClick,
 }: Props) {
   const [failedIds, setFailedIds] = useState<Record<string, true>>({})
@@ -48,9 +46,6 @@ export function HomeRecommendSection({
             ) : null}
             <Text className="tap-scale" style={S.sectionActionStyle} onClick={onRefresh}>
               换一批
-            </Text>
-            <Text className="tap-scale" style={S.sectionActionStyle} onClick={onRandom}>
-              更多
             </Text>
           </View>
         </View>

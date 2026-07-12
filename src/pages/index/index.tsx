@@ -131,11 +131,6 @@ function Index() {
 
   const handleGenerate = () => doSearch(inputValue)
 
-  const handleRandom = () => {
-    trackEvent('random_recipe', { surface: 'home' })
-    Taro.navigateTo({ url: '/pages/result/index?from=random' })
-  }
-
   const handleHistoryClick = (keyword: string) => {
     setInputValue(keyword)
     setShowHistory(false)
@@ -278,7 +273,6 @@ function Index() {
           weatherLoading={weatherLoading}
           onEnableWeather={enableWeather}
           onRefresh={() => setListVariant((v) => v + 1)}
-          onRandom={handleRandom}
           onCardClick={(item) => void openRecipeDetail(item)}
         />
       ) : null}
