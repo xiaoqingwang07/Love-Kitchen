@@ -9,7 +9,7 @@ import './app.scss'
 
 function App({ children }: PropsWithChildren<any>) {
     useLaunch((options) => {
-        console.log('App launched.')
+        // launched
         void initCatalog()
         const query = options?.query || {}
         const joinCode = query.joinCode
