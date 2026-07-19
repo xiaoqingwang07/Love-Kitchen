@@ -32,5 +32,7 @@
       "path": "/api/reminder-cron",
       "schedule": "0 1 * * *"
     }
-  ]
+  ],
+  "installCommand": "echo skip-install",
+  "buildCommand": "echo skip-build"
 }

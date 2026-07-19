@@ -1,0 +1,9 @@
+dist
+src
+config
+docs
+catalog-cdn
+node_modules
+.swc
+*.md
+.env*
