@@ -23,7 +23,7 @@ export function CookedHistoryPage({ items, onBack, onOpenRecipe }: Props) {
           borderBottom: `0.5px solid ${D.separatorLight}`,
         }}
       >
-        <Text style={{ fontSize: D.body, color: D.accent }} onClick={onBack}>
+        <Text style={{ fontSize: D.body, color: D.accentDeep }} onClick={onBack}>
           ← 返回
         </Text>
         <Text

@@ -70,7 +70,7 @@ export function MealPlanCard({ plan, selected, onSelect, onOpenRecipe, onAddShop
               </View>
             )}
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={{ fontSize: D.caption, color: D.accent, fontWeight: D.weightSemibold }}>
+              <Text style={{ fontSize: D.caption, color: D.accentDeep, fontWeight: D.weightSemibold }}>
                 {mealRoleLabel(slot.role)}
               </Text>
               <Text
@@ -119,7 +119,7 @@ export function MealPlanCard({ plan, selected, onSelect, onOpenRecipe, onAddShop
             <Text
               style={{
                 fontSize: D.caption,
-                color: D.accent,
+                color: D.accentDeep,
                 fontWeight: D.weightSemibold,
                 marginTop: 6,
               }}

@@ -135,7 +135,7 @@ export function PreferencePanel({
             }}
             onClick={() => onDinersChange(1)}
           >
-            <Text style={{ fontSize: 18, color: '#fff' }}>+</Text>
+            <Text style={{ fontSize: 18, color: D.onAccent }}>+</Text>
           </View>
         </View>
       </View>

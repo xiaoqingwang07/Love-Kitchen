@@ -112,7 +112,7 @@ export const searchSubmitStyle: CSSProperties = {
 export const searchSubmitTextStyle: CSSProperties = {
   fontSize: D.subheadline,
   fontWeight: D.weightSemibold,
-  color: '#fff',
+  color: D.onAccent,
   letterSpacing: '0.01em',
 }
 
@@ -280,7 +280,7 @@ export const sectionActionsStyle: CSSProperties = {
 
 export const sectionActionStyle: CSSProperties = {
   fontSize: D.footnote,
-  color: D.accent,
+  color: D.accentDeep,
   fontWeight: D.weightSemibold,
   flexShrink: 0,
 }

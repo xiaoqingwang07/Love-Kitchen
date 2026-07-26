@@ -24,7 +24,7 @@ export const resultPageStyles = {
     padding: '6px 12px',
     borderRadius: 999,
     backgroundColor: D.accentMuted,
-    color: D.accent,
+    color: D.accentDeep,
     fontSize: D.caption,
     fontWeight: D.weightSemibold,
   } as CSSProperties,

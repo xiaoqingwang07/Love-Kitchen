@@ -162,7 +162,7 @@ export function RecipeHero({
               key={tag}
               style={{
                 fontSize: D.caption,
-                color: D.accent,
+                color: D.accentDeep,
                 backgroundColor: D.accentMuted,
                 padding: '5px 10px',
                 borderRadius: 999,

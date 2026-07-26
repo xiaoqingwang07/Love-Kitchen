@@ -31,7 +31,7 @@ export function DetailEmptyState({ variant }: Props) {
       <Button
         style={{
           backgroundColor: D.accent,
-          color: '#fff',
+          color: D.onAccent,
           borderRadius: 999,
           border: 'none',
         }}

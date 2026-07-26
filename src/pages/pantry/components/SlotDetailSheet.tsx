@@ -185,7 +185,7 @@ export function SlotDetailSheet({
             height: 48,
             borderRadius: 999,
             backgroundColor: D.accent,
-            color: '#fff',
+            color: D.onAccent,
             fontSize: D.subheadline,
             fontWeight: D.weightSemibold,
             border: 'none',

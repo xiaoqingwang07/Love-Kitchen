@@ -431,6 +431,41 @@ expect(
   })()
 )
 
+/** WCAG 相对亮度 */
+function relLum(hex) {
+  const c = hex.replace('#', '')
+  const ch = [0, 2, 4].map((i) => {
+    const v = parseInt(c.slice(i, i + 2), 16) / 255
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+  })
+  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2]
+}
+function contrast(a, b) {
+  const [x, y] = [relLum(a), relLum(b)].sort((p, q) => q - p)
+  return (x + 0.05) / (y + 0.05)
+}
+const pickToken = (name) => (tokens.match(new RegExp(`${name}: '(#[0-9A-Fa-f]{6})'`)) || [])[1]
+
+expect(
+  '橙底按钮文字对比度须 ≥4.5:1（白字配浅杏橙仅 2.36:1，不可读）',
+  contrast(pickToken('onAccent'), pickToken('accent')) >= 4.5
+)
+expect(
+  '浅底橙色文字对比度须 ≥3:1',
+  contrast(pickToken('accentDeep'), pickToken('bg')) >= 3
+)
+expect('页面不应残留橙底白字', !/backgroundColor: D\.accent[\s\S]{0,220}?color: '#fff'/.test(
+  ['src/pages/index/components/HomeKitchenStatus.tsx', 'src/pages/index/components/HomePantryBanner.tsx']
+    .map((f) => read(f)).join('\n')
+))
+expect(
+  'tabBar 配色须与图标生成脚本一致且达标',
+  appConfig.includes("color: '#9C948B'") &&
+    appConfig.includes("selectedColor: '#D4783F'") &&
+    iconGen.includes("TAB_IDLE = '#9C948B'") &&
+    iconGen.includes("TAB_ACTIVE = '#D4783F'")
+)
+
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL ${failure}`)
   console.error(`\nRegression checks failed: ${failures.length}`)

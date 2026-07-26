@@ -54,7 +54,7 @@ export function HomeKitchenStatus({ expiringCount, onTonightMeal }: Props) {
           style={{
             fontSize: D.body,
             fontWeight: D.weightSemibold,
-            color: '#fff',
+            color: D.onAccent,
             letterSpacing: '0.02em',
           }}
         >

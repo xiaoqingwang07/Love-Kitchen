@@ -59,7 +59,7 @@ export function RecipeStepsList({ steps, timers, failedImages, onStepImageError 
                 flexShrink: 0,
               }}
             >
-              <Text style={{ color: '#fff', fontWeight: D.weightBold, fontSize: 13 }}>{idx + 1}</Text>
+              <Text style={{ color: D.onAccent, fontWeight: D.weightBold, fontSize: 13 }}>{idx + 1}</Text>
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               {stepSrc && !failedImages[`step-${idx}`] ? (

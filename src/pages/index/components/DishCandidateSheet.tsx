@@ -60,7 +60,7 @@ export function DishCandidateSheet({ candidates, onPick, onClose }: Props) {
               <Text style={{ fontSize: D.body, fontWeight: D.weightSemibold, color: D.label }}>
                 {c.name}
                 {i === 0 ? (
-                  <Text style={{ fontSize: D.caption, color: D.accent }}>　最像</Text>
+                  <Text style={{ fontSize: D.caption, color: D.accentDeep }}>　最像</Text>
                 ) : null}
               </Text>
               {c.note ? (

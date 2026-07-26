@@ -24,7 +24,7 @@ export function MealPlanReasonBar({ plan, expiringNames = [] }: Props) {
         border: `0.5px solid ${D.separatorLight}`,
       }}
     >
-      <Text style={{ fontSize: D.caption, fontWeight: D.weightSemibold, color: D.accent }}>
+      <Text style={{ fontSize: D.caption, fontWeight: D.weightSemibold, color: D.accentDeep }}>
         为什么推荐这些？
       </Text>
       {used.length > 0 ? (

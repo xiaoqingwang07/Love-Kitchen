@@ -18,9 +18,11 @@ import path from 'node:path'
 const root = process.cwd()
 const srcDir = path.join(root, 'scripts/icons/src')
 
-const ICON_GREY = '#BEB6AE'
-const TAB_IDLE = '#C6BFB8'
-const TAB_ACTIVE = '#E89562'
+// 对比度（对底色 #FDFCFB）：图标 2.49:1、tab 未选中 2.92:1、tab 选中 3.13:1。
+// 原 #C6BFB8/#E89562 仅 1.78/2.30，小尺寸细线条下看不清，须与 app.config.ts 保持一致。
+const ICON_GREY = '#A9A199'
+const TAB_IDLE = '#9C948B'
+const TAB_ACTIVE = '#D4783F'
 
 const appIcon = (name) => [{ out: `src/assets/icons/${name}.png`, color: ICON_GREY, size: 144 }]
 const tabIcon = (name) => [

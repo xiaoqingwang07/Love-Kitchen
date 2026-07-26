@@ -40,7 +40,7 @@ export function HomePantryBanner({ expiringItems, emptyPantry, onLoadDemo }: Pro
               })
             }}
           >
-            <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: '#fff' }}>
+            <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.onAccent }}>
               拿临期做一顿
             </Text>
           </View>
@@ -99,7 +99,7 @@ export function HomePantryBanner({ expiringItems, emptyPantry, onLoadDemo }: Pro
           >
             <View style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <AppIcon name="camera" size={16} color="#fff" backgroundColor="rgba(255,255,255,0.2)" />
-              <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: '#fff' }}>
+              <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.onAccent }}>
                 拍小票建冰箱
               </Text>
             </View>
@@ -142,7 +142,7 @@ export function HomePantryBanner({ expiringItems, emptyPantry, onLoadDemo }: Pro
             }}
             onClick={onLoadDemo}
           >
-            <Text className="lk-block" style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: D.accent }}>
+            <Text className="lk-block" style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: D.accentDeep }}>
               先体验示例冰箱（18 样食材）
             </Text>
           </View>

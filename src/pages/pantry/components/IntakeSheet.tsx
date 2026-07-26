@@ -130,7 +130,7 @@ export function IntakeSheet({
               {llmAvailable && !visionLoading && intakeDraft ? (
                 <Text
                   className="tap-scale"
-                  style={{ fontSize: D.footnote, color: D.accent, fontWeight: D.weightSemibold }}
+                  style={{ fontSize: D.footnote, color: D.accentDeep, fontWeight: D.weightSemibold }}
                   onClick={onRerunVision}
                 >
                   重新识别
@@ -163,7 +163,7 @@ export function IntakeSheet({
             </View>
             <Text
               className="tap-scale"
-              style={{ fontSize: D.footnote, color: D.accent, fontWeight: D.weightSemibold }}
+              style={{ fontSize: D.footnote, color: D.accentDeep, fontWeight: D.weightSemibold }}
               onClick={() => {
                 try {
                   const ctx = Taro.createInnerAudioContext()
@@ -234,7 +234,7 @@ export function IntakeSheet({
                     {row.amount}
                   </Text>
                 </Text>
-                <Text style={{ fontSize: D.caption, color: D.accent, marginTop: 4 }}>
+                <Text style={{ fontSize: D.caption, color: D.accentDeep, marginTop: 4 }}>
                   推荐 {slotShortLabel(row.side, row.slotIndex)}
                 </Text>
                 {row.duplicateOf.length > 0 ? (
@@ -277,7 +277,7 @@ export function IntakeSheet({
                   height: 48,
                   borderRadius: 999,
                   backgroundColor: D.accent,
-                  color: '#fff',
+                  color: D.onAccent,
                   border: 'none',
                   fontSize: D.footnote,
                   fontWeight: D.weightSemibold,
@@ -308,7 +308,7 @@ export function IntakeSheet({
                   height: 48,
                   borderRadius: 999,
                   backgroundColor: D.accent,
-                  color: '#fff',
+                  color: D.onAccent,
                   border: 'none',
                   fontSize: D.footnote,
                   fontWeight: D.weightSemibold,

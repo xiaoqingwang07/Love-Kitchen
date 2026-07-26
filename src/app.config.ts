@@ -20,8 +20,9 @@ export default defineAppConfig({
     navigationBarTextStyle: 'black'
   },
   tabBar: {
-    color: '#C6BFB8',
-    selectedColor: '#E89562',
+    // 对比度：未选中 2.92:1、选中 3.13:1（原 #C6BFB8/#E89562 仅 1.78/2.30，看不清）
+    color: '#9C948B',
+    selectedColor: '#D4783F',
     backgroundColor: '#FDFCFB',
     borderStyle: 'white',
     list: [

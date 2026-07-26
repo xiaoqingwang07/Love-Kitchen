@@ -181,7 +181,7 @@ export function PantryItemEditSheet({
               height: 48,
               borderRadius: 999,
               backgroundColor: D.accent,
-              color: '#fff',
+              color: D.onAccent,
               fontSize: D.footnote,
               fontWeight: D.weightSemibold,
               border: 'none',

@@ -80,7 +80,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <Button
           onClick={this.handleGoHome}
           style={{
-            backgroundColor: 'transparent', color: D.accent,
+            backgroundColor: 'transparent', color: D.accentDeep,
             borderRadius: '48rpx', padding: '20rpx 64rpx',
             fontSize: '28rpx',
             border: `2rpx solid ${D.accent}`,

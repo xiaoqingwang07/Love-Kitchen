@@ -200,7 +200,7 @@ function Pick() {
               </Text>
               <Text
                 className="tap-scale"
-                style={{ fontSize: D.caption, color: D.accent, fontWeight: D.weightSemibold }}
+                style={{ fontSize: D.caption, color: D.accentDeep, fontWeight: D.weightSemibold }}
                 onClick={handleSelectAllExpiring}
               >
                 全部加入
@@ -251,7 +251,7 @@ function Pick() {
             style={{ width: '44px', height: '44px', backgroundColor: D.accent, borderRadius: D.radiusS, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onClick={handleInputConfirm}
           >
-            <Text style={{ color: '#fff', fontSize: '20px', fontWeight: '300' }}>+</Text>
+            <Text style={{ color: D.onAccent, fontSize: '20px', fontWeight: '300' }}>+</Text>
           </View>
         </View>
       </View>
@@ -341,7 +341,7 @@ function Pick() {
             borderRadius: 999, padding: '0 14px', border: `0.5px solid ${D.accentLine}`,
             maxWidth: '48%', overflow: 'hidden'
           }}>
-            <Text style={{ fontSize: 13, color: D.accent, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <Text style={{ fontSize: 13, color: D.accentDeep, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {selected.join('、')}
             </Text>
           </View>

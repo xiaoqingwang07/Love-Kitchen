@@ -25,7 +25,7 @@ export function FavoritesListPage({ items, onBack, onOpenRecipe, onUnfavorite }:
           borderBottom: `0.5px solid ${D.separatorLight}`,
         }}
       >
-        <Text style={{ fontSize: D.body, color: D.accent }} onClick={onBack}>
+        <Text style={{ fontSize: D.body, color: D.accentDeep }} onClick={onBack}>
           ← 返回
         </Text>
         <Text

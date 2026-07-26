@@ -228,7 +228,7 @@ export function VoiceRecorderSheet({ visible, onClose, onRecorded, onTranscribed
             transition: 'background-color 200ms ease, box-shadow 200ms ease',
           }}
         >
-          <Text style={{ fontSize: 42, color: '#fff' }}>🎙</Text>
+          <Text style={{ fontSize: 42, color: D.onAccent }}>🎙</Text>
         </View>
 
         <Text
