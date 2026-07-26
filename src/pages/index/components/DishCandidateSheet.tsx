@@ -37,7 +37,7 @@ export function DishCandidateSheet({ candidates, onPick, onClose }: Props) {
         <Text style={{ fontSize: D.headline, fontWeight: D.weightBold, color: D.label }}>
           这道菜是哪个？
         </Text>
-        <Text style={{ fontSize: D.footnote, color: D.labelTertiary, marginTop: 4 }}>
+        <Text className="lk-block" style={{ fontSize: D.footnote, color: D.labelTertiary, marginTop: 4 }}>
           相似的菜照片上不好分，点一下确认，给你对应做法
         </Text>
 
@@ -60,7 +60,7 @@ export function DishCandidateSheet({ candidates, onPick, onClose }: Props) {
               <Text style={{ fontSize: D.body, fontWeight: D.weightSemibold, color: D.label }}>
                 {c.name}
                 {i === 0 ? (
-                  <Text style={{ fontSize: D.caption, color: D.accent }}>　最像</Text>
+                  <Text style={{ fontSize: D.caption, color: D.accentDeep }}>　最像</Text>
                 ) : null}
               </Text>
               {c.note ? (

@@ -16,3 +16,4 @@ scripts/fetch-popular-progress.json
 scripts/repair-media-progress.json
 .vercel
 .env*
+.superpowers/

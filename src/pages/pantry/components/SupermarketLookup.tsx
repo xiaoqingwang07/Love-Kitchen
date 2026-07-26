@@ -104,7 +104,7 @@ export function SupermarketLookup({
       </View>
 
       {!lookupName ? (
-        <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 10, lineHeight: 1.5 }}>
+        <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 10, lineHeight: 1.5 }}>
           拿不准家里还有没有？输入或说一句「有没有西红柿」，立刻知道在哪、放了多久。
         </Text>
       ) : lookupResults && lookupResults.length > 0 ? (
@@ -150,7 +150,7 @@ export function SupermarketLookup({
                 </View>
               ))}
               {hasOld ? (
-                <Text style={{ fontSize: D.caption, color: D.orange, marginTop: 8, lineHeight: 1.4 }}>
+                <Text className="lk-block" style={{ fontSize: D.caption, color: D.orange, marginTop: 8, lineHeight: 1.4 }}>
                   有临期 / 过期的，回家先吃旧的，别再囤。
                 </Text>
               ) : null}
@@ -172,7 +172,7 @@ export function SupermarketLookup({
               家里没有「{lookupName}」，可以买
             </Text>
           </View>
-          <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.4 }}>
+          <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.4 }}>
             没查到同类库存（叫法不同也可能查不到，可换个常用名再试）。
           </Text>
         </View>

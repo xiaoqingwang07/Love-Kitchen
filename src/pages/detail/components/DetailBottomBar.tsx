@@ -46,7 +46,7 @@ export function DetailBottomBar({ hasSteps, onMarkCooked, onStartCooking }: Prop
           height: 52,
           borderRadius: 999,
           backgroundColor: D.accent,
-          color: '#fff',
+          color: D.onAccent,
           fontWeight: D.weightSemibold,
           fontSize: D.body,
           border: 'none',

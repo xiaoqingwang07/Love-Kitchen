@@ -27,7 +27,7 @@ export function QuickFillPanel({ pad, selected, onToggle, onCommit }: Props) {
       <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
         30 秒建好你的冰箱
       </Text>
-      <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.5 }}>
+      <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.5 }}>
         点几样常买的，先把冰箱填起来 · 也可拍照 / 小票批量导入
       </Text>
       <View style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>

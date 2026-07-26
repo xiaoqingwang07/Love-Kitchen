@@ -325,7 +325,7 @@ function FridgePantry() {
         </View>
 
         <View style={{ padding: `0 ${pad}px ${PANTRY_BOTTOM_RESERVE}` }}>
-          <Text style={{ fontSize: D.caption, color: D.labelTertiary, lineHeight: 1.5 }}>
+          <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, lineHeight: 1.5 }}>
             点格子手动添加；底部可拍照识别小票/食材，或粘贴清单批量入库。
           </Text>
         </View>
@@ -368,7 +368,7 @@ function FridgePantry() {
           Taro.showModal({
             title: '删除',
             content: `把「${editing.name}」从冰箱删除？`,
-            confirmColor: '#F5412C',
+            confirmColor: D.red,
             success: (r) => {
               if (r.confirm) {
                 store.removeItem(id)
@@ -410,7 +410,7 @@ function FridgePantry() {
           Taro.showModal({
             title: '清理过期',
             content: `把 ${store.expiredCount} 项过期食材一次性移除？`,
-            confirmColor: '#F5412C',
+            confirmColor: D.red,
             success: (r) => {
               if (r.confirm) {
                 store.removeExpired()

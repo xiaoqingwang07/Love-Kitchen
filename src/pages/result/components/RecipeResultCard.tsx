@@ -95,7 +95,7 @@ export function RecipeResultCard({
           <Text
             style={{
               fontSize: D.caption,
-              color: D.accent,
+              color: D.accentDeep,
               fontWeight: D.weightMedium,
               marginBottom: 6,
               lineHeight: 1.4,

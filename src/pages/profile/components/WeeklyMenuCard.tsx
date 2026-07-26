@@ -29,7 +29,7 @@ export function WeeklyMenuCard({ pantryItems }: Props) {
       <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
         本周晚饭建议
       </Text>
-      <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, marginBottom: 12 }}>
+      <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, marginBottom: 12 }}>
         按你冰箱里的食材，稳定推荐 5 个工作日
       </Text>
       {days.map((d) => (
@@ -44,7 +44,7 @@ export function WeeklyMenuCard({ pantryItems }: Props) {
             borderBottom: `0.5px solid ${D.separatorLight}`,
           }}
         >
-          <Text style={{ fontSize: D.caption, color: D.accent, width: 36, flexShrink: 0 }}>
+          <Text style={{ fontSize: D.caption, color: D.accentDeep, width: 36, flexShrink: 0 }}>
             {d.label}
           </Text>
           <Text style={{ fontSize: D.body, color: D.label, flex: 1 }} numberOfLines={1}>
@@ -69,7 +69,7 @@ export function WeeklyMenuCard({ pantryItems }: Props) {
           Taro.navigateTo({ url: `/pages/result/index?from=meal&ingredients=${ing}&source=weekly` })
         }}
       >
-        <Text style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: D.accent }}>
+        <Text style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: D.accentDeep }}>
           按本周建议做今晚
         </Text>
       </View>

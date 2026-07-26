@@ -1,85 +1,103 @@
 /**
- * 鲜活食欲（Fresh Appetite）：干净中性白底 + 鲜绿主色 + 番茄橙高亮。
- * 沿用 Apple HIG 的字号阶梯 / 发丝分隔线 / 圆角卡片 / 大留白，
- * 配色换成更年轻、更通透、让食材照片更"跳"的方向。
+ * 淡雅暖色（Warm Calm）：暖白底 + 杏橙主色 + 暖灰文字。
+ * 2026-07-26 改造：降饱和、去纯黑、拉开字号跨度、圆角收敛三档、去阴影靠留白分层。
  * 键名与旧版完全一致，所有页面零改动即同步换肤。
  */
 export const D = {
   // ===== 背景 =====
-  bg: '#F6F8F5',
+  bg: '#FDFCFB',
   bgElevated: '#FFFFFF',
-  bgGrouped: '#EFF2ED',
+  bgGrouped: '#F7F4F1',
   bgGlass: 'rgba(255, 255, 255, 0.88)',
-  bgGlassHeavy: 'rgba(255, 255, 255, 0.92)',
+  bgGlassHeavy: 'rgba(255, 255, 255, 0.94)',
 
-  // ===== 分隔线（中性、微冷）=====
-  separator: 'rgba(17, 24, 17, 0.07)',
-  separatorLight: 'rgba(17, 24, 17, 0.045)',
+  // ===== 分隔线 =====
+  separator: '#F5F1ED',
+  separatorLight: 'rgba(58, 52, 46, 0.05)',
 
-  // ===== 文字（近黑、中性）=====
-  label: '#10130F',
-  labelSecondary: 'rgba(16, 19, 15, 0.56)',
-  labelTertiary: 'rgba(16, 19, 15, 0.34)',
+  // ===== 文字（暖灰，非纯黑）=====
+  label: '#3A342E',
+  labelSecondary: '#BEB6AE',
+  labelTertiary: '#C6BFB8',
 
-  // ===== 强调色（鲜绿主色）=====
-  accent: '#1AA251',
-  accentMuted: 'rgba(26, 162, 81, 0.12)',
-  accentLine: 'rgba(26, 162, 81, 0.20)',
-  // 番茄橙：临期高亮 / 食欲点缀
-  accentWarm: '#FF6B3D',
-  accentWarmMuted: 'rgba(255, 107, 61, 0.13)',
+  // ===== 强调色（杏橙）=====
+  accent: '#E89562',
+  accentMuted: '#FEF8F3',
+  accentLine: 'rgba(232, 149, 98, 0.20)',
+  // 深一档暖橙：临期高亮 / 需要更强对比时使用
+  accentWarm: '#DE8A5A',
+  accentWarmMuted: '#FDF4EC',
+  /**
+   * 橙底之上的文字色。白字配浅杏橙仅 2.36:1，远低于 4.5:1 可读标准；
+   * 改用深褐后达 5.21:1，且底色保持原样不变重。
+   */
+  onAccent: '#3A342E',
+  /**
+   * 浅底之上的橙色文字/图标。D.accent 直接当文字色在白底只有 2.36:1，
+   * 加深至 3.13:1 才满足非正文 UI 元素的 3:1 门槛。
+   */
+  accentDeep: '#D4783F',
 
-  // ===== 语义色（iOS 风格、更鲜亮）=====
-  blue: '#0A84FF',
-  green: '#1AA251',
-  red: '#F5412C',
-  orange: '#FF6B3D',
-  purple: '#7C5CFF',
+  // ===== 语义色（同步降饱和）=====
+  blue: '#5B8DBE',
+  green: '#7FA88C',
+  red: '#D9736A',
+  orange: '#E89562',
+  purple: '#9B8AC4',
 
   // ===== 标签色 =====
-  tagMutedFg: '#8A8F8A',
-  tagMutedBg: '#EFF2EC',
+  tagMutedFg: '#BEB6AE',
+  tagMutedBg: '#F7F4F1',
+
+  // ===== 冰箱柜体（冷冻=冷调 / 冷藏=绿调，语义色，已降饱和以融入暖色系）=====
+  freezerAccent: '#7E9BB5',
+  freezerDeep: '#3D5468',
+  freezerPanel: 'linear-gradient(168deg, #E7EDF3 0%, #DCE5EE 30%, #D2DCE7 62%, #C6D2DF 100%)',
+  chillAccent: '#8AA189',
+  chillDeep: '#41543F',
+  chillPanel: 'linear-gradient(168deg, #EDF2EC 0%, #E4EBE3 30%, #DAE3D8 62%, #CEDACC 100%)',
 
   // ===== 错误 =====
-  errorBg: '#FFF1EE',
-  errorAccent: '#FF6B4A',
-  errorFg: '#E5392A',
+  errorBg: '#FDF4F2',
+  errorAccent: '#D9736A',
+  errorFg: '#C25A50',
 
-  // ===== 圆角 =====
-  radiusS: 12,
-  radiusM: 16,
-  radiusL: 20,
-  radiusXL: 28,
+  // ===== 圆角（三档：小元素 14 / 卡片 18 / 胶囊 999）=====
+  radiusS: 14,
+  radiusM: 18,
+  radiusL: 18,
+  radiusXL: 18,
+  radiusPill: 999,
 
-  // ===== 阴影（更干净、更轻、微冷）=====
-  shadowCard: '0 1px 8px rgba(18, 28, 18, 0.04), 0 1px 3px rgba(18, 28, 18, 0.03)',
-  shadowLift: '0 12px 36px rgba(18, 28, 18, 0.07), 0 4px 14px rgba(18, 28, 18, 0.05)',
+  // ===== 阴影（几乎去除，靠留白分层）=====
+  shadowCard: 'none',
+  shadowLift: '0 8px 28px rgba(58, 52, 46, 0.06)',
 
   // ===== 间距 =====
-  pagePadH: 24,
-  pagePadTop: 16,
+  pagePadH: 22,
+  pagePadTop: 20,
 
-  // ===== 烹饪模式（更冷的深色）=====
-  cookingBg: '#15171A',
-  cookingSurface: '#222528',
-  cookingText: '#F5F8F5',
-  cookingMuted: 'rgba(245, 248, 245, 0.55)',
+  // ===== 烹饪模式（暖调深色）=====
+  cookingBg: '#22201D',
+  cookingSurface: '#2F2C28',
+  cookingText: '#F7F4F1',
+  cookingMuted: 'rgba(247, 244, 241, 0.55)',
 
-  // ===== 字号 — Apple HIG =====
-  titleLarge: 36,      // LargeTitle
-  title: 28,           // Title 1 / Title 2
-  headline: 20,       // Headline
-  body: 17,            // Body
-  callout: 16,        // Callout
-  subheadline: 15,    // Subhead
-  footnote: 13,        // Footnote
-  caption: 11,         // Caption 1
-  caption2: 10,        // Caption 2
+  // ===== 字号 — 拉开跨度以建立层次 =====
+  titleLarge: 31,      // 页面大标题
+  title: 24,           // 次级标题
+  headline: 20,        // 主角（菜名等）
+  body: 15,            // 正文
+  callout: 15,
+  subheadline: 13.5,
+  footnote: 12.5,      // 说明
+  caption: 10.5,       // 分组标签
+  caption2: 10,
 
-  // ===== 字重 =====
+  // ===== 字重（整体减一档，苹果大标题并不粗）=====
   weightRegular: '400',
   weightMedium: '500',
   weightSemibold: '600',
-  weightBold: '700',
-  weightHeavy: '800',
+  weightBold: '600',
+  weightHeavy: '700',
 } as const

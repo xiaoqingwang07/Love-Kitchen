@@ -19,7 +19,7 @@ export function AboutPage({ onBack, onLogoTap }: Props) {
           borderBottom: `0.5px solid ${D.separatorLight}`,
         }}
       >
-        <Text style={{ fontSize: D.body, color: D.accent }} onClick={onBack}>
+        <Text style={{ fontSize: D.body, color: D.accentDeep }} onClick={onBack}>
           ← 返回
         </Text>
         <Text
@@ -68,7 +68,7 @@ export function AboutPage({ onBack, onLogoTap }: Props) {
             boxShadow: D.shadowCard,
           }}
         >
-          <Text style={{ fontSize: D.subheadline, color: D.labelSecondary, lineHeight: 1.7 }}>
+          <Text className="lk-block" style={{ fontSize: D.subheadline, color: D.labelSecondary, lineHeight: 1.7 }}>
             面向家庭的 AI 厨房助手。把食材管理、今天吃什么、一步一步做到完成，串成一条顺滑的路径。
           </Text>
           <Text style={{ fontSize: D.footnote, color: D.labelTertiary, marginTop: 14, lineHeight: 1.6 }}>

@@ -13,7 +13,7 @@ import { looksLikeIngredientList } from '../../utils/recipeSearch'
 import { initCatalog } from '../../data/catalogLoader'
 import { findRecipeByTitleExact, resolveFullRecipe } from '../../data/recipeRegistry'
 import { usePantryStore } from '../../store/context'
-import { setSelectedRecipeForDetail, consumeAutoSearchIngredient, setProfileOpenFavorites } from '../../utils/navigationPayload'
+import { setSelectedRecipeForDetail, consumeAutoSearchIngredient } from '../../utils/navigationPayload'
 import { getFreshnessStatus } from '../../types/pantry'
 import { recognizeDishCandidates, DishVisionError, type DishCandidate } from '../../api/dishVision'
 import { VoiceRecorderSheet } from '../../components/VoiceRecorderSheet'
@@ -26,13 +26,22 @@ import { HomeRecommendSection } from './components/HomeRecommendSection'
 import { DishCandidateSheet } from './components/DishCandidateSheet'
 import * as S from './styles'
 
+const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+
+/** 首屏日期锚点，如「7月26日 · 周日」 */
+function formatTodayLabel(): string {
+  const d = new Date()
+  return `${d.getMonth() + 1}月${d.getDate()}日 · ${WEEKDAYS[d.getDay()]}`
+}
+
 /**
  * 首页：单一搜索台 + 诚实推荐
  *
  * 设计原则：
  * 1. 搜索框是唯一首屏主动作：文字、拍照、相册、语音四合一；
  * 2. 默认不虚构天气——用户主动点「开启天气」才会去定位+叠加推荐维度；
- * 3. 若冰箱中有临期食材，升级卡片替代普通欢迎语；
+ * 3. 临期提醒置顶于搜索框之前：临期是有时效的坏消息，晚看一天就浪费；
+ *    冰箱无临期时该条整体不渲染，首屏更干净；
  * 4. 不再展示「场景 chip」，场景偏好改由「我的」一次性设定。
  */
 function Index() {
@@ -224,20 +233,20 @@ function Index() {
     <View style={S.pageStyle}>
       <View style={S.headerRowStyle}>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={S.titleStyle}>今晚吃什么？</Text>
-          <Text style={S.titleHintStyle}>拍小票建冰箱，或直接搜食材</Text>
+          <Text className="lk-block" style={S.dateKickerStyle}>
+            {formatTodayLabel()}
+          </Text>
+          <Text className="lk-title" style={S.titleStyle}>
+            今晚吃什么？
+          </Text>
         </View>
-        <Text
-          className="tap-scale"
-          style={S.headerLinkStyle}
-          onClick={() => {
-            setProfileOpenFavorites()
-            Taro.switchTab({ url: '/pages/profile/index' })
-          }}
-        >
-          收藏
-        </Text>
       </View>
+
+      <HomePantryBanner
+        expiringItems={expiringItems}
+        emptyPantry={emptyPantry}
+        onLoadDemo={() => loadDemoPantryAndGoMeal(pantryStore)}
+      />
 
       <HomeSearchBar
         inputValue={inputValue}
@@ -255,12 +264,6 @@ function Index() {
           doSearch(word)
         }}
         onFocusLoadHistory={loadSearchHistory}
-      />
-
-      <HomePantryBanner
-        expiringItems={expiringItems}
-        emptyPantry={emptyPantry}
-        onLoadDemo={() => loadDemoPantryAndGoMeal(pantryStore)}
       />
 
       <HomeKitchenStatus expiringCount={expiringItems.length} onTonightMeal={goTonightMeal} />

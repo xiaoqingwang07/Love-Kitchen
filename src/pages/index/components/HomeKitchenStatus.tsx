@@ -1,7 +1,6 @@
 import { View, Text } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { D } from '../../../theme/designTokens'
-import { AppIcon } from '../../../components/AppIcon'
 import { trackEvent } from '../../../utils/analytics'
 import { usePantryStore, useHouseholdStore } from '../../../store/context'
 import { getFreshnessStatus } from '../../../types/pantry'
@@ -34,61 +33,51 @@ export function HomeKitchenStatus({ expiringCount, onTonightMeal }: Props) {
   if (pantryCount === 0) return null
 
   return (
-    <View
-      style={{
-        margin: `12px ${D.pagePadH}px 0`,
-        padding: 16,
-        borderRadius: D.radiusL,
-        backgroundColor: D.bgElevated,
-        border: `0.5px solid ${D.separatorLight}`,
-      }}
-    >
-      <Text style={{ fontSize: D.caption, fontWeight: D.weightSemibold, color: D.labelSecondary, letterSpacing: '0.08em' }}>
-        厨房状态
-      </Text>
-      <View style={{ display: 'flex', flexDirection: 'row', gap: 12, marginTop: 12 }}>
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={{ fontSize: 26, fontWeight: D.weightBold, color: D.label }}>{pantryCount}</Text>
-          <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>冰箱食材</Text>
-        </View>
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={{ fontSize: 26, fontWeight: D.weightBold, color: expiringCount > 0 ? D.accentWarm : D.label }}>
-            {expiringCount}
-          </Text>
-          <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>快过期</Text>
-        </View>
-        <View
-          style={{ flex: 1, alignItems: 'center' }}
-          className="tap-scale"
-          onClick={() => {
-            trackEvent('home_shopping_entry', { shoppingCount })
-            setProfileOpenShopping()
-            Taro.switchTab({ url: '/pages/profile/index' })
-          }}
-        >
-          <Text style={{ fontSize: 26, fontWeight: D.weightBold, color: D.label }}>{shoppingCount}</Text>
-          <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>待采购</Text>
-        </View>
-      </View>
+    <View style={{ margin: `22px ${D.pagePadH}px 0` }}>
+      {/* 全页唯一实心按钮：主操作独占重量，不与其他元素抢 */}
       <View
         className="tap-scale"
         style={{
-          marginTop: 14,
-          height: 46,
-          borderRadius: 999,
+          height: 48,
+          borderRadius: D.radiusS,
           backgroundColor: D.accent,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 8,
         }}
         onClick={() => {
           trackEvent('home_kitchen_cta', { pantryCount, expiringCount })
           onTonightMeal()
         }}
       >
-        <AppIcon name="meal" size={18} color="#fff" backgroundColor="rgba(255,255,255,0.2)" />
-        <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: '#fff' }}>今晚吃什么</Text>
+        <Text
+          style={{
+            fontSize: D.body,
+            fontWeight: D.weightSemibold,
+            color: D.onAccent,
+            letterSpacing: '0.02em',
+          }}
+        >
+          今晚吃什么
+        </Text>
+      </View>
+
+      {/* 背景信息降级为一行小字：临期已在顶部提醒条呈现，此处不重复 */}
+      <View style={{ display: 'flex', flexDirection: 'row', gap: 20, marginTop: 18, paddingLeft: 4 }}>
+        <Text style={{ fontSize: D.footnote, color: D.labelSecondary }}>
+          冰箱 <Text style={{ color: D.label, fontWeight: D.weightSemibold }}>{pantryCount} 样</Text>
+        </Text>
+        <Text
+          className="tap-scale"
+          style={{ fontSize: D.footnote, color: D.labelSecondary }}
+          onClick={() => {
+            trackEvent('home_shopping_entry', { shoppingCount })
+            setProfileOpenShopping()
+            Taro.switchTab({ url: '/pages/profile/index' })
+          }}
+        >
+          待采购 <Text style={{ color: D.label, fontWeight: D.weightSemibold }}>{shoppingCount}</Text>
+        </Text>
       </View>
     </View>
   )

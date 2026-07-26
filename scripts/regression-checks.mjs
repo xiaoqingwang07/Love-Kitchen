@@ -385,6 +385,87 @@ expect(
     resultLoader.includes('临期食材暂无搭配方案')
 )
 
+// ===== 2026-07-26 界面淡雅化改造 =====
+const iconGen = fs.existsSync(path.join(root, 'scripts/generate-icons.mjs'))
+  ? read('scripts/generate-icons.mjs')
+  : ''
+expect(
+  '图标生成不应依赖字体渲染（PingFang.ttc 在 PIL 下无法打开，静默兜底会产出坏图标）',
+  iconGen !== '' && !iconGen.includes('ImageFont')
+)
+expect(
+  '图标生成应走 SVG 源文件',
+  iconGen.includes('qlmanage') && fs.existsSync(path.join(root, 'scripts/icons/src'))
+)
+
+expect(
+  '图标 PNG 应为高分辨率（≥128px，解决高清屏发虚）',
+  (() => {
+    // PNG IHDR：宽度位于第 16-19 字节（大端）
+    const buf = fs.readFileSync(path.join(root, 'src/assets/tabbar/pick.png'))
+    return buf.readUInt32BE(16) >= 128
+  })()
+)
+expect('旧的字体渲染图标脚本应已移除', !fs.existsSync(path.join(root, 'scripts/generate-app-icons.mjs')))
+
+const tokens = read('src/theme/designTokens.ts')
+expect('设计变量应采用淡雅暖色主色', tokens.includes("accent: '#E89562'"))
+expect('设计变量正文色应为暖灰而非近纯黑', tokens.includes("label: '#3A342E'"))
+expect(
+  '圆角应收敛为三档',
+  tokens.includes('radiusS: 14') && tokens.includes('radiusM: 18') && tokens.includes('radiusPill: 999')
+)
+
+const appScss = read('src/app.scss')
+expect('不应对全局文字施加统一行距', !appScss.includes('line-height: 1.47'))
+expect('应提供块级文字工具类修复标题黏连', appScss.includes('.lk-block'))
+
+expect('首页大标题应块级渲染，避免与相邻文字黏连', indexPage.includes('lk-title'))
+expect('首页应移除与「我的」tab 重复的收藏入口', !indexPage.includes('setProfileOpenFavorites'))
+expect(
+  '首页临期提醒应置顶于搜索框之前',
+  (() => {
+    const banner = indexPage.indexOf('<HomePantryBanner')
+    const search = indexPage.indexOf('<HomeSearchBar')
+    return banner > -1 && search > -1 && banner < search
+  })()
+)
+
+/** WCAG 相对亮度 */
+function relLum(hex) {
+  const c = hex.replace('#', '')
+  const ch = [0, 2, 4].map((i) => {
+    const v = parseInt(c.slice(i, i + 2), 16) / 255
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+  })
+  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2]
+}
+function contrast(a, b) {
+  const [x, y] = [relLum(a), relLum(b)].sort((p, q) => q - p)
+  return (x + 0.05) / (y + 0.05)
+}
+const pickToken = (name) => (tokens.match(new RegExp(`${name}: '(#[0-9A-Fa-f]{6})'`)) || [])[1]
+
+expect(
+  '橙底按钮文字对比度须 ≥4.5:1（白字配浅杏橙仅 2.36:1，不可读）',
+  contrast(pickToken('onAccent'), pickToken('accent')) >= 4.5
+)
+expect(
+  '浅底橙色文字对比度须 ≥3:1',
+  contrast(pickToken('accentDeep'), pickToken('bg')) >= 3
+)
+expect('页面不应残留橙底白字', !/backgroundColor: D\.accent[\s\S]{0,220}?color: '#fff'/.test(
+  ['src/pages/index/components/HomeKitchenStatus.tsx', 'src/pages/index/components/HomePantryBanner.tsx']
+    .map((f) => read(f)).join('\n')
+))
+expect(
+  'tabBar 配色须与图标生成脚本一致且达标',
+  appConfig.includes("color: '#9C948B'") &&
+    appConfig.includes("selectedColor: '#D4783F'") &&
+    iconGen.includes("TAB_IDLE = '#9C948B'") &&
+    iconGen.includes("TAB_ACTIVE = '#D4783F'")
+)
+
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL ${failure}`)
   console.error(`\nRegression checks failed: ${failures.length}`)

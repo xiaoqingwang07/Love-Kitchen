@@ -119,7 +119,7 @@ function Pick() {
     <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: '120px' }}>
       <View style={{ padding: '44px 22px 8px' }}>
         <Text style={{ fontSize: D.titleLarge, fontWeight: D.weightBold, color: D.label, display: 'block', marginBottom: 6, letterSpacing: '-0.04em' }}>今晚</Text>
-        <Text style={{ fontSize: D.footnote, color: D.labelSecondary, lineHeight: 1.5 }}>
+        <Text className="lk-block" style={{ fontSize: D.footnote, color: D.labelSecondary, lineHeight: 1.5 }}>
           勾选食材，生成一顿饭方案
         </Text>
       </View>
@@ -135,7 +135,7 @@ function Pick() {
           }}
         >
           <Text style={{ fontSize: 14, fontWeight: '600', color: D.label, marginBottom: 6 }}>冰箱还是空的</Text>
-          <Text style={{ fontSize: 12, color: D.labelSecondary, lineHeight: 1.5, marginBottom: 12 }}>
+          <Text className="lk-block" style={{ fontSize: 12, color: D.labelSecondary, lineHeight: 1.5, marginBottom: 12 }}>
             先去「冰箱」录入食材，临期会在这里高亮；或在本页直接勾选/输入食材也能匹配。首页搜索不依赖冰箱。
           </Text>
           <View style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
@@ -200,7 +200,7 @@ function Pick() {
               </Text>
               <Text
                 className="tap-scale"
-                style={{ fontSize: D.caption, color: D.accent, fontWeight: D.weightSemibold }}
+                style={{ fontSize: D.caption, color: D.accentDeep, fontWeight: D.weightSemibold }}
                 onClick={handleSelectAllExpiring}
               >
                 全部加入
@@ -251,13 +251,13 @@ function Pick() {
             style={{ width: '44px', height: '44px', backgroundColor: D.accent, borderRadius: D.radiusS, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onClick={handleInputConfirm}
           >
-            <Text style={{ color: '#fff', fontSize: '20px', fontWeight: '300' }}>+</Text>
+            <Text style={{ color: D.onAccent, fontSize: '20px', fontWeight: '300' }}>+</Text>
           </View>
         </View>
       </View>
 
       <View style={{ padding: '0 22px 8px' }}>
-        <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginBottom: 8 }}>筛选食材（输入即过滤列表）</Text>
+        <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginBottom: 8 }}>筛选食材（输入即过滤列表）</Text>
         <Input
           style={{
             height: 44,
@@ -275,7 +275,7 @@ function Pick() {
 
       {!filterHasMatch ? (
         <View style={{ padding: '12px 22px' }}>
-          <Text style={{ fontSize: 13, color: D.labelTertiary, textAlign: 'center' }}>
+          <Text className="lk-block" style={{ fontSize: 13, color: D.labelTertiary, textAlign: 'center' }}>
             没有匹配的食材，试试别的关键字或清空筛选
           </Text>
         </View>
@@ -341,7 +341,7 @@ function Pick() {
             borderRadius: 999, padding: '0 14px', border: `0.5px solid ${D.accentLine}`,
             maxWidth: '48%', overflow: 'hidden'
           }}>
-            <Text style={{ fontSize: 13, color: D.accent, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <Text style={{ fontSize: 13, color: D.accentDeep, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {selected.join('、')}
             </Text>
           </View>

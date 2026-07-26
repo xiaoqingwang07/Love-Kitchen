@@ -34,7 +34,7 @@
     "audit:catalog": "node scripts/audit-catalog-quality.mjs",
     "clean:catalog": "node scripts/clean-catalog-quality.mjs",
     "build:legacy-lite": "node scripts/build-legacy-lite.mjs",
-    "icons:generate": "node scripts/generate-app-icons.mjs"
+    "icons:generate": "node scripts/generate-icons.mjs"
   },
   "browserslist": [
     "last 3 versions",

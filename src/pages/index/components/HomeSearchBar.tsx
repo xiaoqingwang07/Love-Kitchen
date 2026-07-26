@@ -127,7 +127,7 @@ export function HomeSearchBar({
             ) : null}
           </View>
           {searchHistory.length === 0 ? (
-            <Text style={{ fontSize: D.footnote, color: D.labelTertiary, padding: '0 2px 4px' }}>
+            <Text className="lk-block" style={{ fontSize: D.footnote, color: D.labelTertiary, padding: '0 2px 4px' }}>
               还没有记录，搜一次就会出现在这里
             </Text>
           ) : (

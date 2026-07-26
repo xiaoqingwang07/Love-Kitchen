@@ -24,7 +24,7 @@ export function ExpiryReminderCard({ enabled, onToggle }: Props) {
         <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
           临期提醒
         </Text>
-        <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.5 }}>
+        <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.5 }}>
           食材快过期时，微信提醒你趁早做掉，少浪费
         </Text>
       </View>

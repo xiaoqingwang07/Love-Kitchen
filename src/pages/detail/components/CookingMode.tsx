@@ -154,7 +154,8 @@ export function CookingMode({
             <Button
               style={{
                 backgroundColor: t && t.running ? D.cookingSurface : D.accent,
-                color: '#fff',
+                // 底色随计时状态切换：深色面板配浅字，橙底配深褐字
+                color: t && t.running ? D.cookingText : D.onAccent,
                 padding: '0 24px',
                 height: 44,
                 lineHeight: '44px',
@@ -222,7 +223,7 @@ export function CookingMode({
             fontSize: 16,
             fontWeight: D.weightSemibold,
             backgroundColor: D.accent,
-            color: '#fff',
+            color: D.onAccent,
             border: 'none',
           }}
           onClick={() => {

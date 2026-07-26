@@ -82,7 +82,7 @@ export function DeductConfirmSheet({ visible, matches, onConfirm, onClose }: Pro
         >
           这顿用掉了哪些？
         </Text>
-        <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, marginBottom: 12 }}>
+        <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, marginBottom: 12 }}>
           勾选「用完了」的会从冰箱移除；只用了一部分就取消勾选，留在冰箱里
         </Text>
 
@@ -183,7 +183,7 @@ export function DeductConfirmSheet({ visible, matches, onConfirm, onClose }: Pro
               height: 48,
               borderRadius: 999,
               backgroundColor: D.accent,
-              color: '#fff',
+              color: D.onAccent,
               fontSize: D.subheadline,
               fontWeight: D.weightSemibold,
               border: 'none',

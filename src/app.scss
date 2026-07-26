@@ -1,12 +1,12 @@
 /* app.scss — 全局基础样式。中文字体优先，保证真机与 H5 排版一致。 */
 
 page {
-    background-color: #F6F8F5;
+    background-color: #FDFCFB;
     font-family: 'PingFang SC', 'HarmonyOS Sans SC', 'Source Han Sans SC', 'Hiragino Sans GB',
         'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica,
         'Segoe UI', Roboto, sans-serif;
-    color: #10130F;
-    line-height: 1.47;
+    color: #3A342E;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -27,6 +27,20 @@ textarea {
 .tap-scale:active {
     transform: scale(0.97);
     opacity: 0.88;
+}
+
+/* Text 组件默认 display:inline，相邻两个 Text 会挤在同一行，
+   且设在其上的 marginTop 完全不生效（首页「今晚吃什么？」与副标题
+   曾因此渲染成一行并把副标题从中间断开）。
+   凡需独占一行的文字，加 className="lk-block"。 */
+.lk-block {
+    display: block;
+}
+
+/* 大标题：独占一行且行距收紧（正文 1.5 对大字号过松） */
+.lk-title {
+    display: block;
+    line-height: 1.15;
 }
 
 /* Skeleton 骨架动画 */

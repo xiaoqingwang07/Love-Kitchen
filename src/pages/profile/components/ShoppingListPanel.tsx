@@ -159,7 +159,7 @@ function ShoppingListPanelInner() {
                     height: 40,
                     borderRadius: 999,
                     backgroundColor: D.accentMuted,
-                    color: D.accent,
+                    color: D.accentDeep,
                     fontSize: D.caption,
                     border: 'none',
                     display: 'flex',
@@ -176,13 +176,13 @@ function ShoppingListPanelInner() {
                       backgroundColor="transparent"
                       glyphOnly
                     />
-                    <Text style={{ fontSize: D.caption, color: D.accent }}>分享清单</Text>
+                    <Text style={{ fontSize: D.caption, color: D.accentDeep }}>分享清单</Text>
                   </View>
                 </Button>
               </View>
             </>
           ) : (
-            <Text
+            <Text className="lk-block"
               style={{
                 fontSize: D.footnote,
                 color: D.labelTertiary,

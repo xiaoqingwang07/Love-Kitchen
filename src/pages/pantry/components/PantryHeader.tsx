@@ -39,7 +39,7 @@ export function PantryHeader({ pad, presetName, onOpenLayoutSettings }: Props) {
           </Text>
         </View>
       </View>
-      <Text
+      <Text className="lk-block"
         style={{
           fontSize: D.footnote,
           color: D.labelSecondary,

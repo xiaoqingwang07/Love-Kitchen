@@ -17,7 +17,7 @@ export function PantryContextBar({ context }: Props) {
         border: `0.5px solid ${D.accentLine}`,
       }}
     >
-      <Text style={{ fontSize: D.caption, color: D.accent, fontWeight: D.weightSemibold }}>
+      <Text style={{ fontSize: D.caption, color: D.accentDeep, fontWeight: D.weightSemibold }}>
         为什么适合今晚
       </Text>
       <Text

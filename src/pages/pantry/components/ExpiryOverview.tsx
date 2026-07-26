@@ -112,7 +112,7 @@ export function ExpiryOverview({
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontSize: 10, color: '#fff', fontWeight: D.weightSemibold }}>去选菜</Text>
+              <Text style={{ fontSize: 10, color: D.onAccent, fontWeight: D.weightSemibold }}>去选菜</Text>
             </View>
           </View>
         ) : null}

@@ -36,7 +36,7 @@ export function IngredientGrid({ ingredients, pantryItems, onOpenShopping }: Pro
         </Text>
         <Text
           className="tap-scale"
-          style={{ fontSize: D.footnote, color: D.accent, fontWeight: D.weightSemibold }}
+          style={{ fontSize: D.footnote, color: D.accentDeep, fontWeight: D.weightSemibold }}
           onClick={onOpenShopping}
         >
           采购清单 →

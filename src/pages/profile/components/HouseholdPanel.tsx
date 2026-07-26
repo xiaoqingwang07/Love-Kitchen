@@ -93,7 +93,7 @@ function HouseholdPanelInner() {
                   marginBottom: 12,
                 }}
               >
-                <Text style={{ fontSize: D.caption, color: D.accent }}>邀请码</Text>
+                <Text style={{ fontSize: D.caption, color: D.accentDeep }}>邀请码</Text>
                 <Text
                   style={{
                     fontSize: 22,
@@ -122,7 +122,7 @@ function HouseholdPanelInner() {
                     height: 42,
                     borderRadius: 999,
                     backgroundColor: D.accent,
-                    color: '#fff',
+                    color: D.onAccent,
                     fontSize: D.footnote,
                     border: 'none',
                   }}
@@ -137,7 +137,7 @@ function HouseholdPanelInner() {
                     height: 42,
                     borderRadius: 999,
                     backgroundColor: D.accentMuted,
-                    color: D.accent,
+                    color: D.accentDeep,
                     fontSize: D.footnote,
                     border: 'none',
                     display: 'flex',
@@ -154,7 +154,7 @@ function HouseholdPanelInner() {
                       backgroundColor="transparent"
                       glyphOnly
                     />
-                    <Text style={{ fontSize: D.footnote, color: D.accent }}>分享邀请</Text>
+                    <Text style={{ fontSize: D.footnote, color: D.accentDeep }}>分享邀请</Text>
                   </View>
                 </Button>
               </View>
@@ -194,7 +194,7 @@ function HouseholdPanelInner() {
                   height: 44,
                   borderRadius: 999,
                   backgroundColor: D.accent,
-                  color: '#fff',
+                  color: D.onAccent,
                   fontSize: D.subheadline,
                   fontWeight: D.weightSemibold,
                   border: 'none',

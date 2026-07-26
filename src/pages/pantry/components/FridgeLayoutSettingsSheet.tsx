@@ -62,7 +62,7 @@ export function FridgeLayoutSettingsSheet({
         <View style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={{ fontSize: D.headline, fontWeight: D.weightBold, color: D.label }}>冰箱设置</Text>
-            <Text style={{ display: 'block', marginTop: 4, fontSize: D.footnote, color: D.labelSecondary }}>
+            <Text className="lk-block" style={{ display: 'block', marginTop: 4, fontSize: D.footnote, color: D.labelSecondary }}>
               低频设置，选定后一般无需再改
             </Text>
           </View>
@@ -120,8 +120,8 @@ export function FridgeLayoutSettingsSheet({
         <View style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           {(
             [
-              { side: 'freezer' as FridgeSide, title: '冷冻格数', value: layout.freezerSlots, color: '#4E8FC5' },
-              { side: 'fridge' as FridgeSide, title: '冷藏格数', value: layout.fridgeSlots, color: '#5E9D72' },
+              { side: 'freezer' as FridgeSide, title: '冷冻格数', value: layout.freezerSlots, color: D.freezerAccent },
+              { side: 'fridge' as FridgeSide, title: '冷藏格数', value: layout.fridgeSlots, color: D.chillAccent },
             ] as const
           ).map((item) => (
             <View

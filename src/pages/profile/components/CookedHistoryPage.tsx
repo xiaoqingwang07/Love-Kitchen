@@ -23,7 +23,7 @@ export function CookedHistoryPage({ items, onBack, onOpenRecipe }: Props) {
           borderBottom: `0.5px solid ${D.separatorLight}`,
         }}
       >
-        <Text style={{ fontSize: D.body, color: D.accent }} onClick={onBack}>
+        <Text style={{ fontSize: D.body, color: D.accentDeep }} onClick={onBack}>
           ← 返回
         </Text>
         <Text
@@ -48,7 +48,7 @@ export function CookedHistoryPage({ items, onBack, onOpenRecipe }: Props) {
             }}
           >
             <Text style={{ fontSize: 52, marginBottom: 16 }}>👨‍🍳</Text>
-            <Text style={{ fontSize: D.footnote, color: D.labelTertiary }}>还没有做菜记录，做一道试试</Text>
+            <Text className="lk-block" style={{ fontSize: D.footnote, color: D.labelTertiary }}>还没有做菜记录，做一道试试</Text>
           </View>
         ) : (
           items.map((item, idx) => (
