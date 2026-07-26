@@ -385,6 +385,19 @@ expect(
     resultLoader.includes('临期食材暂无搭配方案')
 )
 
+// ===== 2026-07-26 界面淡雅化改造 =====
+const iconGen = fs.existsSync(path.join(root, 'scripts/generate-icons.mjs'))
+  ? read('scripts/generate-icons.mjs')
+  : ''
+expect(
+  '图标生成不应依赖字体渲染（PingFang.ttc 在 PIL 下无法打开，静默兜底会产出坏图标）',
+  iconGen !== '' && !iconGen.includes('ImageFont')
+)
+expect(
+  '图标生成应走 SVG 源文件',
+  iconGen.includes('qlmanage') && fs.existsSync(path.join(root, 'scripts/icons/src'))
+)
+
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL ${failure}`)
   console.error(`\nRegression checks failed: ${failures.length}`)
