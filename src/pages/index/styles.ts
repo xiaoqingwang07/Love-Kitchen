@@ -16,37 +16,29 @@ export const headerRowStyle: CSSProperties = {
   display: 'flex',
   flexDirection: 'row',
   alignItems: 'flex-start',
-  justifyContent: 'space-between',
-  gap: 12,
   paddingLeft: D.pagePadH,
   paddingRight: D.pagePadH,
-  paddingTop: 40,
+  // 原为 40：那是「收藏」入口与大标题并排时留的余量，
+  // 现在标题上方多了日期行，再留 40 会顶部空一大截
+  paddingTop: 12,
   paddingBottom: 4,
+}
+
+/** 日期锚点：「7月26日 · 周日」，弱化处理 */
+export const dateKickerStyle: CSSProperties = {
+  fontSize: D.caption,
+  fontWeight: D.weightMedium,
+  color: D.labelTertiary,
+  letterSpacing: '0.18em',
+  marginBottom: 8,
 }
 
 export const titleStyle: CSSProperties = {
   fontSize: D.titleLarge,
-  fontWeight: D.weightBold,
-  color: D.label,
-  letterSpacing: '-0.04em',
-  lineHeight: 1.12,
-}
-
-export const titleHintStyle: CSSProperties = {
-  marginTop: 10,
-  fontSize: D.footnote,
-  color: D.labelTertiary,
-  fontWeight: D.weightRegular,
-  letterSpacing: '0.01em',
-  lineHeight: 1.5,
-}
-
-export const headerLinkStyle: CSSProperties = {
-  fontSize: D.subheadline,
   fontWeight: D.weightSemibold,
-  color: D.accent,
-  paddingTop: 6,
-  flexShrink: 0,
+  color: D.label,
+  letterSpacing: '-0.038em',
+  lineHeight: 1.15,
 }
 
 // ================= 统一搜索框（Google 式） =================
@@ -293,50 +285,45 @@ export const sectionActionStyle: CSSProperties = {
   flexShrink: 0,
 }
 
-// 横向推荐条：大卡片 + 菜名覆盖
-export const recommendScrollStyle: CSSProperties = {
-  whiteSpace: 'nowrap' as const,
-  marginBottom: 10,
-  marginLeft: -4,
-  paddingLeft: 4,
+// 推荐列表：竖向排列的横向紧凑卡（图在左、字在右）
+export const recommendListStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 10,
 }
 
 export const recommendCardStyle: CSSProperties = {
-  display: 'inline-flex',
-  flexDirection: 'column',
-  width: 168,
-  marginRight: 12,
-  verticalAlign: 'top' as const,
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 14,
   backgroundColor: D.bgElevated,
-  borderRadius: D.radiusL,
-  overflow: 'hidden',
-  border: `0.5px solid ${D.separatorLight}`,
-  boxShadow: D.shadowCard,
+  borderRadius: D.radiusM,
+  padding: 14,
 }
 
 export const recommendThumbStyle: CSSProperties = {
-  width: '100%',
-  height: 112,
-  backgroundColor: D.bg,
+  width: 74,
+  height: 74,
+  flexShrink: 0,
+  borderRadius: D.radiusS,
+  backgroundColor: D.bgGrouped,
+  overflow: 'hidden',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  position: 'relative',
 }
 
 export const recommendTitleStyle: CSSProperties = {
-  fontSize: D.subheadline,
+  fontSize: D.headline,
   fontWeight: D.weightSemibold,
   color: D.label,
-  padding: '10px 12px 6px',
-  lineHeight: 1.35,
-  whiteSpace: 'normal' as const,
-  letterSpacing: '-0.01em',
+  lineHeight: 1.3,
+  letterSpacing: '-0.015em',
 }
 
 export const recommendMetaStyle: CSSProperties = {
-  fontSize: D.caption,
-  color: D.labelTertiary,
-  padding: '0 12px 12px',
-  whiteSpace: 'normal' as const,
+  fontSize: D.footnote,
+  color: D.labelSecondary,
+  marginTop: 5,
 }

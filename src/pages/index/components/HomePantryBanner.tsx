@@ -62,10 +62,14 @@ export function HomePantryBanner({ expiringItems, emptyPantry, onLoadDemo }: Pro
 
   return (
     <View style={S.onboardCardStyle}>
-      <Text style={{ fontSize: D.body, fontWeight: D.weightSemibold, color: D.label }}>
+      <Text
+        className="lk-block"
+        style={{ fontSize: D.headline, fontWeight: D.weightSemibold, color: D.label }}
+      >
         30 秒建好你的冰箱
       </Text>
       <Text
+        className="lk-block"
         style={{
           fontSize: D.footnote,
           color: D.labelSecondary,

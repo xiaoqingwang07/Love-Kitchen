@@ -420,6 +420,17 @@ const appScss = read('src/app.scss')
 expect('不应对全局文字施加统一行距', !appScss.includes('line-height: 1.47'))
 expect('应提供块级文字工具类修复标题黏连', appScss.includes('.lk-block'))
 
+expect('首页大标题应块级渲染，避免与相邻文字黏连', indexPage.includes('lk-title'))
+expect('首页应移除与「我的」tab 重复的收藏入口', !indexPage.includes('setProfileOpenFavorites'))
+expect(
+  '首页临期提醒应置顶于搜索框之前',
+  (() => {
+    const banner = indexPage.indexOf('<HomePantryBanner')
+    const search = indexPage.indexOf('<HomeSearchBar')
+    return banner > -1 && search > -1 && banner < search
+  })()
+)
+
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL ${failure}`)
   console.error(`\nRegression checks failed: ${failures.length}`)
