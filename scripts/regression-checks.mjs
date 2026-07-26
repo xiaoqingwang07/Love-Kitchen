@@ -398,6 +398,16 @@ expect(
   iconGen.includes('qlmanage') && fs.existsSync(path.join(root, 'scripts/icons/src'))
 )
 
+expect(
+  '图标 PNG 应为高分辨率（≥128px，解决高清屏发虚）',
+  (() => {
+    // PNG IHDR：宽度位于第 16-19 字节（大端）
+    const buf = fs.readFileSync(path.join(root, 'src/assets/tabbar/pick.png'))
+    return buf.readUInt32BE(16) >= 128
+  })()
+)
+expect('旧的字体渲染图标脚本应已移除', !fs.existsSync(path.join(root, 'scripts/generate-app-icons.mjs')))
+
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL ${failure}`)
   console.error(`\nRegression checks failed: ${failures.length}`)

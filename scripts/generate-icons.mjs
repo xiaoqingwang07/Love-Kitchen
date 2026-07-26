@@ -19,10 +19,35 @@ const root = process.cwd()
 const srcDir = path.join(root, 'scripts/icons/src')
 
 const ICON_GREY = '#BEB6AE'
+const TAB_IDLE = '#C6BFB8'
+const TAB_ACTIVE = '#E89562'
+
+const appIcon = (name) => [{ out: `src/assets/icons/${name}.png`, color: ICON_GREY, size: 144 }]
+const tabIcon = (name) => [
+  { out: `src/assets/tabbar/${name}.png`, color: TAB_IDLE, size: 162 },
+  { out: `src/assets/tabbar/${name}_active.png`, color: TAB_ACTIVE, size: 162 },
+]
 
 /** SVG 名 -> 输出列表 { out: 路径, color: 描边色, size: 边长(px) } */
 export const TARGETS = {
-  search: [{ out: 'src/assets/icons/search.png', color: ICON_GREY, size: 144 }],
+  // AppIcon（12 个，键名须与 src/components/AppIcon.tsx 的 AppIconName 一致）
+  search: appIcon('search'),
+  camera: appIcon('camera'),
+  meal: appIcon('meal'),
+  mic: appIcon('mic'),
+  cart: appIcon('cart'),
+  fridge: appIcon('fridge'),
+  share: appIcon('share'),
+  add: appIcon('add'),
+  cook: appIcon('cook'),
+  list: appIcon('list'),
+  home: appIcon('home'),
+  heart: appIcon('heart'),
+  // tabBar（4 组 × 常态/选中，输出名须与 app.config.ts 的 iconPath 一致）
+  'tab-home': tabIcon('home'),
+  'tab-pick': tabIcon('pick'),
+  'tab-pantry': tabIcon('pantry'),
+  'tab-profile': tabIcon('profile'),
 }
 
 const py = `
