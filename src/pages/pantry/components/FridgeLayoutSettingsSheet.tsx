@@ -120,8 +120,8 @@ export function FridgeLayoutSettingsSheet({
         <View style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           {(
             [
-              { side: 'freezer' as FridgeSide, title: '冷冻格数', value: layout.freezerSlots, color: '#4E8FC5' },
-              { side: 'fridge' as FridgeSide, title: '冷藏格数', value: layout.fridgeSlots, color: '#5E9D72' },
+              { side: 'freezer' as FridgeSide, title: '冷冻格数', value: layout.freezerSlots, color: D.freezerAccent },
+              { side: 'fridge' as FridgeSide, title: '冷藏格数', value: layout.fridgeSlots, color: D.chillAccent },
             ] as const
           ).map((item) => (
             <View

@@ -35,7 +35,7 @@ export function FridgeCabinet({
     borderRadius: 16,
     padding: '8px 7px 10px',
     position: 'relative',
-    background: 'linear-gradient(168deg, #d8e6f5 0%, #c5d8ed 28%, #b8cce8 55%, #a8bedd 100%)',
+    background: D.freezerPanel,
     border: '1px solid rgba(255,255,255,0.5)',
     boxShadow: 'inset 0 3px 14px rgba(255,255,255,0.45), inset 0 -8px 24px rgba(25,55,95,0.12)',
     display: 'flex',
@@ -47,7 +47,7 @@ export function FridgeCabinet({
     borderRadius: 16,
     padding: '8px 7px 10px',
     position: 'relative',
-    background: 'linear-gradient(168deg, #f4faf6 0%, #e8f2eb 30%, #dce8df 60%, #d0dfd3 100%)',
+    background: D.chillPanel,
     border: '1px solid rgba(255,255,255,0.55)',
     boxShadow: 'inset 0 3px 14px rgba(255,255,255,0.55), inset 0 -8px 24px rgba(45,75,55,0.08)',
     display: 'flex',
@@ -108,7 +108,7 @@ export function FridgeCabinet({
     const minH = kind === 'pull' ? SLOT_PULL_MIN : SLOT_DRAWER_MIN
     const isFz = side === 'freezer'
     const summary = slotList.length === 0 ? '空' : slotList.map((i) => i.name).join('、')
-    const sideColor = isFz ? '#4E8FC5' : '#5E9D72'
+    const sideColor = isFz ? D.freezerAccent : D.chillAccent
 
     return (
       <View
@@ -215,7 +215,7 @@ export function FridgeCabinet({
             style={{
               fontSize: 13,
               fontWeight: D.weightBold,
-              color: isFz ? '#1e3a5c' : '#2d4a38',
+              color: isFz ? D.freezerDeep : D.chillDeep,
               letterSpacing: '-0.02em',
             }}
           >

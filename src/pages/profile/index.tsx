@@ -126,14 +126,14 @@ function Profile() {
       title: '重置冰箱数据',
       content: '这会把冰箱清空并填入 18 条示例食材，当前库存全部丢失。继续？',
       confirmText: '重置',
-      confirmColor: '#F5412C',
+      confirmColor: D.red,
       success: (res) => {
         if (res.confirm) {
           Taro.showModal({
             title: '再次确认',
             content: '此操作不可撤销',
             confirmText: '确认重置',
-            confirmColor: '#F5412C',
+            confirmColor: D.red,
             success: (r2) => {
               if (r2.confirm) {
                 pantryStore.resetToMock()
@@ -151,7 +151,7 @@ function Profile() {
       title: '清空冰箱',
       content: '把冰箱里所有食材清空（用于测试空库状态），当前库存全部丢失。继续？',
       confirmText: '清空',
-      confirmColor: '#F5412C',
+      confirmColor: D.red,
       success: (res) => {
         if (res.confirm) {
           pantryStore.clearAll()

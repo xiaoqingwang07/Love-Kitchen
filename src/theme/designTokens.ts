@@ -39,6 +39,14 @@ export const D = {
   tagMutedFg: '#BEB6AE',
   tagMutedBg: '#F7F4F1',
 
+  // ===== 冰箱柜体（冷冻=冷调 / 冷藏=绿调，语义色，已降饱和以融入暖色系）=====
+  freezerAccent: '#7E9BB5',
+  freezerDeep: '#3D5468',
+  freezerPanel: 'linear-gradient(168deg, #E7EDF3 0%, #DCE5EE 30%, #D2DCE7 62%, #C6D2DF 100%)',
+  chillAccent: '#8AA189',
+  chillDeep: '#41543F',
+  chillPanel: 'linear-gradient(168deg, #EDF2EC 0%, #E4EBE3 30%, #DAE3D8 62%, #CEDACC 100%)',
+
   // ===== 错误 =====
   errorBg: '#FDF4F2',
   errorAccent: '#D9736A',

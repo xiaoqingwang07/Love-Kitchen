@@ -15,14 +15,14 @@ export default defineAppConfig({
   // },
   window: {
     backgroundTextStyle: 'light',
-    navigationBarBackgroundColor: '#F6F8F5',
+    navigationBarBackgroundColor: '#FDFCFB',
     navigationBarTitleText: '爱心厨房',
     navigationBarTextStyle: 'black'
   },
   tabBar: {
-    color: 'rgba(16,19,15,0.35)',
-    selectedColor: '#1AA251',
-    backgroundColor: '#FFFFFF',
+    color: '#C6BFB8',
+    selectedColor: '#E89562',
+    backgroundColor: '#FDFCFB',
     borderStyle: 'white',
     list: [
       {
