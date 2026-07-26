@@ -416,6 +416,10 @@ expect(
   tokens.includes('radiusS: 14') && tokens.includes('radiusM: 18') && tokens.includes('radiusPill: 999')
 )
 
+const appScss = read('src/app.scss')
+expect('不应对全局文字施加统一行距', !appScss.includes('line-height: 1.47'))
+expect('应提供块级文字工具类修复标题黏连', appScss.includes('.lk-block'))
+
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL ${failure}`)
   console.error(`\nRegression checks failed: ${failures.length}`)
