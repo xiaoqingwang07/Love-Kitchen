@@ -142,7 +142,7 @@ export function HomePantryBanner({ expiringItems, emptyPantry, onLoadDemo }: Pro
             }}
             onClick={onLoadDemo}
           >
-            <Text style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: D.accent }}>
+            <Text className="lk-block" style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: D.accent }}>
               先体验示例冰箱（18 样食材）
             </Text>
           </View>

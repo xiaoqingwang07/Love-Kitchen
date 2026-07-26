@@ -325,7 +325,7 @@ function FridgePantry() {
         </View>
 
         <View style={{ padding: `0 ${pad}px ${PANTRY_BOTTOM_RESERVE}` }}>
-          <Text style={{ fontSize: D.caption, color: D.labelTertiary, lineHeight: 1.5 }}>
+          <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, lineHeight: 1.5 }}>
             点格子手动添加；底部可拍照识别小票/食材，或粘贴清单批量入库。
           </Text>
         </View>

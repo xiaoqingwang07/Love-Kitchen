@@ -29,7 +29,7 @@ export function WeeklyMenuCard({ pantryItems }: Props) {
       <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
         本周晚饭建议
       </Text>
-      <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, marginBottom: 12 }}>
+      <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, marginBottom: 12 }}>
         按你冰箱里的食材，稳定推荐 5 个工作日
       </Text>
       {days.map((d) => (

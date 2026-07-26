@@ -17,7 +17,7 @@ export function PantryEmptyHint({ pad }: Props) {
       }}
     >
       <Text style={{ fontSize: D.body, fontWeight: D.weightSemibold, color: D.label }}>先填一些食材</Text>
-      <Text style={{ fontSize: D.footnote, color: D.labelSecondary, lineHeight: 1.5, marginTop: 6 }}>
+      <Text className="lk-block" style={{ fontSize: D.footnote, color: D.labelSecondary, lineHeight: 1.5, marginTop: 6 }}>
         点任意格子可手动录入，或用下方「粘贴清单」一次录一批。
       </Text>
     </View>

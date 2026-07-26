@@ -48,7 +48,7 @@ export function CookedHistoryPage({ items, onBack, onOpenRecipe }: Props) {
             }}
           >
             <Text style={{ fontSize: 52, marginBottom: 16 }}>👨‍🍳</Text>
-            <Text style={{ fontSize: D.footnote, color: D.labelTertiary }}>还没有做菜记录，做一道试试</Text>
+            <Text className="lk-block" style={{ fontSize: D.footnote, color: D.labelTertiary }}>还没有做菜记录，做一道试试</Text>
           </View>
         ) : (
           items.map((item, idx) => (

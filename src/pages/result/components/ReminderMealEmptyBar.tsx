@@ -119,7 +119,7 @@ export const ReminderMealEmptyBar = observer(function ReminderMealEmptyBar({ exp
         border: `0.5px solid ${D.separatorLight}`,
       }}
     >
-      <Text
+      <Text className="lk-block"
         style={{
           fontSize: D.footnote,
           color: D.labelSecondary,

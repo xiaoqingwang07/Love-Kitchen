@@ -182,7 +182,7 @@ function ShoppingListPanelInner() {
               </View>
             </>
           ) : (
-            <Text
+            <Text className="lk-block"
               style={{
                 fontSize: D.footnote,
                 color: D.labelTertiary,

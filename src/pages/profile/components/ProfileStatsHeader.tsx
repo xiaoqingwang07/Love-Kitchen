@@ -28,7 +28,7 @@ export function ProfileStatsHeader({ stats, achievements, onStatClick }: Props) 
       >
         我的
       </Text>
-      <Text style={{ fontSize: D.footnote, color: D.labelSecondary, marginTop: 8 }}>
+      <Text className="lk-block" style={{ fontSize: D.footnote, color: D.labelSecondary, marginTop: 8 }}>
         爱心厨房 · 你的家庭饭桌助理
       </Text>
 

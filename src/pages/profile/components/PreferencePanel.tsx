@@ -46,7 +46,7 @@ export function PreferencePanel({
         <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
           推荐场景
         </Text>
-        <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.5 }}>
+        <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.5 }}>
           AI 出菜时会按这个场景调整语气、步骤和营养侧重
         </Text>
         <View style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>

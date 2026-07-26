@@ -29,7 +29,7 @@ export function MissDishPanel({ dishName, onGenerateWithAi, onAddWish }: Props) 
         onClick={onAddWish}
       >
         <Text>📝</Text>
-        <Text>加入心愿菜（优先收录进正式库）</Text>
+        <Text className="lk-block">加入心愿菜（优先收录进正式库）</Text>
       </View>
     </View>
   )

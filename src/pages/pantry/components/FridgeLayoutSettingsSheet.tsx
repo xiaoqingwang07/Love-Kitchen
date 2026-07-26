@@ -62,7 +62,7 @@ export function FridgeLayoutSettingsSheet({
         <View style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={{ fontSize: D.headline, fontWeight: D.weightBold, color: D.label }}>冰箱设置</Text>
-            <Text style={{ display: 'block', marginTop: 4, fontSize: D.footnote, color: D.labelSecondary }}>
+            <Text className="lk-block" style={{ display: 'block', marginTop: 4, fontSize: D.footnote, color: D.labelSecondary }}>
               低频设置，选定后一般无需再改
             </Text>
           </View>

@@ -60,7 +60,7 @@ export function FavoritesListPage({ items, onBack, onOpenRecipe, onUnfavorite }:
             >
               还没有收藏
             </Text>
-            <Text
+            <Text className="lk-block"
               style={{
                 fontSize: D.footnote,
                 color: D.labelTertiary,
