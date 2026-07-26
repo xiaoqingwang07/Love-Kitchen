@@ -408,6 +408,14 @@ expect(
 )
 expect('旧的字体渲染图标脚本应已移除', !fs.existsSync(path.join(root, 'scripts/generate-app-icons.mjs')))
 
+const tokens = read('src/theme/designTokens.ts')
+expect('设计变量应采用淡雅暖色主色', tokens.includes("accent: '#E89562'"))
+expect('设计变量正文色应为暖灰而非近纯黑', tokens.includes("label: '#3A342E'"))
+expect(
+  '圆角应收敛为三档',
+  tokens.includes('radiusS: 14') && tokens.includes('radiusM: 18') && tokens.includes('radiusPill: 999')
+)
+
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL ${failure}`)
   console.error(`\nRegression checks failed: ${failures.length}`)
