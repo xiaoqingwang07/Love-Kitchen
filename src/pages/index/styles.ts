@@ -12,39 +12,24 @@ export const pageStyle: CSSProperties = {
   paddingTop: D.pagePadTop,
 }
 
-export const headerRowStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'row',
-  alignItems: 'flex-start',
-  paddingLeft: D.pagePadH,
-  paddingRight: D.pagePadH,
-  // 原为 40：那是「收藏」入口与大标题并排时留的余量，
-  // 现在标题上方多了日期行，再留 40 会顶部空一大截
-  paddingTop: 12,
-  paddingBottom: 4,
-}
-
-export const titleStyle: CSSProperties = {
-  fontSize: D.titleLarge,
-  fontWeight: D.weightSemibold,
-  color: D.label,
-  letterSpacing: '-0.038em',
-  lineHeight: 1.15,
-}
+// 首页头部（大标题 / 日期 / 收藏入口）已全部移除，相关样式随之删除
 
 // ================= 统一搜索框（Google 式） =================
 
+/** 首页各区块统一的纵向节奏，避免每块各留各的边距导致疏密不匀 */
+const BLOCK_GAP = 24
+
 export const searchSectionStyle: CSSProperties = {
-  padding: `20px ${D.pagePadH}px 12px`,
+  padding: `${BLOCK_GAP}px ${D.pagePadH}px 0`,
 }
 
-/** 搜索壳：一体化大圆角，左边输入，右边动作栏 */
+/** 搜索壳：左边输入，右边动作栏。圆角随卡片统一为 18，不再单独用 28 */
 export const searchShellStyle: CSSProperties = {
   backgroundColor: D.bgElevated,
-  borderRadius: 28,
+  borderRadius: D.radiusM,
   border: `0.5px solid ${D.separatorLight}`,
   boxShadow: D.shadowCard,
-  padding: '6px 6px 6px 18px',
+  padding: '6px 6px 6px 16px',
   display: 'flex',
   alignItems: 'center',
   gap: 0,
@@ -92,7 +77,7 @@ export const searchSubmitStyle: CSSProperties = {
   paddingLeft: 14,
   paddingRight: 14,
   height: 40,
-  borderRadius: 999,
+  borderRadius: D.radiusS,
   backgroundColor: D.accent,
   display: 'flex',
   alignItems: 'center',
@@ -157,7 +142,7 @@ export const historyTagStyle: CSSProperties = {
 // ================= 快捷卡片（临期 / 空冰箱引导 / 今日推荐） =================
 
 export const urgentCardStyle: CSSProperties = {
-  margin: `4px ${D.pagePadH}px 18px`,
+  margin: `0 ${D.pagePadH}px`,
   padding: '16px 18px',
   borderRadius: D.radiusL,
   background: `linear-gradient(135deg, ${D.accentWarmMuted} 0%, ${D.accentMuted} 100%)`,
@@ -182,33 +167,22 @@ export const urgentLeadStyle: CSSProperties = {
 
 export const urgentActionsStyle: CSSProperties = {
   display: 'flex',
-  gap: 10,
   marginTop: 4,
 }
 
+/** 提醒条内只留一个动作：「去冰箱看看」与底部冰箱 tab 是同一目的地 */
 export const urgentPrimaryBtnStyle: CSSProperties = {
   flex: 1,
-  height: 40,
-  borderRadius: 999,
+  height: 42,
+  borderRadius: D.radiusS,
   backgroundColor: D.accent,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
 }
 
-export const urgentSecondaryBtnStyle: CSSProperties = {
-  flex: 1,
-  height: 40,
-  borderRadius: 999,
-  backgroundColor: D.bgElevated,
-  border: `0.5px solid ${D.separatorLight}`,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-}
-
 export const onboardCardStyle: CSSProperties = {
-  margin: `4px ${D.pagePadH}px 18px`,
+  margin: `0 ${D.pagePadH}px`,
   padding: '16px 18px',
   borderRadius: D.radiusL,
   backgroundColor: D.bgElevated,
@@ -219,7 +193,7 @@ export const onboardCardStyle: CSSProperties = {
 // ================= 今日推荐 =================
 
 export const recipesSectionStyle: CSSProperties = {
-  padding: `4px ${D.pagePadH}px 24px`,
+  padding: `0 ${D.pagePadH}px 24px`,
 }
 
 /** 推荐区头部：一行搞定——左侧说明推荐依据，右侧两个轻动作 */
@@ -229,7 +203,7 @@ export const sectionHeaderStyle: CSSProperties = {
   alignItems: 'baseline',
   justifyContent: 'space-between',
   gap: 12,
-  marginTop: 30,
+  marginTop: BLOCK_GAP,
   marginBottom: 12,
 }
 

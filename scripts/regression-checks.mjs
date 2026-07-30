@@ -422,7 +422,23 @@ const appScss = read('src/app.scss')
 expect('不应对全局文字施加统一行距', !appScss.includes('line-height: 1.47'))
 expect('应提供块级文字工具类修复标题黏连', appScss.includes('.lk-block'))
 
-expect('首页大标题应块级渲染，避免与相邻文字黏连', indexPage.includes('lk-title'))
+expect(
+  '首页不应再有页面级大标题（与搜索框、推荐区表达重复）',
+  !indexPage.includes('titleStyle') && !read('src/pages/index/styles.ts').includes('titleLarge')
+)
+expect(
+  '首页推荐条数须克制，避免首屏无限下滑',
+  /HOME_RECOMMEND_COUNT = [1-6]\b/.test(indexPage)
+)
+expect(
+  '搭配页食材分类须覆盖主要品类（原仅蔬菜/肉类两类且归类有误）',
+  (() => {
+    const pick = read('src/pages/pick/index.tsx')
+    return ['蔬菜', '菌菇', '肉类', '水产', '蛋奶豆', '主食', '调味'].every((c) =>
+      pick.includes(`title: '${c}'`)
+    )
+  })()
+)
 expect('首页应移除与「我的」tab 重复的收藏入口', !indexPage.includes('setProfileOpenFavorites'))
 expect(
   '首页临期提醒应置顶于搜索框之前',

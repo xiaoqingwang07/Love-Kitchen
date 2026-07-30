@@ -33,7 +33,7 @@ export function HomeKitchenStatus({ expiringCount, onTonightMeal }: Props) {
   if (pantryCount === 0) return null
 
   return (
-    <View style={{ margin: `22px ${D.pagePadH}px 0` }}>
+    <View style={{ margin: `24px ${D.pagePadH}px 0` }}>
       {/* 全页唯一实心按钮：主操作独占重量，不与其他元素抢 */}
       <View
         className="tap-scale"

@@ -27,6 +27,12 @@ import { DishCandidateSheet } from './components/DishCandidateSheet'
 import * as S from './styles'
 
 /**
+ * 首页推荐条数：原为 10，首屏要一直下滑才看得完，容易失去耐心。
+ * 4 条正好一屏内看完，想再看用「换一批」。
+ */
+const HOME_RECOMMEND_COUNT = 4
+
+/**
  * 首页：单一搜索台 + 诚实推荐
  *
  * 设计原则：
@@ -58,11 +64,11 @@ function Index() {
   const recommendation = useMemo(() => {
     if (weather) {
       return {
-        recipes: getWeatherRecommendationsForWeather(weather, 10, listVariant).recipes,
+        recipes: getWeatherRecommendationsForWeather(weather, HOME_RECOMMEND_COUNT, listVariant).recipes,
         reason: getReasonText(weather),
       }
     }
-    const personalized = getPersonalizedRecommendations(10, listVariant)
+    const personalized = getPersonalizedRecommendations(HOME_RECOMMEND_COUNT, listVariant)
     return {
       recipes: personalized.recipes,
       reason: personalized.personalized ? '按你常做的口味 · 猜你想吃' : '每日家常 · 高分稳妥',
@@ -226,12 +232,8 @@ function Index() {
 
   return (
     <View style={S.pageStyle}>
-      {/* 日期锚点已移除：与页面主功能无关，属于「多显示一遍」的噪音 */}
-      <View style={S.headerRowStyle}>
-        <Text className="lk-title" style={S.titleStyle}>
-          吃什么？
-        </Text>
-      </View>
+      {/* 首屏不再有大标题：日期是噪音，「吃什么？」与搜索框、推荐区表达的是同一件事。
+          进来第一眼直接是「该处理什么」和「搜什么」。 */}
 
       <HomePantryBanner
         expiringItems={expiringItems}

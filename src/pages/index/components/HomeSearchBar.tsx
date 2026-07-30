@@ -47,7 +47,7 @@ export function HomeSearchBar({
     <>
       <View style={S.searchSectionStyle}>
         <View style={S.searchShellStyle}>
-          <AppIcon name="search" size={14} color={D.labelTertiary} backgroundColor="transparent" glyphOnly />
+          <AppIcon name="search" size={14} color={D.labelTertiary} backgroundColor="transparent" />
           <Input
             style={S.searchInputStyle}
             placeholder="番茄、鸡蛋、鸡胸肉…"
@@ -83,7 +83,7 @@ export function HomeSearchBar({
                   onOpenVoice()
                 }}
               >
-                <AppIcon name="mic" size={16} color={D.accent} backgroundColor="transparent" glyphOnly />
+                <AppIcon name="mic" size={16} color={D.accent} backgroundColor="transparent" />
               </View>
               <View
                 className="tap-scale"
@@ -91,7 +91,7 @@ export function HomeSearchBar({
                 onTouchStart={() => { skipSearchBlurRef.current = true }}
                 onClick={() => onPickDish('album')}
               >
-                <AppIcon name="list" size={16} color={D.accent} backgroundColor="transparent" glyphOnly />
+                <AppIcon name="list" size={16} color={D.accent} backgroundColor="transparent" />
               </View>
               <View
                 className="tap-scale"
@@ -99,7 +99,7 @@ export function HomeSearchBar({
                 onTouchStart={() => { skipSearchBlurRef.current = true }}
                 onClick={() => onPickDish('camera')}
               >
-                <AppIcon name="camera" size={16} color={D.accent} backgroundColor="transparent" glyphOnly />
+                <AppIcon name="camera" size={16} color={D.accent} backgroundColor="transparent" />
               </View>
             </View>
           )}

@@ -103,11 +103,9 @@ export function SupermarketLookup({
         </View>
       </View>
 
-      {!lookupName ? (
-        <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 10, lineHeight: 1.5 }}>
-          拿不准家里还有没有？输入或说一句「有没有西红柿」，立刻知道在哪、放了多久。
-        </Text>
-      ) : lookupResults && lookupResults.length > 0 ? (
+      {/* 未输入时不再展示一段使用说明：输入框 placeholder 已说明用途，
+          再补一句是重复占位 */}
+      {!lookupName ? null : lookupResults && lookupResults.length > 0 ? (
         (() => {
           const hasOld = lookupResults.some((it) => getFreshnessStatus(it) !== 'fresh')
           return (

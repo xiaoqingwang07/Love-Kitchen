@@ -44,15 +44,6 @@ export function HomePantryBanner({ expiringItems, emptyPantry, onLoadDemo }: Pro
               拿临期做一顿
             </Text>
           </View>
-          <View
-            className="tap-scale"
-            style={S.urgentSecondaryBtnStyle}
-            onClick={() => Taro.switchTab({ url: '/pages/pantry/index' })}
-          >
-            <Text style={{ fontSize: D.subheadline, fontWeight: D.weightMedium, color: D.label }}>
-              去冰箱看看
-            </Text>
-          </View>
         </View>
       </View>
     )
