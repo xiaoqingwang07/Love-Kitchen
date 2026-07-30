@@ -57,7 +57,7 @@ function Result() {
 
   useShareAppMessage(() =>
     resolvePrimedShare({
-      title: '爱心厨房 - 今晚吃什么？',
+      title: '爱心厨房 - 吃什么？',
       path: '/pages/result/index?from=meal',
     })
   )
@@ -165,7 +165,7 @@ function Result() {
   const mealTitle = useMemo(() => {
     if (!isMealMode) return '推荐'
     if (expiringForMeal.length > 0) return '今晚先吃掉这些'
-    return '今晚吃什么'
+    return '吃什么'
   }, [isMealMode, expiringForMeal.length])
 
   const mealConstraints = useMemo(() => {

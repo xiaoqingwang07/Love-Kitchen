@@ -124,7 +124,7 @@ export function HomePantryBanner({ expiringItems, emptyPantry, onLoadDemo }: Pro
             <View style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <AppIcon name="meal" size={16} color={D.accent} />
               <Text style={{ fontSize: D.subheadline, fontWeight: D.weightMedium, color: D.label }}>
-                直接问今晚吃什么
+                直接问吃什么
               </Text>
             </View>
           </View>

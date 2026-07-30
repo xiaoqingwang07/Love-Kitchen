@@ -29,29 +29,21 @@ export function HomeRecommendSection({
 
   return (
     <View style={S.recipesSectionStyle}>
+      {/* 头部收敛为一行：原有「今日推荐」标签与 reason 文案是同一件事说两遍，
+          下面还跟一句长解释，属于低价值重复，已合并。 */}
       <View style={S.sectionHeaderStyle}>
-        <Text className="lk-block" style={S.sectionTitleStyle}>
-          今日推荐
+        <Text style={S.sectionLeadStyle}>
+          {weather ? `${weather.temperature}°C · 按实时天气挑的` : reason}
         </Text>
-        <Text className="lk-block" style={S.sectionLeadStyle}>
-          {reason}
-        </Text>
-        <View style={S.sectionMetaRowStyle}>
-          <Text style={S.sectionMetaTextStyle}>
-            {weather
-              ? `${weather.temperature}°C · 已按实时天气调整`
-              : '按家常口味与评分排序，开启天气后会参考气温冷热'}
-          </Text>
-          <View style={S.sectionActionsStyle}>
-            {!weather ? (
-              <Text className="tap-scale" style={S.sectionActionStyle} onClick={onEnableWeather}>
-                {weatherLoading ? '获取中…' : '开启天气'}
-              </Text>
-            ) : null}
-            <Text className="tap-scale" style={S.sectionActionStyle} onClick={onRefresh}>
-              换一批
+        <View style={S.sectionActionsStyle}>
+          {!weather ? (
+            <Text className="tap-scale" style={S.sectionActionStyle} onClick={onEnableWeather}>
+              {weatherLoading ? '获取中…' : '按天气'}
             </Text>
-          </View>
+          ) : null}
+          <Text className="tap-scale" style={S.sectionActionStyle} onClick={onRefresh}>
+            换一批
+          </Text>
         </View>
       </View>
 

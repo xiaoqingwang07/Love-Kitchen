@@ -23,7 +23,6 @@ import { SupermarketLookup, cleanSupermarketLookupQuery } from './components/Sup
 import { PantryItemEditSheet } from './components/PantryItemEditSheet'
 import { FridgeLayoutSettingsSheet } from './components/FridgeLayoutSettingsSheet'
 import { SlotDetailSheet } from './components/SlotDetailSheet'
-import { PantryHeader } from './components/PantryHeader'
 import { QuickFillPanel } from './components/QuickFillPanel'
 import { ExpiryOverview, type HighlightMode } from './components/ExpiryOverview'
 import { PantryEmptyHint } from './components/PantryEmptyHint'
@@ -42,7 +41,8 @@ function saveFridgeLayout(layout: FridgeLayoutConfig): void {
 
 const pad = D.pagePadH
 const DAY_MS = 24 * 60 * 60 * 1000
-const PANTRY_BOTTOM_RESERVE = 'calc(156px + env(safe-area-inset-bottom))'
+// 底部条由两行 5 个按钮收敛为单个「添加食材」，高度 48 + 上下 12 内边距
+const PANTRY_BOTTOM_RESERVE = 'calc(96px + env(safe-area-inset-bottom))'
 
 function FridgePantry() {
   const store = usePantryStore()
@@ -266,11 +266,9 @@ function FridgePantry() {
   return (
     <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: PANTRY_BOTTOM_RESERVE }}>
       <ScrollView scrollY showScrollbar={false} style={{ paddingBottom: PANTRY_BOTTOM_RESERVE }}>
-        <PantryHeader
-          pad={pad}
-          presetName={currentPreset.name}
-          onOpenLayoutSettings={() => setShowLayoutSettings(true)}
-        />
+        {/* 原 PantryHeader（大标题「冰箱」+ 功能说明 + 柜型按钮）已拆除：
+            页面名归原生导航栏，柜型切换并入下方筛选行 */}
+        <View style={{ height: 8 }} />
 
         {store.totalCount > 0 ? (
           <SupermarketLookup
@@ -306,6 +304,21 @@ function FridgePantry() {
           expiringNames={store.expiringItems.map((i) => i.name)}
           highlight={highlight}
           onHighlightChange={setHighlight}
+          presetName={currentPreset.name}
+          onOpenLayoutSettings={() => setShowLayoutSettings(true)}
+          onClearExpired={() => {
+            Taro.showModal({
+              title: '清理过期',
+              content: `把 ${store.expiredCount} 项过期食材一次性移除？`,
+              confirmColor: D.red,
+              success: (r) => {
+                if (r.confirm) {
+                  store.removeExpired()
+                  Taro.showToast({ title: '已清理', icon: 'success' })
+                }
+              },
+            })
+          }}
         />
 
         {store.totalCount === 0 ? <PantryEmptyHint pad={pad} /> : null}
@@ -402,23 +415,9 @@ function FridgePantry() {
 
       <PantryBottomBar
         pad={pad}
-        expiredCount={store.expiredCount}
         onReceiptIntake={() => intake.openImageIntake('receipt')}
         onIngredientsIntake={() => intake.openImageIntake('ingredients')}
         onPasteIntake={intake.openPasteIntake}
-        onClearExpired={() => {
-          Taro.showModal({
-            title: '清理过期',
-            content: `把 ${store.expiredCount} 项过期食材一次性移除？`,
-            confirmColor: D.red,
-            success: (r) => {
-              if (r.confirm) {
-                store.removeExpired()
-                Taro.showToast({ title: '已清理', icon: 'success' })
-              }
-            },
-          })
-        }}
       />
 
       <VoiceRecorderSheet

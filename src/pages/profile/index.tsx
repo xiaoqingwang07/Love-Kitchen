@@ -47,7 +47,7 @@ function Profile() {
 
   useShareAppMessage(() =>
     resolvePrimedShare({
-      title: '爱心厨房 - 一起管冰箱、定今晚吃什么',
+      title: '爱心厨房 - 一起管冰箱、定这顿吃什么',
       path: '/pages/index/index',
     })
   )

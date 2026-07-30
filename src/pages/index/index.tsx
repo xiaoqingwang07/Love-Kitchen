@@ -26,14 +26,6 @@ import { HomeRecommendSection } from './components/HomeRecommendSection'
 import { DishCandidateSheet } from './components/DishCandidateSheet'
 import * as S from './styles'
 
-const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
-
-/** 首屏日期锚点，如「7月26日 · 周日」 */
-function formatTodayLabel(): string {
-  const d = new Date()
-  return `${d.getMonth() + 1}月${d.getDate()}日 · ${WEEKDAYS[d.getDay()]}`
-}
-
 /**
  * 首页：单一搜索台 + 诚实推荐
  *
@@ -42,7 +34,9 @@ function formatTodayLabel(): string {
  * 2. 默认不虚构天气——用户主动点「开启天气」才会去定位+叠加推荐维度；
  * 3. 临期提醒置顶于搜索框之前：临期是有时效的坏消息，晚看一天就浪费；
  *    冰箱无临期时该条整体不渲染，首屏更干净；
- * 4. 不再展示「场景 chip」，场景偏好改由「我的」一次性设定。
+ * 4. 推荐区常驻：原先「有临期就不显示推荐」会让首屏留下大片空白，
+ *    而推荐图正是首页最有价值的内容；
+ * 5. 不再展示「场景 chip」，场景偏好改由「我的」一次性设定。
  */
 function Index() {
   const pantryStore = usePantryStore()
@@ -223,7 +217,8 @@ function Index() {
   }
 
   const emptyPantry = pantryStore.totalCount === 0
-  const showGenericRecommend = !emptyPantry && expiringItems.length === 0
+  // 推荐区常驻（冰箱为空时除外）：原先「有临期就不显示」会让首屏空一大片
+  const showGenericRecommend = !emptyPantry
 
   const goTonightMeal = () => {
     Taro.navigateTo({ url: buildMealResultPath(pantryStore.items, 'home-status') })
@@ -231,15 +226,11 @@ function Index() {
 
   return (
     <View style={S.pageStyle}>
+      {/* 日期锚点已移除：与页面主功能无关，属于「多显示一遍」的噪音 */}
       <View style={S.headerRowStyle}>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text className="lk-block" style={S.dateKickerStyle}>
-            {formatTodayLabel()}
-          </Text>
-          <Text className="lk-title" style={S.titleStyle}>
-            今晚吃什么？
-          </Text>
-        </View>
+        <Text className="lk-title" style={S.titleStyle}>
+          吃什么？
+        </Text>
       </View>
 
       <HomePantryBanner

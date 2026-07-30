@@ -106,7 +106,7 @@ function ShoppingListPanelInner() {
                 ? `${pending.length} 样待买 · 勾选已买到的，可批量删除`
                 : householdStore.shoppingList.length > 0
                 ? '全部已勾选，可删除或继续添加'
-                : '从菜谱或今晚方案加入缺失食材'}
+                : '从菜谱或搭配方案加入缺失食材'}
             </Text>
           </View>
         </View>
@@ -190,7 +190,7 @@ function ShoppingListPanelInner() {
                 padding: '8px 0 4px',
               }}
             >
-              打开菜谱详情或「今晚方案」，把还缺的食材加入这里，买菜时勾选、删项即可。
+              打开菜谱详情或「搭配方案」，把还缺的食材加入这里，买菜时勾选、删项即可。
             </Text>
           )}
         </View>

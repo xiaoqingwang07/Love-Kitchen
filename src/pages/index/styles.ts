@@ -24,15 +24,6 @@ export const headerRowStyle: CSSProperties = {
   paddingBottom: 4,
 }
 
-/** 日期锚点：「7月26日 · 周日」，弱化处理 */
-export const dateKickerStyle: CSSProperties = {
-  fontSize: D.caption,
-  fontWeight: D.weightMedium,
-  color: D.labelTertiary,
-  letterSpacing: '0.18em',
-  marginBottom: 8,
-}
-
 export const titleStyle: CSSProperties = {
   fontSize: D.titleLarge,
   fontWeight: D.weightSemibold,
@@ -231,43 +222,22 @@ export const recipesSectionStyle: CSSProperties = {
   padding: `4px ${D.pagePadH}px 24px`,
 }
 
+/** 推荐区头部：一行搞定——左侧说明推荐依据，右侧两个轻动作 */
 export const sectionHeaderStyle: CSSProperties = {
-  marginBottom: 14,
-}
-
-export const sectionTitleStyle: CSSProperties = {
-  fontSize: D.caption,
-  fontWeight: D.weightSemibold,
-  color: D.labelSecondary,
-  letterSpacing: '0.14em',
-  textTransform: 'uppercase' as const,
-  marginBottom: 6,
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'baseline',
+  justifyContent: 'space-between',
+  gap: 12,
+  marginTop: 30,
+  marginBottom: 12,
 }
 
 export const sectionLeadStyle: CSSProperties = {
-  fontSize: D.body,
-  fontWeight: D.weightSemibold,
-  color: D.label,
-  lineHeight: 1.4,
-  letterSpacing: '-0.02em',
-}
-
-export const sectionMetaRowStyle: CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 10,
-  rowGap: 8,
-  marginTop: 10,
-}
-
-export const sectionMetaTextStyle: CSSProperties = {
-  fontSize: D.caption,
-  color: D.labelTertiary,
+  fontSize: D.footnote,
+  color: D.labelSecondary,
   flex: 1,
-  minWidth: '60%',
-  lineHeight: 1.4,
+  minWidth: 0,
 }
 
 export const sectionActionsStyle: CSSProperties = {

@@ -34,7 +34,8 @@ export default defineAppConfig({
       },
       {
         pagePath: 'pages/pick/index',
-        text: '今晚',
+        // 不叫「选菜」也不叫「今晚」：前者像点单，后者把使用场景限死在晚饭
+        text: '搭配',
         iconPath: 'assets/tabbar/pick.png',
         selectedIconPath: 'assets/tabbar/pick_active.png'
       },

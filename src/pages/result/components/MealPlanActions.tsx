@@ -48,7 +48,7 @@ export function MealPlanActions({ plan, loading, disabled, onStartMain, onShare 
           border: 'none',
         }}
       >
-        分享今晚方案
+        分享搭配方案
       </Button>
     </View>
   )

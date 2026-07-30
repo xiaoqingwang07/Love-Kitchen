@@ -81,8 +81,10 @@ expect(
 )
 
 expect(
-  'tabBar 选菜页应改名为今晚',
-  appConfig.includes("text: '今晚'")
+  'tabBar 搭配页名称须时段中性（不叫「选菜」，也不叫把场景限死在晚饭的「今晚」）',
+  appConfig.includes("text: '搭配'") &&
+    !appConfig.includes("text: '选菜'") &&
+    !appConfig.includes("text: '今晚'")
 )
 
 expect('app.config 不应声明无效 scope.record', !appConfig.includes("'scope.record'"))
@@ -332,7 +334,7 @@ expect('烹饪完成应上报 meal_solved', read('src/utils/analyticsExport.ts')
 expect('Epic E 应有 mealSolved 计数与 Plus 软提示', fs.existsSync(path.join(root, 'src/utils/mealSolvedTracker.ts')) && read('src/utils/mealSolvedTracker.ts').includes('EVENTS.upgradePromptShown'))
 expect('Epic E 应有每周菜单建议', fs.existsSync(path.join(root, 'src/pages/profile/components/WeeklyMenuCard.tsx')) && read('src/utils/weeklyMenuSuggest.ts').includes('buildWeeklyMenuSuggestion'))
 expect('今晚方案应解释推荐依据', fs.existsSync(path.join(root, 'src/pages/result/components/MealPlanReasonBar.tsx')))
-expect('分享应支持三类标题', shareLinks.includes('今晚吃【') && shareLinks.includes('帮我买') && shareLinks.includes('加入我家的厨房清单'))
+expect('分享应支持三类标题', shareLinks.includes('这顿吃【') && shareLinks.includes('帮我买') && shareLinks.includes('加入我家的厨房清单'))
 expect('meal 缺货应加入采购清单', resultPage.includes('handleAddMealShopping') && resultPage.includes('addShoppingItems'))
 
 // ── 2026-07-06 整改不变量：扣减确认 / 采购直达 / 结果页冰箱联动 / 精简 ──
@@ -464,6 +466,33 @@ expect(
     appConfig.includes("selectedColor: '#D4783F'") &&
     iconGen.includes("TAB_IDLE = '#9C948B'") &&
     iconGen.includes("TAB_ACTIVE = '#D4783F'")
+)
+
+expect(
+  'tab 页不应在页面内重复渲染页面名（页面名归原生导航栏）',
+  ['pick', 'pantry', 'profile'].every((p) =>
+    fs.existsSync(path.join(root, `src/pages/${p}/index.config.ts`))
+  ) &&
+    !fs.existsSync(path.join(root, 'src/pages/pantry/components/PantryHeader.tsx')) &&
+    !read('src/pages/profile/components/ProfileStatsHeader.tsx').includes('titleLarge') &&
+    !read('src/pages/pick/index.tsx').includes('titleLarge')
+)
+expect(
+  '首页推荐区不应因存在临期食材而整体隐藏（会留下大片空白）',
+  indexPage.includes('const showGenericRecommend = !emptyPantry') &&
+    !indexPage.includes('expiringItems.length === 0')
+)
+expect(
+  '冰箱底部操作条应收敛为单一入口（原 5 个按钮占满两行并遮挡柜体）',
+  (() => {
+    const bar = read('src/pages/pantry/components/PantryBottomBar.tsx')
+    return (
+      bar.includes('showActionSheet') &&
+      bar.includes('添加食材') &&
+      !bar.includes('去选菜') &&
+      !bar.includes('清过期')
+    )
+  })()
 )
 
 if (failures.length > 0) {

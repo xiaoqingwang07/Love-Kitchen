@@ -117,13 +117,8 @@ function Pick() {
 
   return (
     <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: '120px' }}>
-      <View style={{ padding: '44px 22px 8px' }}>
-        <Text style={{ fontSize: D.titleLarge, fontWeight: D.weightBold, color: D.label, display: 'block', marginBottom: 6, letterSpacing: '-0.04em' }}>今晚</Text>
-        <Text className="lk-block" style={{ fontSize: D.footnote, color: D.labelSecondary, lineHeight: 1.5 }}>
-          勾选食材，生成一顿饭方案
-        </Text>
-      </View>
-
+      {/* 原有大标题「今晚」+ 副标题「勾选食材，生成一顿饭方案」已移除：
+          页面名在原生导航栏，下方「选择食材」卡片本身已说明用途。 */}
       {pantryEmpty ? (
         <View
           style={{
@@ -355,7 +350,7 @@ function Pick() {
           onClick={handleMatch}
           disabled={selected.length === 0}
         >
-          {selected.length > 0 ? `生成今晚方案 · ${selected.length} 种` : '请选择食材'}
+          {selected.length > 0 ? `生成搭配方案 · ${selected.length} 种` : '请选择食材'}
         </Button>
       </View>
     </View>

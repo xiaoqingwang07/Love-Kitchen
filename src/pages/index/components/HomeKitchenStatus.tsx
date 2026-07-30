@@ -58,7 +58,7 @@ export function HomeKitchenStatus({ expiringCount, onTonightMeal }: Props) {
             letterSpacing: '0.02em',
           }}
         >
-          今晚吃什么
+          帮我搭配
         </Text>
       </View>
 

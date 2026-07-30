@@ -13,6 +13,11 @@ type Props = {
   expiringNames: string[]
   highlight: HighlightMode
   onHighlightChange: (mode: HighlightMode) => void
+  /** 由底部操作条移来：清理动作就近放在过期卡上 */
+  onClearExpired: () => void
+  /** 由页面右上角移来：柜型切换并入筛选行 */
+  presetName: string
+  onOpenLayoutSettings: () => void
 }
 
 export function ExpiryOverview({
@@ -23,6 +28,9 @@ export function ExpiryOverview({
   expiringNames,
   highlight,
   onHighlightChange,
+  onClearExpired,
+  presetName,
+  onOpenLayoutSettings,
 }: Props) {
   if (totalCount === 0) return null
 
@@ -77,21 +85,19 @@ export function ExpiryOverview({
             }}
           >
             <Text
-              style={{
-                fontSize: D.caption,
-                color: D.accentWarm,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase' as const,
-              }}
+              className="lk-block"
+              style={{ fontSize: D.caption, color: D.accentWarm, letterSpacing: '0.12em' }}
             >
               临期
             </Text>
             <Text
+              className="lk-block"
               style={{
                 fontSize: D.title,
                 fontWeight: D.weightBold,
                 color: D.accentWarm,
                 marginTop: 2,
+                lineHeight: 1.1,
               }}
             >
               {expiringCount}
@@ -104,11 +110,14 @@ export function ExpiryOverview({
                 Taro.switchTab({ url: '/pages/pick/index' })
               }}
               style={{
-                marginTop: 8,
+                marginTop: 10,
+                alignSelf: 'flex-start',
                 backgroundColor: D.accentWarm,
-                borderRadius: 99,
-                padding: '4px 10px',
-                display: 'inline-flex',
+                borderRadius: D.radiusPill,
+                paddingLeft: 11,
+                paddingRight: 11,
+                height: 26,
+                display: 'flex',
                 alignItems: 'center',
               }}
             >
@@ -129,33 +138,56 @@ export function ExpiryOverview({
             }}
           >
             <Text
-              style={{
-                fontSize: D.caption,
-                color: D.red,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase' as const,
-              }}
+              className="lk-block"
+              style={{ fontSize: D.caption, color: D.red, letterSpacing: '0.12em' }}
             >
               过期
             </Text>
             <Text
+              className="lk-block"
               style={{
                 fontSize: D.title,
                 fontWeight: D.weightBold,
                 color: D.red,
                 marginTop: 2,
+                lineHeight: 1.1,
               }}
             >
               {expiredCount}
             </Text>
+            {/* 由底部操作条移来：清理就近放在过期卡上，与临期卡的「去选菜」对称 */}
+            <View
+              className="tap-scale"
+              onClick={(e) => {
+                e.stopPropagation()
+                onClearExpired()
+              }}
+              style={{
+                marginTop: 8,
+                alignSelf: 'flex-start',
+                paddingLeft: 10,
+                paddingRight: 10,
+                height: 26,
+                borderRadius: D.radiusPill,
+                backgroundColor: D.bgElevated,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={{ fontSize: 10, color: D.errorFg, fontWeight: D.weightSemibold }}>清过期</Text>
+            </View>
           </View>
         ) : null}
       </View>
 
+      {/* 筛选行：右侧并入「柜型切换」——两者同属视图控件，
+          原先柜型按钮单独挂在页面右上角，删掉大标题后会孤零零悬着 */}
       <View
         style={{
           display: 'flex',
           flexDirection: 'row',
+          alignItems: 'center',
           gap: 8,
           padding: `0 ${pad}px`,
           marginBottom: 16,
@@ -190,6 +222,25 @@ export function ExpiryOverview({
             </Text>
           </View>
         ))}
+
+        <View
+          className="tap-scale"
+          onClick={onOpenLayoutSettings}
+          style={{
+            marginLeft: 'auto',
+            paddingLeft: 12,
+            paddingRight: 12,
+            height: 30,
+            borderRadius: D.radiusPill,
+            backgroundColor: D.bgElevated,
+            border: `0.5px solid ${D.separator}`,
+            display: 'flex',
+            alignItems: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Text style={{ fontSize: D.footnote, color: D.labelSecondary }}>{presetName}</Text>
+        </View>
       </View>
     </>
   )

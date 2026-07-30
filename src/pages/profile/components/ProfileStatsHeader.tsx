@@ -15,24 +15,14 @@ type Props = {
   onStatClick: (action: StatItem['action']) => void
 }
 
+/**
+ * 原有大标题「我的」+ 副标题「爱心厨房 · 你的家庭饭桌助理」已移除：
+ * 页面名在原生导航栏，副标题是纯装饰，两者都与下方内容重复。
+ */
 export function ProfileStatsHeader({ stats, achievements, onStatClick }: Props) {
   return (
-    <View style={{ padding: '44px 22px 20px' }}>
-      <Text
-        style={{
-          fontSize: D.titleLarge,
-          fontWeight: D.weightBold,
-          color: D.label,
-          letterSpacing: '-0.04em',
-        }}
-      >
-        我的
-      </Text>
-      <Text className="lk-block" style={{ fontSize: D.footnote, color: D.labelSecondary, marginTop: 8 }}>
-        爱心厨房 · 你的家庭饭桌助理
-      </Text>
-
-      <View style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+    <View style={{ padding: '16px 22px 20px' }}>
+      <View style={{ display: 'flex', gap: 10 }}>
         {stats.map((s) => (
           <View
             key={s.action}

@@ -118,7 +118,7 @@ export function resolvePrimedShare(
       const miss = p.missingCount > 0 ? ` · 还缺 ${p.missingCount} 样` : ''
       reportEvent(EVENTS.shareSend, { kind: 'meal', missing: p.missingCount })
       return {
-        title: `今晚吃【${p.title}】${miss}`,
+        title: `这顿吃【${p.title}】${miss}`,
         path: buildMealSharePath(p),
       }
     }
