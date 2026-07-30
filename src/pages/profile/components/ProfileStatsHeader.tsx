@@ -22,35 +22,18 @@ type Props = {
 export function ProfileStatsHeader({ stats, achievements, onStatClick }: Props) {
   return (
     <View style={{ padding: '16px 22px 20px' }}>
-      <View style={{ display: 'flex', gap: 10 }}>
+      {/* 三张大卡片收敛为一行可点小字：这里是次要信息，不该占掉三分之一屏 */}
+      <View style={{ display: 'flex', flexDirection: 'row', gap: 20, paddingLeft: 2 }}>
         {stats.map((s) => (
-          <View
+          <Text
             key={s.action}
             className="tap-scale"
-            style={{
-              flex: 1,
-              backgroundColor: D.bgElevated,
-              borderRadius: D.radiusM,
-              padding: '14px 12px',
-              border: `0.5px solid ${D.separatorLight}`,
-              boxShadow: D.shadowCard,
-            }}
+            style={{ fontSize: D.footnote, color: D.labelSecondary }}
             onClick={() => onStatClick(s.action)}
           >
-            <Text
-              style={{
-                fontSize: D.title,
-                fontWeight: D.weightBold,
-                color: D.label,
-                letterSpacing: '-0.02em',
-              }}
-            >
-              {s.value}
-            </Text>
-            <Text style={{ fontSize: D.caption, color: D.labelSecondary, marginTop: 4 }}>
-              {s.label}
-            </Text>
-          </View>
+            {s.label}{' '}
+            <Text style={{ color: D.label, fontWeight: D.weightSemibold }}>{s.value}</Text>
+          </Text>
         ))}
       </View>
 

@@ -264,8 +264,8 @@ function FridgePantry() {
   }
 
   return (
-    <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: PANTRY_BOTTOM_RESERVE }}>
-      <ScrollView scrollY showScrollbar={false} style={{ paddingBottom: PANTRY_BOTTOM_RESERVE }}>
+    <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
+      <ScrollView scrollY showScrollbar={false}>
         {/* 原 PantryHeader（大标题「冰箱」+ 功能说明 + 柜型按钮）已拆除：
             页面名归原生导航栏，柜型切换并入下方筛选行 */}
         <View style={{ height: 8 }} />
@@ -302,6 +302,16 @@ function FridgePantry() {
           expiringCount={store.expiringCount}
           expiredCount={store.expiredCount}
           expiringNames={store.expiringItems.map((i) => i.name)}
+          soonestExpiringDays={
+            store.expiringItems.length > 0
+              ? Math.min(...store.expiringItems.map((i) => getDaysLeft(i)))
+              : null
+          }
+          longestExpiredDays={
+            store.expiredItems.length > 0
+              ? Math.max(...store.expiredItems.map((i) => -getDaysLeft(i)))
+              : null
+          }
           highlight={highlight}
           onHighlightChange={setHighlight}
           presetName={currentPreset.name}
@@ -337,11 +347,11 @@ function FridgePantry() {
           </View>
         </View>
 
-        <View style={{ padding: `0 ${pad}px ${PANTRY_BOTTOM_RESERVE}` }}>
-          <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, lineHeight: 1.5 }}>
-            点格子手动添加；底部可拍照识别小票/食材，或粘贴清单批量入库。
-          </Text>
-        </View>
+        {/* 底部留白只在这里给一次。原先页面容器、ScrollView、这段提示各加一次
+            PANTRY_BOTTOM_RESERVE，累计近 290px，真机上柜体下方拖出一大片空白。
+            提示文案也已删除：内容过时（底部早已合并为单个「添加食材」），
+            且按钮本身即自解释。 */}
+        <View style={{ height: PANTRY_BOTTOM_RESERVE }} />
       </ScrollView>
 
       <FridgeLayoutSettingsSheet

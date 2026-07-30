@@ -11,21 +11,45 @@ type Props = {
   expiringCount: number
   expiredCount: number
   expiringNames: string[]
+  /** 最紧急的临期项还剩几天（<=0 表示今天到期） */
+  soonestExpiringDays: number | null
+  /** 最久的过期项已过期几天 */
+  longestExpiredDays: number | null
   highlight: HighlightMode
   onHighlightChange: (mode: HighlightMode) => void
-  /** 由底部操作条移来：清理动作就近放在过期卡上 */
   onClearExpired: () => void
-  /** 由页面右上角移来：柜型切换并入筛选行 */
   presetName: string
   onOpenLayoutSettings: () => void
 }
 
+function expiringText(days: number | null): string {
+  if (days === null) return ''
+  if (days <= 0) return '今天到期'
+  if (days === 1) return '明天到期'
+  return `最早还剩 ${days} 天`
+}
+
+function expiredText(days: number | null): string {
+  if (days === null) return ''
+  if (days <= 0) return '刚过期'
+  return `最久已过期 ${days} 天`
+}
+
+/**
+ * 冰箱概览：筛选行即计数行。
+ *
+ * 原先是三张大卡（共 N 项 / 临期 / 过期），每张里再塞一个操作按钮，
+ * 占掉近三分之一屏且与下方筛选按钮语义重复。现在计数直接并进筛选按钮，
+ * 选中某一类时才在下方显示该类的时间信息与对应操作——表面简洁，选中才展开。
+ */
 export function ExpiryOverview({
   pad,
   totalCount,
   expiringCount,
   expiredCount,
   expiringNames,
+  soonestExpiringDays,
+  longestExpiredDays,
   highlight,
   onHighlightChange,
   onClearExpired,
@@ -34,155 +58,34 @@ export function ExpiryOverview({
 }: Props) {
   if (totalCount === 0) return null
 
+  const chips = [
+    { k: 'all' as HighlightMode, t: '全部', n: totalCount, tone: D.label },
+    { k: 'expiring' as HighlightMode, t: '临期', n: expiringCount, tone: D.accentWarm },
+    { k: 'expired' as HighlightMode, t: '过期', n: expiredCount, tone: D.red },
+  ].filter((c) => c.k === 'all' || c.n > 0)
+
+  const detail =
+    highlight === 'expiring' && expiringCount > 0
+      ? {
+          text: expiringText(soonestExpiringDays),
+          action: '用它们做一顿',
+          tone: D.accentWarm,
+          onAct: () => {
+            setPickAutoSelectIngredients(expiringNames)
+            Taro.switchTab({ url: '/pages/pick/index' })
+          },
+        }
+      : highlight === 'expired' && expiredCount > 0
+        ? {
+            text: expiredText(longestExpiredDays),
+            action: '清理过期',
+            tone: D.errorFg,
+            onAct: onClearExpired,
+          }
+        : null
+
   return (
     <>
-      <View style={{ margin: `0 ${pad}px 14px`, display: 'flex', gap: 10 }}>
-        <View
-          style={{
-            flex: 1,
-            padding: '12px 14px',
-            backgroundColor: D.bgElevated,
-            borderRadius: D.radiusM,
-            border: `0.5px solid ${D.separatorLight}`,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: D.caption,
-              color: D.labelTertiary,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase' as const,
-            }}
-          >
-            共
-          </Text>
-          <Text
-            style={{
-              fontSize: D.title,
-              fontWeight: D.weightBold,
-              color: D.label,
-              marginTop: 2,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            {totalCount}
-            <Text style={{ fontSize: D.caption, color: D.labelTertiary, fontWeight: D.weightRegular }}>
-              {' '}
-              项
-            </Text>
-          </Text>
-        </View>
-        {expiringCount > 0 ? (
-          <View
-            className="tap-scale"
-            onClick={() => onHighlightChange('expiring')}
-            style={{
-              flex: 1,
-              padding: '12px 14px',
-              backgroundColor: D.accentWarmMuted,
-              borderRadius: D.radiusM,
-              border: `0.5px solid ${D.accentLine}`,
-            }}
-          >
-            <Text
-              className="lk-block"
-              style={{ fontSize: D.caption, color: D.accentWarm, letterSpacing: '0.12em' }}
-            >
-              临期
-            </Text>
-            <Text
-              className="lk-block"
-              style={{
-                fontSize: D.title,
-                fontWeight: D.weightBold,
-                color: D.accentWarm,
-                marginTop: 2,
-                lineHeight: 1.1,
-              }}
-            >
-              {expiringCount}
-            </Text>
-            <View
-              className="tap-scale"
-              onClick={(e) => {
-                e.stopPropagation()
-                setPickAutoSelectIngredients(expiringNames)
-                Taro.switchTab({ url: '/pages/pick/index' })
-              }}
-              style={{
-                marginTop: 10,
-                alignSelf: 'flex-start',
-                backgroundColor: D.accentWarm,
-                borderRadius: D.radiusPill,
-                paddingLeft: 11,
-                paddingRight: 11,
-                height: 26,
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 10, color: D.onAccent, fontWeight: D.weightSemibold }}>去选菜</Text>
-            </View>
-          </View>
-        ) : null}
-        {expiredCount > 0 ? (
-          <View
-            className="tap-scale"
-            onClick={() => onHighlightChange('expired')}
-            style={{
-              flex: 1,
-              padding: '12px 14px',
-              backgroundColor: D.errorBg,
-              borderRadius: D.radiusM,
-              border: `0.5px solid rgba(208,90,56,0.2)`,
-            }}
-          >
-            <Text
-              className="lk-block"
-              style={{ fontSize: D.caption, color: D.red, letterSpacing: '0.12em' }}
-            >
-              过期
-            </Text>
-            <Text
-              className="lk-block"
-              style={{
-                fontSize: D.title,
-                fontWeight: D.weightBold,
-                color: D.red,
-                marginTop: 2,
-                lineHeight: 1.1,
-              }}
-            >
-              {expiredCount}
-            </Text>
-            {/* 由底部操作条移来：清理就近放在过期卡上，与临期卡的「去选菜」对称 */}
-            <View
-              className="tap-scale"
-              onClick={(e) => {
-                e.stopPropagation()
-                onClearExpired()
-              }}
-              style={{
-                marginTop: 8,
-                alignSelf: 'flex-start',
-                paddingLeft: 10,
-                paddingRight: 10,
-                height: 26,
-                borderRadius: D.radiusPill,
-                backgroundColor: D.bgElevated,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 10, color: D.errorFg, fontWeight: D.weightSemibold }}>清过期</Text>
-            </View>
-          </View>
-        ) : null}
-      </View>
-
-      {/* 筛选行：右侧并入「柜型切换」——两者同属视图控件，
-          原先柜型按钮单独挂在页面右上角，删掉大标题后会孤零零悬着 */}
       <View
         style={{
           display: 'flex',
@@ -190,39 +93,52 @@ export function ExpiryOverview({
           alignItems: 'center',
           gap: 8,
           padding: `0 ${pad}px`,
-          marginBottom: 16,
+          marginBottom: detail ? 10 : 16,
         }}
       >
-        {(
-          [
-            { k: 'all' as HighlightMode, t: '全貌' },
-            { k: 'expiring' as HighlightMode, t: '只看临期' },
-            { k: 'expired' as HighlightMode, t: '只看过期' },
-          ] as const
-        ).map(({ k, t }) => (
-          <View
-            key={k}
-            className="tap-scale"
-            style={{
-              padding: '7px 14px',
-              borderRadius: 999,
-              backgroundColor: highlight === k ? D.label : D.bgElevated,
-              border: highlight === k ? 'none' : `0.5px solid ${D.separator}`,
-            }}
-            onClick={() => onHighlightChange(k)}
-          >
-            <Text
+        {chips.map(({ k, t, n, tone }) => {
+          const on = highlight === k
+          return (
+            <View
+              key={k}
+              className="tap-scale"
               style={{
-                fontSize: D.footnote,
-                fontWeight: D.weightSemibold,
-                color: highlight === k ? D.bgElevated : D.labelSecondary,
+                paddingLeft: 13,
+                paddingRight: 13,
+                height: 32,
+                borderRadius: D.radiusPill,
+                backgroundColor: on ? D.label : D.bgElevated,
+                border: on ? 'none' : `0.5px solid ${D.separator}`,
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 5,
               }}
+              onClick={() => onHighlightChange(k)}
             >
-              {t}
-            </Text>
-          </View>
-        ))}
+              <Text
+                style={{
+                  fontSize: D.footnote,
+                  fontWeight: D.weightSemibold,
+                  color: on ? D.bgElevated : D.labelSecondary,
+                }}
+              >
+                {t}
+              </Text>
+              <Text
+                style={{
+                  fontSize: D.footnote,
+                  fontWeight: D.weightSemibold,
+                  color: on ? D.bgElevated : tone,
+                }}
+              >
+                {n}
+              </Text>
+            </View>
+          )
+        })}
 
+        {/* 柜型切换：同属视图控件，并入本行 */}
         <View
           className="tap-scale"
           onClick={onOpenLayoutSettings}
@@ -230,7 +146,7 @@ export function ExpiryOverview({
             marginLeft: 'auto',
             paddingLeft: 12,
             paddingRight: 12,
-            height: 30,
+            height: 32,
             borderRadius: D.radiusPill,
             backgroundColor: D.bgElevated,
             border: `0.5px solid ${D.separator}`,
@@ -242,6 +158,30 @@ export function ExpiryOverview({
           <Text style={{ fontSize: D.footnote, color: D.labelSecondary }}>{presetName}</Text>
         </View>
       </View>
+
+      {/* 选中临期/过期时才出现：时间信息 + 对应操作 */}
+      {detail ? (
+        <View
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            padding: `0 ${pad}px`,
+            marginBottom: 16,
+          }}
+        >
+          <Text style={{ fontSize: D.footnote, color: detail.tone }}>{detail.text}</Text>
+          <Text
+            className="tap-scale"
+            style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: detail.tone }}
+            onClick={detail.onAct}
+          >
+            {detail.action}
+          </Text>
+        </View>
+      ) : null}
     </>
   )
 }

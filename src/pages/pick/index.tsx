@@ -167,8 +167,8 @@ function Pick() {
             <View
               style={{
                 flex: 1,
-                height: 40,
-                borderRadius: 999,
+                height: 42,
+                borderRadius: D.radiusS,
                 backgroundColor: D.accent,
                 display: 'flex',
                 alignItems: 'center',
@@ -176,13 +176,13 @@ function Pick() {
               }}
               onClick={() => Taro.switchTab({ url: '/pages/pantry/index' })}
             >
-              <Text style={{ fontSize: D.body, fontWeight: D.weightSemibold, color: D.bgElevated }}>去录入食材</Text>
+              <Text style={{ fontSize: D.body, fontWeight: D.weightSemibold, color: D.onAccent }}>去录入食材</Text>
             </View>
             <View
               style={{
                 flex: 1,
-                height: 40,
-                borderRadius: 999,
+                height: 42,
+                borderRadius: D.radiusS,
                 backgroundColor: D.bgElevated,
                 border: `0.5px solid ${D.separator}`,
                 display: 'flex',
@@ -248,13 +248,13 @@ function Pick() {
                     }}
                     onClick={() => toggleSelect(item.name)}
                   >
-                    <Text style={{ color: isSelected ? D.bgElevated : D.label, fontSize: D.footnote, fontWeight: D.weightMedium }}>
+                    <Text style={{ color: isSelected ? D.onAccent : D.label, fontSize: D.footnote, fontWeight: D.weightMedium }}>
                       {item.name}
                     </Text>
-                    <Text style={{ color: isSelected ? 'rgba(255,255,255,0.75)' : D.accentWarm, fontSize: D.caption }}>
+                    <Text style={{ color: isSelected ? 'rgba(58,52,46,0.62)' : D.accentWarm, fontSize: D.caption }}>
                       {slotHint(item)} · {days <= 0 ? '今天' : `${days}天`}
                     </Text>
-                    {isSelected ? <Text style={{ color: D.bgElevated, fontSize: D.footnote }}> ✓</Text> : null}
+                    {isSelected ? <Text style={{ color: D.onAccent, fontSize: D.footnote }}> ✓</Text> : null}
                   </View>
                 )
               })}
@@ -331,7 +331,7 @@ function Pick() {
                     style={{
                       padding: '8px 14px', borderRadius: D.radiusS, fontSize: D.footnote,
                       ...(isSelected
-                        ? { backgroundColor: D.accent, border: `0.5px solid ${D.accent}`, color: D.bgElevated }
+                        ? { backgroundColor: D.accent, border: `0.5px solid ${D.accent}`, color: D.onAccent }
                         : isExpiring
                           ? { backgroundColor: D.accentWarmMuted, border: `0.5px solid ${D.accentLine}`, color: D.label }
                           : { backgroundColor: D.bgElevated, border: `0.5px solid ${D.separator}`, color: D.label }
@@ -339,11 +339,11 @@ function Pick() {
                     }}
                     onClick={() => toggleSelect(item)}
                   >
-                    <Text style={{ fontSize: D.footnote, fontWeight: D.weightMedium, color: isSelected ? D.bgElevated : D.label }}>{item}</Text>
+                    <Text style={{ fontSize: D.footnote, fontWeight: D.weightMedium, color: isSelected ? D.onAccent : D.label }}>{item}</Text>
                     {pin ? (
-                      <Text style={{ fontSize: D.caption2, color: isSelected ? 'rgba(255,255,255,0.75)' : D.labelTertiary, marginTop: 2 }}>{slotHint(pin)}</Text>
+                      <Text style={{ fontSize: D.caption2, color: isSelected ? 'rgba(58,52,46,0.62)' : D.labelTertiary, marginTop: 2 }}>{slotHint(pin)}</Text>
                     ) : null}
-                    {isSelected ? <Text style={{ color: D.bgElevated }}> ✓</Text> : null}
+                    {isSelected ? <Text style={{ color: D.onAccent }}> ✓</Text> : null}
                   </View>
                 )
               })}
@@ -373,9 +373,9 @@ function Pick() {
         )}
         <Button
           style={{
-            flex: 1, height: 52, backgroundColor: selected.length > 0 ? D.accent : D.separatorLight,
-            borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: selected.length > 0 ? D.bgElevated : D.labelTertiary, fontSize: D.body, fontWeight: D.weightSemibold, border: 'none'
+            flex: 1, height: 48, backgroundColor: selected.length > 0 ? D.accent : D.separatorLight,
+            borderRadius: D.radiusS, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: selected.length > 0 ? D.onAccent : D.labelTertiary, fontSize: D.body, fontWeight: D.weightSemibold, border: 'none'
           }}
           onClick={handleMatch}
           disabled={selected.length === 0}

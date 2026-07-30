@@ -4,7 +4,7 @@ import { D } from '../../../theme/designTokens'
 import type { PantryItem } from '../../../types/pantry'
 import type { FridgeLayoutConfig, FridgeSide } from '../../../types/fridge'
 import { slotCountForSide, slotKind } from '../../../types/fridge'
-import { getFreshnessStatus } from '../../../types/pantry'
+import { getFreshnessStatus, getDaysLeft } from '../../../types/pantry'
 
 export type FridgeHighlightMode = 'all' | 'expiring' | 'expired'
 
@@ -108,6 +108,21 @@ export function FridgeCabinet({
     const minH = kind === 'pull' ? SLOT_PULL_MIN : SLOT_DRAWER_MIN
     const isFz = side === 'freezer'
     const summary = slotList.length === 0 ? '空' : slotList.map((i) => i.name).join('、')
+
+    // 到期提示：只有非新鲜的格子才显示，取该格最紧急的一项。
+    // 原先只有一个圆点，看不出「明天过期」还是「三天后过期」。
+    const urgent = slotList
+      .filter((i) => getFreshnessStatus(i) !== 'fresh')
+      .sort((a, b) => a.expiresAt - b.expiresAt)[0]
+    let expiryHint = ''
+    if (urgent) {
+      const d = getDaysLeft(urgent)
+      if (getFreshnessStatus(urgent) === 'expired') {
+        expiryHint = d >= 0 ? '已过期' : `已过期 ${-d} 天`
+      } else {
+        expiryHint = d <= 0 ? '今天到期' : d === 1 ? '明天到期' : `还剩 ${d} 天`
+      }
+    }
     const sideColor = isFz ? D.freezerAccent : D.chillAccent
 
     return (
@@ -176,6 +191,7 @@ export function FridgeCabinet({
           ) : null}
         </View>
         <Text
+          className="lk-block"
           style={{
             fontSize: 12,
             fontWeight: '600',
@@ -186,6 +202,19 @@ export function FridgeCabinet({
         >
           {summary}
         </Text>
+        {expiryHint ? (
+          <Text
+            className="lk-block"
+            style={{
+              fontSize: 9.5,
+              fontWeight: '600',
+              color: hasExpired ? D.red : D.accentWarm,
+              marginTop: 3,
+            }}
+          >
+            {expiryHint}
+          </Text>
+        ) : null}
       </View>
     )
   }

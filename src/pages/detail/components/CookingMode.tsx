@@ -201,7 +201,7 @@ export function CookingMode({
         <Button
           style={{
             flex: 1,
-            height: 52,
+            height: 48,
             borderRadius: 999,
             fontSize: 16,
             fontWeight: D.weightSemibold,
@@ -218,7 +218,7 @@ export function CookingMode({
         <Button
           style={{
             flex: 1.3,
-            height: 52,
+            height: 48,
             borderRadius: 999,
             fontSize: 16,
             fontWeight: D.weightSemibold,

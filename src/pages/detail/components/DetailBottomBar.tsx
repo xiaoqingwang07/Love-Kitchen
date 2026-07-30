@@ -28,7 +28,7 @@ export function DetailBottomBar({ hasSteps, onMarkCooked, onStartCooking }: Prop
       <Button
         style={{
           flex: 1,
-          height: 52,
+          height: 48,
           borderRadius: 999,
           backgroundColor: D.bgElevated,
           color: D.label,
@@ -43,7 +43,7 @@ export function DetailBottomBar({ hasSteps, onMarkCooked, onStartCooking }: Prop
       <Button
         style={{
           flex: 1.6,
-          height: 52,
+          height: 48,
           borderRadius: 999,
           backgroundColor: D.accent,
           color: D.onAccent,
