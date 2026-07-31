@@ -10,10 +10,25 @@ import { isPremiumDisplayRecipe } from './catalogQuality'
 let poolCacheGen = -1
 let poolCache: Recipe[] | null = null
 
+/** 每一步都有图才算「跟着做得下去」——做菜时看图比读字快得多 */
+function isFullyIllustrated(r: Recipe): boolean {
+  const steps = r.steps ?? []
+  return steps.length > 0 && steps.every((s) => Boolean(s.image))
+}
+
+/**
+ * 推荐池。优先只放「每步都有图」的菜谱：catalog 里 4692/5000 满足，
+ * 池子足够大。若 catalog 未加载（真机上 request 域名未配置时会退回 legacy 200，
+ * 那批手写菜谱按规则不贴步骤图），则放宽回全量，避免首页空手。
+ */
+const MIN_ILLUSTRATED_POOL = 50
+
 function recommendPool(): Recipe[] {
   const gen = getCatalogGeneration()
   if (poolCache && poolCacheGen === gen) return poolCache
-  poolCache = getCatalogRecipes().filter(isPremiumDisplayRecipe)
+  const premium = getCatalogRecipes().filter(isPremiumDisplayRecipe)
+  const illustrated = premium.filter(isFullyIllustrated)
+  poolCache = illustrated.length >= MIN_ILLUSTRATED_POOL ? illustrated : premium
   poolCacheGen = gen
   return poolCache
 }

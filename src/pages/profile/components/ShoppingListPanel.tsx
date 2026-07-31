@@ -101,7 +101,7 @@ function ShoppingListPanelInner() {
             <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
               采购清单
             </Text>
-            <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4 }}>
+            <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4 }}>
               {pending.length > 0
                 ? `${pending.length} 样待买 · 勾选已买到的，可批量删除`
                 : householdStore.shoppingList.length > 0

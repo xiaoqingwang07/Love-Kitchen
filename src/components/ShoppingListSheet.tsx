@@ -221,72 +221,70 @@ export function ShoppingListSheet({ visible, items, onClose, onAddToList }: Prop
           ) : null}
         </View>
 
-        <View style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
-          <Button
+        {/* 操作区：一个主按钮通栏，次要动作退为一行文字链。
+            原先四个按钮并排挤在一行，「加入采购清单」被压到换行，
+            深色主按钮旁边还有个橙色按钮抢重点，主次全乱。 */}
+        <View style={{ marginTop: 18 }}>
+          <View
+            className="tap-scale"
             style={{
-              flex: 1,
-              minWidth: 80,
               height: 48,
-              borderRadius: 999,
-              backgroundColor: D.bgGrouped,
-              color: D.label,
-              fontSize: D.subheadline,
-              fontWeight: D.weightSemibold,
-              border: `0.5px solid ${D.separator}`,
-            }}
-            onClick={onClose}
-          >
-            关闭
-          </Button>
-          {onAddToList ? (
-            <Button
-              style={{
-                flex: 1.2,
-                minWidth: 100,
-                height: 48,
-                borderRadius: 999,
-                backgroundColor: D.label,
-                color: D.bgElevated,
-                fontSize: D.footnote,
-                fontWeight: D.weightSemibold,
-                border: 'none',
-              }}
-              onClick={addToList}
-            >
-              {householdApiConfigured() ? '加入清单' : '加入采购清单'}
-            </Button>
-          ) : null}
-          <Button
-            style={{
-              flex: 1.4,
-              height: 48,
-              borderRadius: 999,
+              borderRadius: D.radiusS,
               backgroundColor: D.accent,
-              color: D.onAccent,
-              fontSize: D.subheadline,
-              fontWeight: D.weightSemibold,
-              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
-            onClick={copy}
+            onClick={onAddToList ? addToList : copy}
           >
-            复制 {selectedCount ? `(${selectedCount})` : ''}
-          </Button>
-          <Button
-            openType="share"
-            onClick={prepareShare}
+            <Text style={{ fontSize: D.body, fontWeight: D.weightSemibold, color: D.onAccent }}>
+              {onAddToList
+                ? `加入采购清单${selectedCount ? ` · ${selectedCount} 项` : ''}`
+                : `复制清单${selectedCount ? ` · ${selectedCount} 项` : ''}`}
+            </Text>
+          </View>
+
+          <View
             style={{
-              flex: 1,
-              height: 48,
-              borderRadius: 999,
-              backgroundColor: D.accentMuted,
-              color: D.accentDeep,
-              fontSize: D.subheadline,
-              fontWeight: D.weightSemibold,
-              border: 'none',
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 28,
+              marginTop: 14,
             }}
           >
-            分享
-          </Button>
+            {onAddToList ? (
+              <Text
+                className="tap-scale"
+                style={{ fontSize: D.footnote, color: D.labelSecondary, padding: '6px 4px' }}
+                onClick={copy}
+              >
+                复制清单
+              </Text>
+            ) : null}
+            <Button
+              openType="share"
+              onClick={prepareShare}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: '6px 4px',
+                lineHeight: 'normal',
+                fontSize: D.footnote,
+                color: D.labelSecondary,
+              }}
+            >
+              分享
+            </Button>
+            <Text
+              className="tap-scale"
+              style={{ fontSize: D.footnote, color: D.labelSecondary, padding: '6px 4px' }}
+              onClick={onClose}
+            >
+              关闭
+            </Text>
+          </View>
         </View>
       </View>
     </View>

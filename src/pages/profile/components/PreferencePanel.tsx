@@ -92,7 +92,7 @@ export function PreferencePanel({
           <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
             默认就餐人数
           </Text>
-          <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4 }}>份量推荐时的参考值</Text>
+          <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4 }}>份量推荐时的参考值</Text>
         </View>
         <View style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <View

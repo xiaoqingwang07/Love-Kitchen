@@ -164,7 +164,7 @@ function Result() {
 
   const mealTitle = useMemo(() => {
     if (!isMealMode) return '推荐'
-    if (expiringForMeal.length > 0) return '今晚先吃掉这些'
+    if (expiringForMeal.length > 0) return '先吃掉这些'
     return '吃什么'
   }, [isMealMode, expiringForMeal.length])
 

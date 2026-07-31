@@ -434,8 +434,10 @@ expect(
   '搭配页食材分类须覆盖主要品类（原仅蔬菜/肉类两类且归类有误）',
   (() => {
     const pick = read('src/pages/pick/index.tsx')
-    return ['蔬菜', '菌菇', '肉类', '水产', '蛋奶豆', '主食', '调味'].every((c) =>
-      pick.includes(`title: '${c}'`)
+    return (
+      ['蔬菜', '菌菇', '肉类', '水产', '蛋奶豆', '主食'].every((c) => pick.includes(`title: '${c}'`)) &&
+      // 调味料不参与「决定吃什么」，不应出现在食材选择列表
+      !pick.includes("title: '调味'")
     )
   })()
 )

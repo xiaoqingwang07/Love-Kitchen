@@ -218,8 +218,19 @@ export const sectionActionsStyle: CSSProperties = {
   display: 'flex',
   flexDirection: 'row',
   alignItems: 'center',
-  gap: 14,
+  gap: 4,
   flexShrink: 0,
+  marginRight: -10,
+}
+
+/** 撑出足够的手指命中区（裸文字在真机上点不中） */
+export const sectionActionHitStyle: CSSProperties = {
+  paddingLeft: 10,
+  paddingRight: 10,
+  paddingTop: 6,
+  paddingBottom: 6,
+  display: 'flex',
+  alignItems: 'center',
 }
 
 export const sectionActionStyle: CSSProperties = {

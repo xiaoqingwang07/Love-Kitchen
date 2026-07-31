@@ -112,11 +112,12 @@ export function MealPlanCard({ plan, selected, onSelect, onOpenRecipe, onAddShop
 
       {plan.missingItems.length > 0 ? (
         <View style={{ marginTop: 10 }}>
-          <Text style={{ fontSize: D.caption, color: D.labelSecondary }}>
+          <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelSecondary }}>
             还缺：{plan.missingItems.map((m) => m.name).join('、')}
           </Text>
           {onAddShopping ? (
             <Text
+              className="lk-block"
               style={{
                 fontSize: D.caption,
                 color: D.accentDeep,

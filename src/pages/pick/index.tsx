@@ -42,14 +42,11 @@ const CATEGORIES = [
     items: ['鸡蛋', '鸭蛋', '咸鸭蛋', '皮蛋', '鹌鹑蛋', '牛奶', '酸奶', '奶酪', '黄油', '豆腐', '嫩豆腐', '冻豆腐', '豆干', '豆皮', '腐竹', '千张', '豆浆']
   },
   {
+    // 只留能「决定这顿吃什么」的主食：面条能想到打卤面，饺子皮能想到包饺子。
+    // 大米/面粉/油盐酱醋这类基础调料不进选择列表——没人靠选生抽来决定晚饭吃啥。
     title: '主食',
     emoji: '🍚',
-    items: ['米饭', '大米', '面条', '挂面', '意面', '馒头', '包子', '饺子皮', '馄饨皮', '面粉', '年糕', '粉丝', '米粉', '河粉', '吐司', '小米', '燕麦']
-  },
-  {
-    title: '调味',
-    emoji: '🧄',
-    items: ['葱', '姜', '蒜', '干辣椒', '小米椒', '香菜', '花椒', '八角', '香叶', '桂皮', '生抽', '老抽', '蚝油', '料酒', '醋', '豆瓣酱', '番茄酱', '芝麻', '孜然', '淀粉']
+    items: ['面条', '挂面', '意面', '米粉', '河粉', '粉丝', '饺子皮', '馄饨皮', '年糕', '馒头', '包子', '吐司', '米饭']
   }
 ]
 
@@ -251,7 +248,7 @@ function Pick() {
                     <Text style={{ color: isSelected ? D.onAccent : D.label, fontSize: D.footnote, fontWeight: D.weightMedium }}>
                       {item.name}
                     </Text>
-                    <Text style={{ color: isSelected ? 'rgba(58,52,46,0.62)' : D.accentWarm, fontSize: D.caption }}>
+                    <Text style={{ color: isSelected ? 'rgba(58,52,46,0.62)' : D.accentWarm, fontSize: D.caption, marginLeft: 5 }}>
                       {slotHint(item)} · {days <= 0 ? '今天' : `${days}天`}
                     </Text>
                     {isSelected ? <Text style={{ color: D.onAccent, fontSize: D.footnote }}> ✓</Text> : null}
@@ -340,8 +337,9 @@ function Pick() {
                     onClick={() => toggleSelect(item)}
                   >
                     <Text style={{ fontSize: D.footnote, fontWeight: D.weightMedium, color: isSelected ? D.onAccent : D.label }}>{item}</Text>
+                    {/* 位置提示与食材名同行，靠 marginLeft 拉开，否则会连成「生菜藏2层」 */}
                     {pin ? (
-                      <Text style={{ fontSize: D.caption2, color: isSelected ? 'rgba(58,52,46,0.62)' : D.labelTertiary, marginTop: 2 }}>{slotHint(pin)}</Text>
+                      <Text style={{ fontSize: D.caption2, color: isSelected ? 'rgba(58,52,46,0.62)' : D.labelTertiary, marginLeft: 5 }}>{slotHint(pin)}</Text>
                     ) : null}
                     {isSelected ? <Text style={{ color: D.onAccent }}> ✓</Text> : null}
                   </View>
@@ -371,17 +369,32 @@ function Pick() {
             </Text>
           </View>
         )}
-        <Button
+        {/* 用 View 而非 Button：Taro 的 Button 在 selected 由空变非空时
+            不会从 DOM 移除 disabled 属性，导致选完食材点按钮毫无反应。
+            空选的提示由 handleMatch 内部负责。 */}
+        <View
+          className="tap-scale"
           style={{
-            flex: 1, height: 48, backgroundColor: selected.length > 0 ? D.accent : D.separatorLight,
-            borderRadius: D.radiusS, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: selected.length > 0 ? D.onAccent : D.labelTertiary, fontSize: D.body, fontWeight: D.weightSemibold, border: 'none'
+            flex: 1,
+            height: 48,
+            backgroundColor: selected.length > 0 ? D.accent : D.separatorLight,
+            borderRadius: D.radiusS,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
           onClick={handleMatch}
-          disabled={selected.length === 0}
         >
-          {selected.length > 0 ? `生成搭配方案 · ${selected.length} 种` : '请选择食材'}
-        </Button>
+          <Text
+            style={{
+              color: selected.length > 0 ? D.onAccent : D.labelTertiary,
+              fontSize: D.body,
+              fontWeight: D.weightSemibold,
+            }}
+          >
+            {selected.length > 0 ? `生成搭配方案 · ${selected.length} 种` : '请选择食材'}
+          </Text>
+        </View>
       </View>
     </View>
   )

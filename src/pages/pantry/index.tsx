@@ -270,22 +270,9 @@ function FridgePantry() {
             页面名归原生导航栏，柜型切换并入下方筛选行 */}
         <View style={{ height: 8 }} />
 
-        {store.totalCount > 0 ? (
-          <SupermarketLookup
-            pad={pad}
-            lookupQuery={lookupQuery}
-            lookupResults={lookupResults}
-            onLookupQueryChange={setLookupQuery}
-            onSelectItem={(side, slotIndex) => setActiveSlot({ side, slotIndex })}
-            onVoiceClick={() => {
-              if (!isAsrAvailable()) {
-                Taro.showToast({ title: '语音暂不可用，请手动输入', icon: 'none' })
-                return
-              }
-              setShowVoiceLookup(true)
-            }}
-          />
-        ) : null}
+        {/* 「超市查冰箱」搜索框已移除：本页把每格食材名都摊开显示了，
+            十几二十样一眼扫完，再放一个搜索框属于重复。
+            组件保留在 components/ 下，日后食材量大到需要检索时可直接接回。 */}
 
         {store.totalCount === 0 ? (
           <QuickFillPanel

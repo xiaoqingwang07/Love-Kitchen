@@ -31,7 +31,7 @@ export function LlmServiceStatusCard({ valid }: Props) {
         <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
           智能推荐
         </Text>
-        <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>
+        <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>
           {valid === false
             ? '暂不可用，稍后 AI 会自动回退到本地库'
             : valid === true

@@ -283,10 +283,10 @@ export function FridgeCabinet({
             gap: 6,
           }}
         >
-          <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             {renderZone('freezer', freezerIndices, { title: '冷冻室' })}
           </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             {renderZone('fridge', fridgeIndices, { title: '冷藏室' })}
           </View>
         </View>
@@ -324,14 +324,14 @@ export function FridgeCabinet({
   return (
     <View style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '6px 4px 8px' }}>
       {renderZone('fridge', fridgeIndices, { title: '上层冷藏' })}
-      <View style={{ display: 'flex', flexDirection: 'row', gap: 8 }}>
-        <View style={{ flex: 1 }}>
+      <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', gap: 8 }}>
+        <View style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {renderZone('freezer', freezerIndices.slice(0, Math.ceil(freezerIndices.length / 2)), {
             compact: true,
             title: '下左冷冻',
           })}
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {renderZone('freezer', freezerIndices.slice(Math.ceil(freezerIndices.length / 2)), {
             compact: true,
             title: '下右冷冻',

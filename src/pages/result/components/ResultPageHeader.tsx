@@ -26,8 +26,14 @@ export function ResultPageHeader({
 }: Props) {
   return (
     <View style={S.header}>
-      <Text style={S.title}>{title}</Text>
-      {subtitle ? <Text style={S.subtitle}>{subtitle}</Text> : null}
+      <Text className="lk-title" style={S.title}>
+        {title}
+      </Text>
+      {subtitle ? (
+        <Text className="lk-block" style={S.subtitle}>
+          {subtitle}
+        </Text>
+      ) : null}
       {isMealMode ? (
         <MealPlanConstraints active={mealConstraints} onToggle={onToggleConstraint} />
       ) : null}

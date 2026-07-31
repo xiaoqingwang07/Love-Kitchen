@@ -35,15 +35,17 @@ export function HomeRecommendSection({
         <Text style={S.sectionLeadStyle}>
           {weather ? `${weather.temperature}°C · 按实时天气挑的` : reason}
         </Text>
+        {/* 动作用 View 包一层撑出可点区域：原先是裸 Text，真机上命中区只有
+            文字本身那几十像素，手指点不中，表现为「点了没反应」 */}
         <View style={S.sectionActionsStyle}>
           {!weather ? (
-            <Text className="tap-scale" style={S.sectionActionStyle} onClick={onEnableWeather}>
-              {weatherLoading ? '获取中…' : '按天气'}
-            </Text>
+            <View className="tap-scale" style={S.sectionActionHitStyle} onClick={onEnableWeather}>
+              <Text style={S.sectionActionStyle}>{weatherLoading ? '获取中…' : '按天气'}</Text>
+            </View>
           ) : null}
-          <Text className="tap-scale" style={S.sectionActionStyle} onClick={onRefresh}>
-            换一批
-          </Text>
+          <View className="tap-scale" style={S.sectionActionHitStyle} onClick={onRefresh}>
+            <Text style={S.sectionActionStyle}>换一批</Text>
+          </View>
         </View>
       </View>
 
@@ -62,6 +64,8 @@ export function HomeRecommendSection({
               style={S.recommendCardStyle}
               onClick={() => onCardClick(item)}
             >
+              {/* 无真实照片时回退 emoji，优先用菜谱自带的那个：它是按菜品人工标注的
+                  （红烧蹄髈 = 🍖），比按标签反推准确得多（按「猪肉」标签会算出 🥩 生牛排） */}
               <View style={S.recommendThumbStyle}>
                 {imageSrc && !failedIds[failKey] ? (
                   <Image
@@ -72,7 +76,7 @@ export function HomeRecommendSection({
                   />
                 ) : (
                   <Text style={{ fontSize: 32 }}>
-                    {recipePlaceholderEmoji(displayTitle, item.tags)}
+                    {item.emoji || recipePlaceholderEmoji(displayTitle, item.tags)}
                   </Text>
                 )}
               </View>

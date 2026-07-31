@@ -195,7 +195,7 @@ export function useResultLoader(
         setRecipes([])
         setNotice(
           plans.length
-            ? { tone: 'info', title: '朋友分享的今晚方案', detail: plans[0].reason }
+            ? { tone: 'info', title: '朋友分享的方案', detail: plans[0].reason }
             : {
                 tone: 'warn',
                 title: '分享的菜谱找不到了',
@@ -238,7 +238,9 @@ export function useResultLoader(
                   title: '临期食材暂无搭配方案',
                   detail: '建议尽快清掉、延长保存，或列入采购后再做。',
                 }
-              : { tone: 'info', title: '优先消耗临期食材', detail: plans[0].reason }
+              : // 方案正常时不再弹提示条：它说的「优先消耗临期 xxx」与下方
+                // 「为什么推荐这些」卡片完全重复，属于同一句话说两遍
+                null
           )
         })
         return cleanup
@@ -269,7 +271,7 @@ export function useResultLoader(
         } else if (degraded === 'generic') {
           setNotice({
             tone: 'info',
-            title: list.length > 0 ? '换个思路：先来三套家常搭配' : '今晚一餐方案',
+            title: list.length > 0 ? '换个思路：先来三套家常搭配' : '这一顿的方案',
             detail:
               list.length > 0
                 ? '你选的食材暂时拼不出完整一餐，这三套是家常稳妥组合；也可以减少食材种类再试。'
@@ -278,7 +280,7 @@ export function useResultLoader(
         } else {
           setNotice({
             tone: 'info',
-            title: expiringList.length > 0 ? '优先消耗临期食材' : '今晚一餐方案',
+            title: expiringList.length > 0 ? '优先消耗临期食材' : '这一顿的方案',
             detail: plans[0].reason,
           })
         }

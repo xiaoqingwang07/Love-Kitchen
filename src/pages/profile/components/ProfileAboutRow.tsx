@@ -25,7 +25,7 @@ export function ProfileAboutRow({ onOpen }: Props) {
         <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
           关于
         </Text>
-        <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>
+        <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>
           爱心厨房 v1.1
         </Text>
       </View>
