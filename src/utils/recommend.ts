@@ -186,19 +186,22 @@ export function getPersonalizedRecommendations(
     return { recipes: getDailyRecommendations(total, variant), personalized: false }
   }
 
-  // 取更大的高分池，按「偏好标签得分」重排，保留少量随机避免每天一样
   const pool = pickTopByRating(recommendPool(), 60)
-  const jitter = shuffleWithSeed(
-    pool.map((_, i) => i),
-    seed
-  )
-  const scored = pool.map((r, i) => {
+  const scored = pool.map((r) => {
     const tagScore = (r.tags ?? []).reduce((s, t) => s + (weights.get(t) ?? 0), 0)
-    // 主排序看标签契合度，次看评分，再叠一点种子抖动维持新鲜感
-    const score = tagScore * 10 + (r.rating ?? 0) + (jitter[i] % 7) * 0.05
-    return { r, score }
+    return { r, score: tagScore * 10 + (r.rating ?? 0) }
   })
   scored.sort((a, b) => b.score - a.score)
-  const recipes = scored.slice(0, Math.min(total, scored.length)).map((x) => x.r)
+
+  /**
+   * 先按偏好取候选窗口，再在窗口内按种子洗牌。
+   *
+   * 原实现是「按分数排序后直接取前 total 名」，随机项只贡献 ≤0.3 分，
+   * 而标签差一个就是 10 分——种子换了排序纹丝不动，「换一批」对有做菜
+   * 历史的用户完全无效（无历史的用户走每日推荐分支，所以不易发现）。
+   */
+  const windowSize = Math.min(scored.length, Math.max(total * 6, 18))
+  const candidates = scored.slice(0, windowSize).map((x) => x.r)
+  const recipes = shuffleWithSeed(candidates, seed).slice(0, Math.min(total, candidates.length))
   return { recipes, personalized: true }
 }
