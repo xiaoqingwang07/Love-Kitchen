@@ -433,7 +433,12 @@ if (isWeappDist) {
     ok(`构建产物存在 ${p}`, fs.existsSync(path.join(root, p)))
   }
   const appJson = JSON.parse(fs.readFileSync(path.join(root, 'dist/app.json'), 'utf8'))
-  ok('tabBar 含「今晚」', appJson.tabBar?.list?.some((t) => t.text === '今晚'))
+  // 名称须时段中性：「今晚」把使用场景限死在晚饭，「选菜」像点单
+  ok(
+    'tabBar 搭配页名称正确',
+    appJson.tabBar?.list?.some((t) => t.text === '搭配') &&
+      !appJson.tabBar?.list?.some((t) => t.text === '今晚' || t.text === '选菜')
+  )
   ok('app.json 不应声明无效 scope.record', !appJson.permission?.['scope.record'])
   ok('app.json 仍保留定位权限说明', Boolean(appJson.permission?.['scope.userLocation']?.desc))
 } else {

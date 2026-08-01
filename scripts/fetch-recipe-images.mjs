@@ -146,7 +146,9 @@ function readAdditionalSeeds(addTs) {
 
 function readRecipeMeta() {
   const recipesTs = fs.readFileSync(path.join(root, 'src/data/recipesLegacy.ts'), 'utf8')
-  const addTs = fs.readFileSync(path.join(root, 'src/data/additionalRecipes.ts'), 'utf8')
+  // 种子数据在 additionalSeeds.ts；additionalRecipes.ts 只是从它 import 后生成步骤，
+  // 里面没有 { id, title, method } 字面量。此前误读后者，导致这 120 道被静默跳过、一直无图。
+  const addTs = fs.readFileSync(path.join(root, 'src/data/additionalSeeds.ts'), 'utf8')
   const meta = []
 
   for (const m of recipesTs.matchAll(/id:\s*(\d+),\s*\n\s*title:\s*'([^']+)'/g)) {
@@ -351,6 +353,19 @@ function buildOutputMaps(meta, cache) {
     const entry = cache[title]
     if (!entry?.stepImages?.length) continue
 
+    /**
+     * 只接受来自真实下厨房菜谱页的条目（recipeId 为数字）。
+     *
+     * 缓存里曾残留 recipeId:'legacy' 的条目——那是历史上人工排查判定「图文不符」
+     * 后从 exactDishImages 删除的旧图。--emit 会把缓存原样写回，等于把已排除的
+     * 错图重新装回代码（实测：老鸭汤配「番茄土豆肥牛汤」、亲子丼配刨冰、
+     * 东坡肉配红烧肉宣传图）。这里直接拒收，宁可留空也不回灌。
+     */
+    if (!/^\d+$/.test(String(entry.recipeId ?? ''))) {
+      console.warn(`SKIP ${title}: 非真实抓取来源(recipeId=${entry.recipeId})，拒绝写入`)
+      continue
+    }
+
     let cover = entry.cover
     const coverBase = normalizeUrl(cover)
     if (usedCovers.has(coverBase)) {
@@ -409,9 +424,32 @@ function writeStepImages(map) {
   fs.writeFileSync(path.join(root, 'src/data/stepImages.ts'), lines.join('\n'), 'utf8')
 }
 
+/**
+ * 人工判定「图文不符」的菜名台账。
+ *
+ * 下厨房搜索返回的是松散相关结果，且菜谱页封面常是用户上传的宣传图
+ * （实测：水煮肉片配「水煮三鲜」海报、清蒸大闸蟹配香肠卷、地三鲜配厨师本人照片）。
+ * 「来源可追溯」不等于「图对得上」——只有目视核验能判定。
+ * 这里记录已判定不合格的菜，抓取阶段直接跳过，避免每次重跑又把同样的错图捞回来。
+ */
+function readRejectLedger() {
+  const p = path.join(__dirname, 'image-rejects.json')
+  if (!fs.existsSync(p)) return new Set()
+  try {
+    return new Set(JSON.parse(fs.readFileSync(p, 'utf8')))
+  } catch {
+    return new Set()
+  }
+}
+
 async function main() {
-  const meta = readRecipeMeta()
-  console.log(`Fetching real step photos for ${meta.length} dishes...`)
+  const rejected = readRejectLedger()
+  const meta = readRecipeMeta().filter((m) => !rejected.has(m.title))
+  console.log(
+    `Fetching real step photos for ${meta.length} dishes` +
+      (rejected.size ? `（已跳过 ${rejected.size} 道人工判定图文不符的）` : '') +
+      '...'
+  )
 
   let cache = {}
   if (fs.existsSync(cachePath)) {

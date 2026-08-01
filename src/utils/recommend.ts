@@ -5,10 +5,17 @@ import type { Recipe } from '../types/recipe'
 import { shuffleWithSeed, daySeed } from './shuffleSeed'
 import { getCookedRecipes } from '../store/storageUtils'
 import { isPremiumDisplayRecipe } from './catalogQuality'
+import { enrichRecipeMedia } from './enrichRecipeMedia'
+import { isRenderableRecipeImage } from './recipeImageUrl'
 
 /** 推荐池：过滤低质量条目（按 catalog 代际缓存，避免 5000+ 条反复 filter 卡死首屏） */
 let poolCacheGen = -1
 let poolCache: Recipe[] | null = null
+
+/** 有可渲染封面图——推荐位是「看图选菜」，没图的卡片只剩一个 emoji，很突兀 */
+function hasCover(r: Recipe): boolean {
+  return isRenderableRecipeImage(enrichRecipeMedia(r).image)
+}
 
 /** 每一步都有图才算「跟着做得下去」——做菜时看图比读字快得多 */
 function isFullyIllustrated(r: Recipe): boolean {
@@ -17,18 +24,20 @@ function isFullyIllustrated(r: Recipe): boolean {
 }
 
 /**
- * 推荐池。优先只放「每步都有图」的菜谱：catalog 里 4692/5000 满足，
- * 池子足够大。若 catalog 未加载（真机上 request 域名未配置时会退回 legacy 200，
- * 那批手写菜谱按规则不贴步骤图），则放宽回全量，避免首页空手。
+ * 推荐池，两级筛选：
+ * 1. 硬门槛：必须有封面图。没封面的菜（如 legacy 里找不到可靠配图、
+ *    映射已删除的「红烧蹄髈」）不进推荐位，否则一排真实照片里夹一个 emoji。
+ * 2. 软偏好：再优先「每步都有图」的（catalog 4692/5000 满足）；
+ *    数量不足时退回仅满足硬门槛的，保证首页不空手。
  */
 const MIN_ILLUSTRATED_POOL = 50
 
 function recommendPool(): Recipe[] {
   const gen = getCatalogGeneration()
   if (poolCache && poolCacheGen === gen) return poolCache
-  const premium = getCatalogRecipes().filter(isPremiumDisplayRecipe)
-  const illustrated = premium.filter(isFullyIllustrated)
-  poolCache = illustrated.length >= MIN_ILLUSTRATED_POOL ? illustrated : premium
+  const withCover = getCatalogRecipes().filter(isPremiumDisplayRecipe).filter(hasCover)
+  const illustrated = withCover.filter(isFullyIllustrated)
+  poolCache = illustrated.length >= MIN_ILLUSTRATED_POOL ? illustrated : withCover
   poolCacheGen = gen
   return poolCache
 }

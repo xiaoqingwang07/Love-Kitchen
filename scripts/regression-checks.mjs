@@ -513,6 +513,43 @@ expect(
   })()
 )
 
+expect(
+  '推荐池须硬性要求有封面图（无图的菜混在真实照片里只剩 emoji，很突兀）',
+  (() => {
+    const rec = read('src/utils/recommend.ts')
+    return rec.includes('function hasCover') && rec.includes('.filter(hasCover)')
+  })()
+)
+expect(
+  '「换一批」须真正换菜：不能只按固定分数排序取前 N',
+  (() => {
+    const rec = read('src/utils/recommend.ts')
+    // 个性化分支必须在候选窗口内按种子洗牌，而不是直接 slice 排序结果
+    return rec.includes('shuffleWithSeed(candidates, seed)')
+  })()
+)
+
+expect(
+  '每张封面都须可追溯到真实下厨房菜谱页（防止历史错图经缓存回灌）',
+  (() => {
+    const cachePath = path.join(root, 'scripts/recipe-image-cache.json')
+    if (!fs.existsSync(cachePath)) return true
+    const cache = JSON.parse(read('scripts/recipe-image-cache.json'))
+    const covers = [...read('src/data/exactDishImages.ts').matchAll(/'([^']+)':\s*'https/g)].map(
+      (m) => m[1]
+    )
+    // 已入库的封面，其缓存来源必须是数字菜谱 id；'legacy' 等占位来源曾装回过图文不符的旧图
+    return covers.every((t) => /^\d+$/.test(String(cache[t]?.recipeId ?? '')))
+  })()
+)
+expect(
+  '图片抓取脚本须读取真正存放菜谱种子的文件',
+  (() => {
+    const s = read('scripts/fetch-recipe-images.mjs')
+    return s.includes("src/data/additionalSeeds.ts") && !s.includes("'src/data/additionalRecipes.ts'")
+  })()
+)
+
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL ${failure}`)
   console.error(`\nRegression checks failed: ${failures.length}`)
