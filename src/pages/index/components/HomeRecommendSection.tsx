@@ -8,6 +8,8 @@ import * as S from '../styles'
 
 type Props = {
   recipes: Recipe[]
+  /** 冰箱里现有食材名，用于算「有几样 / 缺几样」 */
+  pantryNames: string[]
   reason: string
   weather: { temperature: number } | null
   weatherLoading: boolean
@@ -18,6 +20,7 @@ type Props = {
 
 export function HomeRecommendSection({
   recipes,
+  pantryNames,
   reason,
   weather,
   weatherLoading,
@@ -80,6 +83,8 @@ export function HomeRecommendSection({
                   </Text>
                 )}
               </View>
+              {/* 右侧原本只有菜名 + 时长两行，留下大片空白。
+                  补上「冰箱里有几样 / 还缺几样」——这正是用户决定做不做这道菜的依据 */}
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text className="lk-block" style={S.recommendTitleStyle}>
                   {displayTitle}
@@ -87,6 +92,22 @@ export function HomeRecommendSection({
                 <Text className="lk-block" style={S.recommendMetaStyle}>
                   {item.time ? `${item.time} 分钟` : '家常'} · {item.difficulty || '简单'}
                 </Text>
+                {(() => {
+                  const names = (item.ingredients ?? []).map((i) => i.name).filter(Boolean)
+                  if (names.length === 0) return null
+                  const have = names.filter((n) => pantryNames.some((p) => p.includes(n) || n.includes(p)))
+                  const missing = names.length - have.length
+                  return (
+                    <View style={S.recommendStockRowStyle}>
+                      <Text style={S.recommendStockHaveStyle}>冰箱有 {have.length} 样</Text>
+                      {missing > 0 ? (
+                        <Text style={S.recommendStockMissStyle}>还缺 {missing} 样</Text>
+                      ) : (
+                        <Text style={S.recommendStockReadyStyle}>食材齐了</Text>
+                      )}
+                    </View>
+                  )
+                })()}
               </View>
             </View>
           )

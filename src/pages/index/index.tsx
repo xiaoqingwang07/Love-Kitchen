@@ -264,6 +264,7 @@ function Index() {
       {showGenericRecommend ? (
         <HomeRecommendSection
           recipes={recommendation.recipes}
+          pantryNames={pantryStore.items.map((i) => i.name)}
           reason={recommendation.reason}
           weather={weather}
           weatherLoading={weatherLoading}

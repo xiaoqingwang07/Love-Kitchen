@@ -435,8 +435,9 @@ expect(
   (() => {
     const pick = read('src/pages/pick/index.tsx')
     return (
-      ['蔬菜', '菌菇', '肉类', '水产', '蛋奶豆', '主食'].every((c) => pick.includes(`title: '${c}'`)) &&
-      // 调味料不参与「决定吃什么」，不应出现在食材选择列表
+      ['蔬菜', '菌菇', '肉类', '水产', '蛋奶豆'].every((c) => pick.includes(`title: '${c}'`)) &&
+      // 米饭面条、油盐酱醋不是「决定吃什么」的食材，不应出现在选择列表
+      !pick.includes("title: '主食'") &&
       !pick.includes("title: '调味'")
     )
   })()
@@ -548,6 +549,11 @@ expect(
     const s = read('scripts/fetch-recipe-images.mjs')
     return s.includes("src/data/additionalSeeds.ts") && !s.includes("'src/data/additionalRecipes.ts'")
   })()
+)
+
+expect(
+  'STEP_IMAGE_MAP 必须被渲染链路读取（曾生成了 200 道步骤图却无人引用，界面全程纯文字）',
+  read('src/utils/enrichRecipeMedia.ts').includes('getStepImages')
 )
 
 if (failures.length > 0) {

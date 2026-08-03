@@ -282,3 +282,27 @@ export const recommendMetaStyle: CSSProperties = {
   color: D.labelSecondary,
   marginTop: 5,
 }
+
+/** 推荐卡右侧的库存提示：把原本空着的一大片补成决策信息 */
+export const recommendStockRowStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'row',
+  gap: 10,
+  marginTop: 7,
+}
+
+export const recommendStockHaveStyle: CSSProperties = {
+  fontSize: D.caption,
+  color: D.labelSecondary,
+}
+
+export const recommendStockMissStyle: CSSProperties = {
+  fontSize: D.caption,
+  color: D.accentDeep,
+}
+
+export const recommendStockReadyStyle: CSSProperties = {
+  fontSize: D.caption,
+  color: D.green,
+  fontWeight: D.weightSemibold,
+}
