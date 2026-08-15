@@ -126,6 +126,18 @@ expect(
   'mealPlanBuilder 应能输出 MealPlan',
   mealBuilder.includes('buildLocalMealPlans') && fs.existsSync(path.join(root, 'src/types/mealPlan.ts'))
 )
+expect(
+  '搭配方案不应按 catalog 切片盲选配菜',
+  !mealBuilder.includes('slice(altIndex * 3') && mealBuilder.includes('scoreSideCandidate')
+)
+expect(
+  '汤/凉拌不应占用晚饭主菜槽',
+  mealBuilder.includes('HEARTY_SOUP_RE') && mealBuilder.includes('classifyMealRole')
+)
+expect(
+  '多食材搭配主菜命中门槛应为 1',
+  mealBuilder.includes('minSelectedHits: 1')
+)
 
 expect('catalogLoader 应经 legacyFullLoader 加载内置菜谱', catalogLoader.includes('legacyFullLoader') && fs.existsSync(path.join(root, 'src/data/legacyFullLoader.ts')))
 expect(

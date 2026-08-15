@@ -11,6 +11,7 @@ const STAPLE_NAMES = new Set([
   '花椒', '八角', '香叶', '桂皮', '胡椒粉', '白胡椒粉', '黑胡椒粉',
   '鸡精', '味精', '芝麻', '白芝麻', '香油', '芝麻油',
   '干辣椒', '辣椒', '小米辣', '豆瓣酱', '郫县豆瓣酱',
+  '虾皮', '虾米',
 ])
 
 function normalizeIngredientName(name: string): string {
@@ -22,6 +23,10 @@ function isStaple(name: string): boolean {
   if (!n) return true
   if (STAPLE_NAMES.has(n)) return true
   return Array.from(STAPLE_NAMES).some((s) => n.includes(s) || s.includes(n))
+}
+
+export function isStapleIngredient(name: string): boolean {
+  return isStaple(name)
 }
 
 /** 用户所选食材在菜谱用料里命中了哪些 */

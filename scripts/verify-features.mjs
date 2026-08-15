@@ -106,6 +106,10 @@ for (const title of blockedMainTitles) {
 for (const title of ['芋头烧排骨', '剁椒蒸芋头', '芋泥香酥鸭', '粉蒸排骨肉', '自制芋头咸饭', '芋头排骨汤']) {
   ok(`晚饭主菜应保留：${title}`, isDinnerMainCandidate({ title, displayTitle: title }))
 }
+ok('紫菜蛋花汤不应当晚饭主菜', !isDinnerMainCandidate({ title: '紫菜蛋花汤', displayTitle: '紫菜蛋花汤', tags: ['汤类', '快手'] }))
+ok('凉拌黄瓜不应当晚饭主菜', !isDinnerMainCandidate({ title: '凉拌黄瓜', displayTitle: '凉拌黄瓜', tags: ['凉菜', '素食'] }))
+ok('白灼虾应可当晚饭主菜', isDinnerMainCandidate({ title: '白灼虾', displayTitle: '白灼虾', tags: ['海鲜'] }))
+ok('清炒油麦菜不应当晚饭主菜', !isDinnerMainCandidate({ title: '清炒油麦菜', displayTitle: '清炒油麦菜', tags: ['炒菜', '素食'] }))
 for (const title of ['广式香芋饼', '只需三样食材的烧芋头']) {
   if (title.includes('香芋饼')) {
     ok(`晚饭主菜应排除：${title}`, !isDinnerMainCandidate({ title, displayTitle: title }))
