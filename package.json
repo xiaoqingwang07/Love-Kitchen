@@ -17,7 +17,7 @@
     "dev:h5": "taro build --type h5 --watch",
     "build:h5": "taro build --type h5",
     "typecheck": "tsc --noEmit",
-    "test:regression": "node scripts/regression-checks.mjs && node scripts/catalog-id-check.mjs && node scripts/demo-pantry-meal-check.mjs && node scripts/household-suppress-push-check.mjs",
+    "test:regression": "node scripts/regression-checks.mjs && node scripts/catalog-id-check.mjs && node scripts/demo-pantry-meal-check.mjs && node scripts/household-suppress-push-check.mjs && node scripts/shopping-remind-check.cjs",
     "check:release": "node scripts/check-release-readiness.mjs",
     "verify:features": "node scripts/verify-features.mjs",
     "verify:all": "npm run typecheck && npm run test:regression && npm run check:release && node scripts/verify-features.mjs && npm run build:weapp && node scripts/verify-bundle.mjs",

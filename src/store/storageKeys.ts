@@ -42,6 +42,8 @@ export const STORAGE_KEYS = {
   mealSolvedCount: 'mealSolvedCount',
   /** Plus 软提示已展示 */
   plusPromptShown: 'plusPromptShown',
+  /** 采购清单：计划购买日 YYYY-MM-DD */
+  shoppingBuyRemindAt: 'shoppingBuyRemindAt',
 } as const
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS]

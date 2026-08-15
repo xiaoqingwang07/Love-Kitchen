@@ -19,7 +19,7 @@ import { MealPlanCard } from './components/MealPlanCard'
 import { MealPlanActions } from './components/MealPlanActions'
 import { RecipeResultCard } from './components/RecipeResultCard'
 import type { MealConstraint, MealPlan } from '../../types/mealPlan'
-import { setSelectedRecipeForDetail } from '../../utils/navigationPayload'
+import { setSelectedRecipeForDetail, setPantryOpenShopping } from '../../utils/navigationPayload'
 import { ResultPageHeader } from './components/ResultPageHeader'
 import { ResultNoticeBar } from './components/ResultNoticeBar'
 import { ReminderMealEmptyBar } from './components/ReminderMealEmptyBar'
@@ -203,6 +203,19 @@ function Result() {
       title: `已加 ${plan.missingItems.length} 样到采购清单`,
       icon: 'success',
     })
+    setTimeout(() => {
+      Taro.showModal({
+        title: '去冰箱采购清单？',
+        content: '买完可勾选，直接放入冰箱。',
+        confirmText: '去冰箱',
+        cancelText: '稍后',
+        success: (res) => {
+          if (!res.confirm) return
+          setPantryOpenShopping()
+          Taro.switchTab({ url: '/pages/pantry/index' })
+        },
+      })
+    }, 400)
   }
 
   const headerSubtitle = useMemo(() => {

@@ -149,7 +149,12 @@ expect(
     fs.existsSync(path.join(root, 'src/types/household.ts'))
 )
 
-expect('Profile 应包含采购清单入口', read('src/pages/profile/index.tsx').includes('ShoppingListPanel'))
+expect('冰箱页应包含采购清单入口', read('src/pages/pantry/index.tsx').includes('ShoppingListPanel'))
+expect(
+  '我的页不应再承载采购清单',
+  !read('src/pages/profile/index.tsx').includes('ShoppingListPanel') &&
+    !fs.existsSync(path.join(root, 'src/pages/profile/components/ShoppingListPanel.tsx'))
+)
 expect(
   'Profile 家庭入口仅在 API 配置时渲染',
   read('src/pages/profile/components/HouseholdPanel.tsx').includes('householdApiConfigured()') &&
@@ -298,11 +303,12 @@ expect('空冰箱应可体验示例冰箱', homePantryBanner.includes('示例冰
 expect('用户可见错误不应暴露 TARO_APP', !read('src/api/dishVision.ts').includes("'TARO_APP") && read('src/api/recipe.ts').includes('智能推荐服务未就绪'))
 
 // ── P0 不变量：购物清单 UX 重构后须保持 ──
-const shoppingListPanel = read('src/pages/profile/components/ShoppingListPanel.tsx')
+const shoppingListPanel = read('src/pages/pantry/components/ShoppingListPanel.tsx')
 expect(
   'P0 采购清单 UI 须经 store 勾选/删除（不得直接改 shoppingList）',
   shoppingListPanel.includes('toggleShoppingItem') &&
     shoppingListPanel.includes('removeCheckedShopping') &&
+    shoppingListPanel.includes('stockCheckedToPantry') &&
     !/this\.shoppingList\s*=/.test(shoppingListPanel) &&
     !/shoppingList\.push/.test(shoppingListPanel)
 )
@@ -310,7 +316,8 @@ expect(
   'P0 购物清单增删改在 household 模式应 schedulePush',
   /addShoppingItems[\s\S]*if \(this\.inHousehold\) this\.schedulePush\(\)/.test(householdStore) &&
     /toggleShoppingItem[\s\S]*if \(this\.inHousehold\) this\.schedulePush\(\)/.test(householdStore) &&
-    /removeCheckedShopping[\s\S]*if \(this\.inHousehold\) this\.schedulePush\(\)/.test(householdStore)
+    /removeCheckedShopping[\s\S]*if \(this\.inHousehold\) this\.schedulePush\(\)/.test(householdStore) &&
+    /stockCheckedToPantry[\s\S]*if \(this\.inHousehold\) this\.schedulePush\(\)/.test(householdStore)
 )
 expect(
   'P0 pull 应 cancel debounce 且 applyRemote 不 echo push',
@@ -330,6 +337,12 @@ expect(
     fs.readFileSync(path.join(root, 'package.json'), 'utf8').includes('catalog-id-check.mjs')
 )
 expect('采购清单面板应支持删除已勾选', shoppingListPanel.includes('removeCheckedShopping'))
+expect(
+  '采购日提醒应写入系统日历',
+  fs.existsSync(path.join(root, 'src/utils/shoppingRemind.ts')) &&
+    read('src/utils/shoppingRemind.ts').includes('addPhoneCalendar') &&
+    shoppingListPanel.includes('scheduleShoppingReminder')
+)
 expect('烹饪完成应上报 meal_solved', read('src/utils/analyticsExport.ts').includes('meal_solved'))
 expect('Epic E 应有 mealSolved 计数与 Plus 软提示', fs.existsSync(path.join(root, 'src/utils/mealSolvedTracker.ts')) && read('src/utils/mealSolvedTracker.ts').includes('EVENTS.upgradePromptShown'))
 expect('Epic E 应有每周菜单建议', fs.existsSync(path.join(root, 'src/pages/profile/components/WeeklyMenuCard.tsx')) && read('src/utils/weeklyMenuSuggest.ts').includes('buildWeeklyMenuSuggestion'))
@@ -351,10 +364,10 @@ expect(
   pantryStore.includes('previewDeduction') && pantryStore.includes('removeItemsByIds')
 )
 expect(
-  '首页「待采购」应直达我的页采购清单',
-  homeKitchenStatus.includes('setProfileOpenShopping') &&
-    profileLifecycle.includes('consumeProfileOpenShopping') &&
-    profilePage.includes('shopping-panel')
+  '首页「待采购」应直达冰箱页采购清单',
+  homeKitchenStatus.includes('setPantryOpenShopping') &&
+    pantryPage.includes('consumePantryOpenShopping') &&
+    pantryPage.includes('shopping-panel')
 )
 expect(
   '非 meal 结果卡应展示冰箱联动提示',

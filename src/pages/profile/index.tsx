@@ -10,7 +10,6 @@ import {
   toggleFavorite,
 } from '../../store/storageUtils'
 import { WeeklyMenuCard } from './components/WeeklyMenuCard'
-import { ShoppingListPanel } from './components/ShoppingListPanel'
 import { HouseholdPanel } from './components/HouseholdPanel'
 import { PreferencePanel } from './components/PreferencePanel'
 import { FavoritesListPage } from './components/FavoritesListPage'
@@ -69,16 +68,6 @@ function Profile() {
     setShowFavorites(true)
   }, [loadFavoriteItems])
 
-  const openShoppingPanel = useCallback(() => {
-    // 退出可能盖在上面的子页面，再滚动定位到采购清单
-    setShowFavorites(false)
-    setShowHistory(false)
-    setShowAbout(false)
-    setTimeout(() => {
-      void Taro.pageScrollTo({ selector: '#shopping-panel', duration: 300 })
-    }, 120)
-  }, [])
-
   const {
     apiKeyValid,
     dinersCount,
@@ -88,7 +77,7 @@ function Profile() {
     handleToggleReminder,
     handleDinersChange,
     handleTestLlmProxy,
-  } = useProfileLifecycle(pantryStore, householdStore, openFavorites, openShoppingPanel)
+  } = useProfileLifecycle(pantryStore, householdStore, openFavorites)
 
   const applyScene = (k: SceneType) => {
     setRecipeScene(k)
@@ -223,10 +212,6 @@ function Profile() {
           onSceneChange={applyScene}
           onDinersChange={handleDinersChange}
         />
-
-        <View id="shopping-panel">
-          <ShoppingListPanel />
-        </View>
 
         <HouseholdPanel />
 

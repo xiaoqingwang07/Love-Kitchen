@@ -453,7 +453,9 @@ const resultLoaderSrc = fs.readFileSync(path.join(root, 'src/pages/result/useRes
 ok('结果页源码含 meal 模式', resultLoaderSrc.includes("from === 'meal'") && resultLoaderSrc.includes('buildMealPlansWithAiFallback'))
 
 const profileSrc = fs.readFileSync(path.join(root, 'src/pages/profile/index.tsx'), 'utf8')
-ok('Profile 源码含采购清单面板', profileSrc.includes('ShoppingListPanel'))
+ok('冰箱页源码含采购清单面板', pantryPageSrc.includes('ShoppingListPanel'))
+ok('我的页不再承载采购清单', !profileSrc.includes('ShoppingListPanel'))
+ok('采购清单可写入系统日历提醒', fs.readFileSync(path.join(root, 'src/utils/shoppingRemind.ts'), 'utf8').includes('addPhoneCalendar'))
 
 const householdSrc = fs.readFileSync(path.join(root, 'src/store/householdStore.ts'), 'utf8')
 ok('HouseholdStore 含同步逻辑', householdSrc.includes('pullRemote') && householdSrc.includes('pushRemote'))

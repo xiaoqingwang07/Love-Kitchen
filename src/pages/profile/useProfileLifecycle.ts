@@ -7,7 +7,6 @@ import { householdApiConfigured } from '../../api/household'
 import { getDefaultDinersCount, setDefaultDinersCount } from '../../store/userPreferences'
 import {
   consumeProfileOpenFavorites,
-  consumeProfileOpenShopping,
   consumePendingJoinCode,
 } from '../../utils/navigationPayload'
 import {
@@ -33,8 +32,7 @@ export function isDevEnv(): boolean {
 export function useProfileLifecycle(
   pantryStore: PantryStore,
   householdStore: HouseholdStore,
-  onOpenFavorites: () => void,
-  onOpenShopping?: () => void
+  onOpenFavorites: () => void
 ) {
   const router = useRouter()
   const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null)
@@ -89,9 +87,6 @@ export function useProfileLifecycle(
     }
     if (consumeProfileOpenFavorites()) {
       onOpenFavorites()
-    }
-    if (consumeProfileOpenShopping()) {
-      onOpenShopping?.()
     }
   })
 

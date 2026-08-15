@@ -422,6 +422,33 @@ export class HouseholdStore {
     this.persistLocal()
     if (this.inHousehold) this.schedulePush()
   }
+
+  /**
+   * 把已勾选项写入冰箱并移出清单。买完即入库，冰箱页才能形成完整链条。
+   */
+  stockCheckedToPantry(): { stocked: number; names: string[] } {
+    if (!this.pantry) {
+      Taro.showToast({ title: '冰箱还没准备好', icon: 'none' })
+      return { stocked: 0, names: [] }
+    }
+    const checked = this.shoppingList.filter((i) => i.checked)
+    if (checked.length === 0) {
+      Taro.showToast({ title: '先勾选已买到的', icon: 'none' })
+      return { stocked: 0, names: [] }
+    }
+    const names: string[] = []
+    for (const item of checked) {
+      this.pantry.addItem(item.name, item.amount || '适量')
+      names.push(item.name)
+    }
+    this.shoppingList = this.shoppingList.filter((i) => !i.checked)
+    if (this.household) {
+      this.household = { ...this.household, shoppingList: this.shoppingList }
+    }
+    this.persistLocal()
+    if (this.inHousehold) this.schedulePush()
+    return { stocked: names.length, names }
+  }
 }
 
 export const householdStore = new HouseholdStore()

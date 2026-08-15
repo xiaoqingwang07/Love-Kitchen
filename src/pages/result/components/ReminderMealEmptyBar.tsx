@@ -3,6 +3,7 @@ import Taro from '@tarojs/taro'
 import { observer } from 'mobx-react-lite'
 import { usePantryStore, useHouseholdStore } from '../../../store/context'
 import { trackEvent } from '../../../utils/analytics'
+import { setPantryOpenShopping } from '../../../utils/navigationPayload'
 import { D } from '../../../theme/designTokens'
 
 type Props = {
@@ -94,11 +95,14 @@ export const ReminderMealEmptyBar = observer(function ReminderMealEmptyBar({ exp
     setTimeout(() => {
       Taro.showModal({
         title: '去查看采购清单？',
-        content: '可在「我的」页查看、勾选和删除待买项。',
-        confirmText: '去我的',
+        content: '可在「冰箱」页勾选已买的，直接放入冰箱。',
+        confirmText: '去冰箱',
         cancelText: '稍后',
         success: (res) => {
-          if (res.confirm) Taro.switchTab({ url: '/pages/profile/index' })
+          if (res.confirm) {
+            setPantryOpenShopping()
+            Taro.switchTab({ url: '/pages/pantry/index' })
+          }
         },
       })
     }, 500)

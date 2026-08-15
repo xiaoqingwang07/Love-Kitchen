@@ -16,6 +16,7 @@ export type NavPayloadKey =
   | 'pickAutoSelectIngredients'
   | 'profileOpenFavorites'
   | 'profileOpenShopping'
+  | 'pantryOpenShopping'
   | 'autoSearchIngredient'
   | 'pendingJoinCode'
 
@@ -169,13 +170,24 @@ export function consumeProfileOpenFavorites(): boolean {
   return consumeFlagWithLegacy('profileOpenFavorites', STORAGE_KEYS.profileOpenFavorites)
 }
 
-/** 首页「待采购」→ 我的页定位到采购清单 */
-export function setProfileOpenShopping(): void {
-  setNavPayload('profileOpenShopping', true)
+/** 首页「待采购」→ 冰箱页定位到采购清单 */
+export function setPantryOpenShopping(): void {
+  setNavPayload('pantryOpenShopping', true)
 }
 
+export function consumePantryOpenShopping(): boolean {
+  return Boolean(consumeNavPayload<boolean>('pantryOpenShopping')) ||
+    Boolean(consumeNavPayload<boolean>('profileOpenShopping'))
+}
+
+/** @deprecated 采购清单已迁到冰箱页，请用 setPantryOpenShopping */
+export function setProfileOpenShopping(): void {
+  setPantryOpenShopping()
+}
+
+/** @deprecated 请用 consumePantryOpenShopping */
 export function consumeProfileOpenShopping(): boolean {
-  return Boolean(consumeNavPayload<boolean>('profileOpenShopping'))
+  return consumePantryOpenShopping()
 }
 
 /** 外部落地首页时预填搜索框 */

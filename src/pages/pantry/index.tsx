@@ -1,5 +1,5 @@
 import { View, Text, ScrollView } from '@tarojs/components'
-import Taro, { useDidShow, useRouter } from '@tarojs/taro'
+import Taro, { useDidShow, useRouter, useShareAppMessage } from '@tarojs/taro'
 import { useState, useMemo, useEffect, type CSSProperties } from 'react'
 import { observer } from 'mobx-react-lite'
 import { usePantryStore, useHouseholdStore } from '../../store/context'
@@ -16,7 +16,8 @@ import { VoiceRecorderSheet } from '../../components/VoiceRecorderSheet'
 import { isAsrAvailable } from '../../utils/voiceAsr'
 import { usesLlmProxy } from '../../api/recipe'
 import { trackEvent } from '../../utils/analytics'
-import { decodeShoppingShare } from '../../utils/shareLinks'
+import { decodeShoppingShare, resolvePrimedShare } from '../../utils/shareLinks'
+import { consumePantryOpenShopping } from '../../utils/navigationPayload'
 import { FridgeCabinet } from './components/FridgeCabinet'
 import { IntakeSheet } from './components/IntakeSheet'
 import { SupermarketLookup, cleanSupermarketLookupQuery } from './components/SupermarketLookup'
@@ -27,6 +28,7 @@ import { QuickFillPanel } from './components/QuickFillPanel'
 import { ExpiryOverview, type HighlightMode } from './components/ExpiryOverview'
 import { PantryEmptyHint } from './components/PantryEmptyHint'
 import { PantryBottomBar } from './components/PantryBottomBar'
+import { ShoppingListPanel } from './components/ShoppingListPanel'
 import { usePantryIntake } from './usePantryIntake'
 import { loadFridgeLayoutConfig, saveFridgeLayoutConfig } from '../../utils/fridgeLayoutStorage'
 import { D } from '../../theme/designTokens'
@@ -58,6 +60,8 @@ function FridgePantry() {
   const [layout, setLayout] = useState<FridgeLayoutConfig>(() => loadFridgeLayout())
   const [showLayoutSettings, setShowLayoutSettings] = useState(false)
   const [quickFill, setQuickFill] = useState<string[]>([])
+  const [focusShopping, setFocusShopping] = useState(false)
+  const [scrollInto, setScrollInto] = useState('')
 
   const intake = usePantryIntake(store, layout)
 
@@ -105,8 +109,21 @@ function FridgePantry() {
     doAdd(quickFill)
   }
 
+  useShareAppMessage(() =>
+    resolvePrimedShare({
+      title: '爱心厨房 - 采购清单',
+      path: '/pages/pantry/index',
+    })
+  )
+
   useDidShow(() => {
     void householdStore.syncOnShow()
+
+    if (consumePantryOpenShopping()) {
+      setFocusShopping(true)
+      setScrollInto('shopping-panel')
+      setTimeout(() => setScrollInto(''), 800)
+    }
 
     const sharedShop = decodeShoppingShare(router.params.shop)
     if (sharedShop?.items.length) {
@@ -115,14 +132,13 @@ function FridgePantry() {
       Taro.showModal({
         title: sharedShop.title || '朋友分享的采购清单',
         content: lines.slice(0, 200) + (lines.length > 200 ? '…' : ''),
-        confirmText: '复制清单',
+        confirmText: '加入待买',
         cancelText: '关闭',
         success: (r) => {
           if (r.confirm) {
-            Taro.setClipboardData({
-              data: lines,
-              success: () => Taro.showToast({ title: '已复制', icon: 'success' }),
-            })
+            householdStore.addShoppingItems(sharedShop.items)
+            setFocusShopping(true)
+            Taro.showToast({ title: `已加入 ${sharedShop.items.length} 样`, icon: 'success' })
           }
         },
       })
@@ -265,10 +281,14 @@ function FridgePantry() {
 
   return (
     <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
-      <ScrollView scrollY showScrollbar={false}>
+      <ScrollView scrollY showScrollbar={false} scrollIntoView={scrollInto}>
         {/* 原 PantryHeader（大标题「冰箱」+ 功能说明 + 柜型按钮）已拆除：
             页面名归原生导航栏，柜型切换并入下方筛选行 */}
         <View style={{ height: 8 }} />
+
+        <View style={{ padding: `0 ${pad}px` }}>
+          <ShoppingListPanel forceExpand={focusShopping} />
+        </View>
 
         {/* 「超市查冰箱」搜索框已移除：本页把每格食材名都摊开显示了，
             十几二十样一眼扫完，再放一个搜索框属于重复。
