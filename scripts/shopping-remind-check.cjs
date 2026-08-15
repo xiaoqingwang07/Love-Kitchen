@@ -30,6 +30,8 @@ const {
   parseYmd,
   todayYmd,
   formatRemindLabel,
+  isWebRuntime,
+  openWebDatePicker,
 } = require(path.join(__dirname, '../src/utils/shoppingRemind.ts'))
 
 function fail(msg) {
@@ -46,5 +48,10 @@ if (!parseYmd('2026-08-20')) fail('应能解析 YYYY-MM-DD')
 if (parseYmd('bad')) fail('非法日期应返回 null')
 if (!/^\d{4}-\d{2}-\d{2}$/.test(todayYmd())) fail('todayYmd 格式')
 if (formatRemindLabel('2026-08-20') !== '8 月 20 日') fail(`提醒文案: ${formatRemindLabel('2026-08-20')}`)
+if (typeof isWebRuntime !== 'function') fail('isWebRuntime 应导出')
+if (typeof openWebDatePicker !== 'function') fail('openWebDatePicker 应导出')
+if (openWebDatePicker({ value: '2026-08-20', onPick: () => {} }) !== false) {
+  fail('无 document 时 openWebDatePicker 应返回 false')
+}
 
 console.log('shopping-remind-check passed')

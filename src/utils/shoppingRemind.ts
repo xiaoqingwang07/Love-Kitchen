@@ -69,6 +69,64 @@ export function saveShoppingRemindDate(ymd: string): void {
 
 export type ShoppingRemindResult = 'calendar' | 'ics' | 'copied' | 'failed'
 
+export function isWebRuntime(): boolean {
+  try {
+    return Taro.getEnv() === Taro.ENV_TYPE.WEB
+  } catch {
+    return typeof document !== 'undefined'
+  }
+}
+
+/**
+ * H5 用系统日期控件。Taro Picker 在网页里点选容易被父级 onClick 吞掉，
+ * 系统 `<input type="date">` 才能真正弹出日历。
+ */
+export function openWebDatePicker(opts: {
+  value: string
+  min?: string
+  onPick: (ymd: string) => void
+}): boolean {
+  if (typeof document === 'undefined') return false
+  const existing = document.getElementById('lk-shop-date-picker')
+  existing?.remove()
+  const input = document.createElement('input')
+  input.id = 'lk-shop-date-picker'
+  input.type = 'date'
+  input.min = opts.min || todayYmd()
+  input.value = opts.value && /^\d{4}-\d{2}-\d{2}$/.test(opts.value) ? opts.value : todayYmd()
+  input.setAttribute('aria-label', '购买日')
+  Object.assign(input.style, {
+    position: 'fixed',
+    right: '16px',
+    top: '96px',
+    zIndex: '2147483647',
+    fontSize: '16px',
+    padding: '6px 8px',
+    borderRadius: '8px',
+    border: '1px solid #e8c4b0',
+    background: '#fff',
+    color: '#5c3a2e',
+  })
+  let done = false
+  const finish = (ymd?: string) => {
+    if (done) return
+    done = true
+    input.remove()
+    if (ymd && /^\d{4}-\d{2}-\d{2}$/.test(ymd)) opts.onPick(ymd)
+  }
+  input.addEventListener('change', () => finish(input.value))
+  input.addEventListener('cancel', () => finish())
+  document.body.appendChild(input)
+  try {
+    const picker = input as HTMLInputElement & { showPicker?: () => void }
+    if (typeof picker.showPicker === 'function') picker.showPicker()
+    else input.focus()
+  } catch {
+    input.focus()
+  }
+  return true
+}
+
 function tryDownloadIcs(ics: string): boolean {
   if (typeof document === 'undefined') return false
   try {
@@ -110,7 +168,7 @@ export async function scheduleShoppingReminder(opts: {
       : '打开爱心厨房冰箱页，按清单采购后入库。'
 
   try {
-    if (typeof Taro.addPhoneCalendar === 'function') {
+    if (!isWebRuntime() && typeof Taro.addPhoneCalendar === 'function') {
       await Taro.addPhoneCalendar({
         title,
         startTime: Math.floor(date.getTime() / 1000),

@@ -341,7 +341,8 @@ expect(
   '采购日提醒应写入系统日历',
   fs.existsSync(path.join(root, 'src/utils/shoppingRemind.ts')) &&
     read('src/utils/shoppingRemind.ts').includes('addPhoneCalendar') &&
-    shoppingListPanel.includes('scheduleShoppingReminder')
+    shoppingListPanel.includes('scheduleShoppingReminder') &&
+    shoppingListPanel.includes('openWebDatePicker')
 )
 expect('烹饪完成应上报 meal_solved', read('src/utils/analyticsExport.ts').includes('meal_solved'))
 expect('Epic E 应有 mealSolved 计数与 Plus 软提示', fs.existsSync(path.join(root, 'src/utils/mealSolvedTracker.ts')) && read('src/utils/mealSolvedTracker.ts').includes('EVENTS.upgradePromptShown'))

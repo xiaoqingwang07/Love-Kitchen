@@ -11,7 +11,9 @@ import { primeShoppingShare } from '../../../utils/shareLinks'
 import { buildDuplicateWarning } from '../../../utils/duplicateGuard'
 import {
   formatRemindLabel,
+  isWebRuntime,
   loadShoppingRemindDate,
+  openWebDatePicker,
   remindDateStillValid,
   scheduleShoppingReminder,
   todayYmd,
@@ -105,6 +107,67 @@ function Capsule({
       >
         {label}
       </Text>
+    </View>
+  )
+}
+
+function RemindDateRow({
+  remindYmd,
+  onPick,
+}: {
+  remindYmd: string
+  onPick: (ymd: string) => void
+}) {
+  const row = (
+    <View
+      style={{
+        marginTop: 12,
+        padding: '10px 12px',
+        borderRadius: D.radiusS,
+        backgroundColor: D.accentMuted,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+      }}
+    >
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ fontSize: D.caption, fontWeight: D.weightSemibold, color: D.accentDeep }}>
+          {remindYmd ? `购买提醒 · ${formatRemindLabel(remindYmd)}` : '设置购买日提醒'}
+        </Text>
+        <Text className="lk-block" style={{ fontSize: 11, color: D.labelTertiary, marginTop: 4 }}>
+          写入手机日历（带闹钟）。微信不能直接建系统待办，日历是能提醒你去超市的方式。
+        </Text>
+      </View>
+      <Text style={{ fontSize: D.caption, color: D.accentDeep }}>选日期</Text>
+    </View>
+  )
+  if (isWebRuntime()) {
+    return (
+      <View
+        onClick={(e) => {
+          e.stopPropagation()
+          openWebDatePicker({
+            value: remindYmd || todayYmd(),
+            min: todayYmd(),
+            onPick,
+          })
+        }}
+      >
+        {row}
+      </View>
+    )
+  }
+  return (
+    <View onClick={(e) => e.stopPropagation()}>
+      <Picker
+        mode="date"
+        value={remindYmd || todayYmd()}
+        start={todayYmd()}
+        onChange={(e) => onPick(String(e.detail.value))}
+      >
+        {row}
+      </Picker>
     </View>
   )
 }
@@ -341,36 +404,7 @@ function ShoppingListPanelInner({ forceExpand }: Props) {
             </Text>
           </View>
 
-          <Picker
-            mode="date"
-            value={remindYmd || todayYmd()}
-            start={todayYmd()}
-            onChange={(e) => handleRemindChange(String(e.detail.value))}
-          >
-            <View
-              style={{
-                marginTop: 12,
-                padding: '10px 12px',
-                borderRadius: D.radiusS,
-                backgroundColor: D.accentMuted,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 8,
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={{ fontSize: D.caption, fontWeight: D.weightSemibold, color: D.accentDeep }}>
-                  {remindYmd ? `购买提醒 · ${formatRemindLabel(remindYmd)}` : '设置购买日提醒'}
-                </Text>
-                <Text className="lk-block" style={{ fontSize: 11, color: D.labelTertiary, marginTop: 4 }}>
-                  写入手机日历（带闹钟）。微信不能直接建系统待办，日历是能提醒你去超市的方式。
-                </Text>
-              </View>
-              <Text style={{ fontSize: D.caption, color: D.accentDeep }}>选日期</Text>
-            </View>
-          </Picker>
+          <RemindDateRow remindYmd={remindYmd} onPick={handleRemindChange} />
         </View>
       ) : null}
     </View>
