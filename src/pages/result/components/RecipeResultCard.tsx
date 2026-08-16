@@ -1,5 +1,5 @@
 import { View, Text, Image } from '@tarojs/components'
-import { D } from '../../../theme/designTokens'
+import { D, mediaRowTextCol } from '../../../theme/designTokens'
 import type { Recipe } from '../../../types/recipe'
 import { isRenderableRecipeImage } from '../../../utils/recipeImageUrl'
 
@@ -74,20 +74,22 @@ export function RecipeResultCard({
           <Text style={{ lineHeight: 1 }}>{recipe.emoji || '🥘'}</Text>
         )}
       </View>
-      <View style={{ flex: 1, minWidth: 0 }}>
+      <View style={mediaRowTextCol}>
         <Text
+          className="lk-block"
           style={{
             fontSize: D.body,
             fontWeight: D.weightSemibold,
             color: D.label,
             marginBottom: 4,
             letterSpacing: '-0.01em',
+            lineHeight: 1.25,
           }}
         >
           {displayTitle}
         </Text>
         {recipe.quote ? (
-          <Text style={{ fontSize: D.caption, color: D.labelSecondary, marginBottom: 8, lineHeight: 1.5 }} numberOfLines={2}>
+          <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelSecondary, marginBottom: 8, lineHeight: 1.35 }} numberOfLines={2}>
             {recipe.quote}
           </Text>
         ) : null}

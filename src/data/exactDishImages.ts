@@ -19,7 +19,7 @@ export const EXACT_DISH_IMAGE_OVERRIDES: Record<string, string> = {
   '剁椒鱼头': 'https://i2.chuimg.com/e27b83bac2fd4c10bbd6f0974e18cc5e_2712w_2170h.jpg?imageView2/1/w/1200/h/760/interlace/1/q/85',
   '荷叶糯米鸡': 'https://i2.chuimg.com/4b788647dfeb4d0cbba80400eeab35f2_1080w_1616h.jpg?imageView2/1/w/1200/h/760/interlace/1/q/85',
   '番茄炒蛋': 'https://i2.chuimg.com/9c081c408a9b11e6a9a10242ac110002_620w_413h.jpg?imageView2/1/w/1200/h/760/interlace/1/q/85',
-  '辣椒炒肉': 'https://i2.chuimg.com/f12dbcb940194e6d8030b24be7afd758_1080w_864h.jpg?imageView2/1/w/1200/h/760/interlace/1/q/85',
+  '辣椒炒肉': 'https://i2.chuimg.com/2bc5967e7d5e4b05b106747cc79c787d_640w_808h.jpg?imageView2/1/w/1200/h/760/interlace/1/q/85',
   '宫保鸡丁': 'https://i2.chuimg.com/b917a46af36711e6947d0242ac110002_1177w_1178h.jpg?imageView2/1/w/1200/h/760/interlace/1/q/85',
   '鱼香肉丝': 'https://i2.chuimg.com/6cbadcb1853b4359ad033578f352dced_535w_427h.jpg?imageView2/1/w/1200/h/760/interlace/1/q/85',
   '麻婆豆腐': 'https://i2.chuimg.com/5a63c293f4e2479fb28975283fd4df60_1921w_2560h.jpg?imageView2/1/w/1200/h/760/interlace/1/q/85',

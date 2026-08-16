@@ -1,7 +1,7 @@
 import { View, Text, Image } from '@tarojs/components'
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
-import { D } from '../../../theme/designTokens'
+import { D, mediaRowTextCol } from '../../../theme/designTokens'
 import type { MealPlan } from '../../../types/mealPlan'
 import { mealRoleLabel } from '../../../utils/mealPlanBuilder'
 import { recipePlaceholderEmoji } from '../../../utils/recipePlaceholderEmoji'
@@ -38,7 +38,7 @@ export function MealPlanCard({ plan, selected, onSelect, onOpenRecipe, onAddShop
         return (
           <View
             key={failKey}
-            style={{ display: 'flex', flexDirection: 'row', gap: 12, marginBottom: 12 }}
+            style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}
             onClick={(e) => {
               e.stopPropagation()
               onOpenRecipe?.(slot.recipe)
@@ -69,7 +69,7 @@ export function MealPlanCard({ plan, selected, onSelect, onOpenRecipe, onAddShop
                 </Text>
               </View>
             )}
-            <View style={{ flex: 1, minWidth: 0 }}>
+            <View style={mediaRowTextCol}>
               <Text style={{ fontSize: D.caption, color: D.accentDeep, fontWeight: D.weightSemibold }}>
                 {mealRoleLabel(slot.role)}
               </Text>
@@ -84,7 +84,7 @@ export function MealPlanCard({ plan, selected, onSelect, onOpenRecipe, onAddShop
               >
                 {displayTitle}
               </Text>
-              <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4 }}>
+              <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.25 }}>
                 {slot.recipe.time ?? 15} 分钟
                 {slot.expiringUsed.length > 0
                   ? ` · 消耗临期 ${slot.expiringUsed.join('、')}`
@@ -115,6 +115,9 @@ export function MealPlanCard({ plan, selected, onSelect, onOpenRecipe, onAddShop
           <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelSecondary }}>
             还缺：{plan.missingItems.map((m) => m.name).join('、')}
           </Text>
+          <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.35 }}>
+            油盐酱醋、葱姜蒜按常备，未计入
+          </Text>
           {onAddShopping ? (
             <Text
               className="lk-block"
@@ -129,13 +132,13 @@ export function MealPlanCard({ plan, selected, onSelect, onOpenRecipe, onAddShop
                 onAddShopping()
               }}
             >
-              加入采购清单
+              加入待买
             </Text>
           ) : null}
         </View>
       ) : (
-        <Text style={{ fontSize: D.caption, color: D.green, marginTop: 10 }}>
-          冰箱食材够用
+        <Text className="lk-block" style={{ fontSize: D.caption, color: D.green, marginTop: 10, lineHeight: 1.25 }}>
+          主料冰箱里有，调味按常备即可
         </Text>
       )}
     </View>

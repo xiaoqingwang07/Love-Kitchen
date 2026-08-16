@@ -21,15 +21,37 @@ export function isRealDishPhotoUrl(url: string): boolean {
 }
 
 /**
+ * 精确封面：先整名命中，再取「标题里包含的最长菜名」。
+ * 这样「费大厨辣椒炒肉」不会落到一张看不见辣椒的褐肉特写上。
+ */
+export function pickExactDishCover(...titles: Array<string | undefined>): string {
+  const keys = titles.map((t) => (t || '').trim()).filter(Boolean)
+  if (keys.length === 0) return ''
+
+  for (const k of keys) {
+    const exact = EXACT_DISH_IMAGE_OVERRIDES[k]
+    if (exact && isRealDishPhotoUrl(exact)) return exact
+  }
+
+  let bestName = ''
+  let bestUrl = ''
+  for (const [name, url] of Object.entries(EXACT_DISH_IMAGE_OVERRIDES)) {
+    if (name.length <= bestName.length || !isRealDishPhotoUrl(url)) continue
+    if (keys.some((k) => k.includes(name))) {
+      bestName = name
+      bestUrl = url
+    }
+  }
+  return bestUrl
+}
+
+/**
  * 本地菜谱封面：只返回下厨房真实图，无映射时不造假图。
  * 优先精确封面表，其次该菜第一张步骤过程图。
  */
 export function pickRealDishImage(title: string, stepImages: string[] = []): string {
-  const t = (title || '').trim()
-  if (!t) return ''
-
-  const exact = EXACT_DISH_IMAGE_OVERRIDES[t]
-  if (exact && isRealDishPhotoUrl(exact)) return exact
+  const exact = pickExactDishCover(title)
+  if (exact) return exact
 
   for (const u of stepImages) {
     if (isRealDishPhotoUrl(u)) return u

@@ -88,13 +88,13 @@ export const ReminderMealEmptyBar = observer(function ReminderMealEmptyBar({ exp
     householdStore.addShoppingItems(items)
     trackEvent('reminder_empty_action', { action: 'shopping_list', count: items.length })
     Taro.showToast({
-      title: '已加入采购清单',
+      title: '已加入待买',
       icon: 'success',
       duration: 2000,
     })
     setTimeout(() => {
       Taro.showModal({
-        title: '去查看采购清单？',
+        title: '去查看待买清单？',
         content: '可在「冰箱」页勾选已买的，直接放入冰箱。',
         confirmText: '去冰箱',
         cancelText: '稍后',
@@ -132,15 +132,36 @@ export const ReminderMealEmptyBar = observer(function ReminderMealEmptyBar({ exp
           marginBottom: 10,
         }}
       >
-        暂时拼不出完整方案，你可以延长保存、标记已用完，或列入采购后再做。
+        暂时拼不出完整方案，你可以延长保存、标记已用完，或加入待买后再做。
       </Text>
-      <View style={{ display: 'flex', flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+      <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <ActionBtn label="延长 3 天" accent onClick={handleExtend} />
         <ActionBtn label="标记已用完" onClick={handleDiscard} />
       </View>
-      <View style={{ display: 'flex', flexDirection: 'row', gap: 8 }}>
-        <ActionBtn label="加入采购" accent onClick={handleAddShopping} />
-        <ActionBtn label="去冰箱处理" onClick={handleGoPantry} />
+      <View
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 20,
+          marginTop: 12,
+        }}
+      >
+        <Text
+          className="tap-scale"
+          style={{ fontSize: D.footnote, color: D.accentDeep, fontWeight: D.weightMedium, lineHeight: 1.2, padding: '4px 0' }}
+          onClick={handleAddShopping}
+        >
+          加入待买
+        </Text>
+        <Text
+          className="tap-scale"
+          style={{ fontSize: D.footnote, color: D.labelSecondary, lineHeight: 1.2, padding: '4px 0' }}
+          onClick={handleGoPantry}
+        >
+          去冰箱
+        </Text>
       </View>
     </View>
   )

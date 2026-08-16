@@ -22,6 +22,9 @@ export function MealPlanConstraints({ active, onToggle }: Props) {
               borderRadius: 999,
               backgroundColor: on ? D.accentMuted : D.bgElevated,
               border: `0.5px solid ${on ? D.accent : D.separatorLight}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
             onClick={() => onToggle(c)}
           >
@@ -30,6 +33,7 @@ export function MealPlanConstraints({ active, onToggle }: Props) {
                 fontSize: D.caption,
                 fontWeight: on ? D.weightSemibold : D.weightMedium,
                 color: on ? D.accent : D.labelSecondary,
+                lineHeight: 1.2,
               }}
             >
               {MEAL_CONSTRAINT_LABELS[c]}

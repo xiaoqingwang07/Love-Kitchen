@@ -1,5 +1,6 @@
-import { View, Text, Button, Image } from '@tarojs/components'
+import { View, Text, Image } from '@tarojs/components'
 import { D } from '../../../theme/designTokens'
+import { BackChevron } from '../../../components/BackChevron'
 import { formatMMSS, useParallelTimers } from '../../../hooks/useParallelTimers'
 import { isRenderableRecipeImage } from '../../../utils/recipeImageUrl'
 import type { Recipe, Step } from '../../../types/recipe'
@@ -47,29 +48,45 @@ export function CookingMode({
     >
       <View
         style={{
-          padding: '16px 20px',
-          paddingTop: 'calc(20px + env(safe-area-inset-top))',
+          padding: '8px 16px',
+          paddingTop: 'calc(8px + env(safe-area-inset-top))',
           display: 'flex',
-          justifyContent: 'space-between',
+          flexDirection: 'row',
           alignItems: 'center',
         }}
       >
-        <Text style={{ color: D.cookingMuted, fontSize: 15 }} onClick={onExit}>
-          ← 退出
-        </Text>
+        <View
+          className="tap-scale"
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: 'rgba(247, 244, 241, 0.12)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+          onClick={onExit}
+        >
+          <BackChevron color={D.cookingText} size={16} />
+        </View>
         <Text
           style={{
+            flex: 1,
             color: D.cookingText,
-            fontSize: 16,
+            fontSize: 17,
             fontWeight: D.weightSemibold,
-            maxWidth: '60%',
             textAlign: 'center',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.2,
+            padding: '0 12px',
           }}
           numberOfLines={1}
         >
           {recipe.title}
         </Text>
-        <View style={{ width: 50 }} />
+        <View style={{ width: 36, flexShrink: 0 }} />
       </View>
 
       <View
@@ -126,16 +143,16 @@ export function CookingMode({
         {step.tip ? (
           <View
             style={{
-              fontSize: 14,
-              color: D.accentWarm,
               backgroundColor: 'rgba(196,148,74,0.15)',
-              padding: '12px 16px',
-              borderRadius: D.radiusM,
+              padding: '8px 14px',
+              borderRadius: D.radiusS,
               marginBottom: 20,
-              lineHeight: 1.5,
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
             }}
           >
-            <Text style={{ color: D.accentWarm }}>💡 {step.tip}</Text>
+            <Text style={{ color: D.accentWarm, fontSize: 14, lineHeight: 1.4 }}>{step.tip}</Text>
           </View>
         ) : null}
 
@@ -151,26 +168,33 @@ export function CookingMode({
             >
               {formatMMSS(t ? t.remaining : (step.time || 0) * 60)}
             </Text>
-            <Button
+            <View
+              className="tap-scale"
               style={{
                 backgroundColor: t && t.running ? D.cookingSurface : D.accent,
-                // 底色随计时状态切换：深色面板配浅字，橙底配深褐字
-                color: t && t.running ? D.cookingText : D.onAccent,
-                padding: '0 24px',
-                height: 44,
-                lineHeight: '44px',
+                padding: '0 22px',
+                height: 40,
                 borderRadius: 999,
-                fontSize: 15,
-                fontWeight: D.weightSemibold,
-                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
               onClick={() => {
                 if (t && t.running) timers.pause(timerKey)
                 else timers.start(timerKey, (step.time || 1) * 60)
               }}
             >
-              {t && t.running ? '暂停' : t && t.remaining > 0 ? '继续' : '开始计时'}
-            </Button>
+              <Text
+                style={{
+                  color: t && t.running ? D.cookingText : D.onAccent,
+                  fontSize: 15,
+                  fontWeight: D.weightSemibold,
+                  lineHeight: 1.2,
+                }}
+              >
+                {t && t.running ? '暂停' : t && t.remaining > 0 ? '继续' : '开始计时'}
+              </Text>
+            </View>
           </View>
         ) : null}
       </View>
@@ -193,38 +217,47 @@ export function CookingMode({
       <View
         style={{
           display: 'flex',
-          gap: 12,
-          padding: '16px 24px',
-          paddingBottom: 'calc(24px + env(safe-area-inset-bottom))',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 16,
+          padding: '12px 24px',
+          paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
         }}
       >
-        <Button
+        <View
+          className="tap-scale"
+          style={{
+            height: 48,
+            padding: '0 8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            opacity: currentStep === 0 ? 0.35 : 1,
+          }}
+          onClick={() => currentStep > 0 && onStepChange(currentStep - 1)}
+        >
+          <Text
+            style={{
+              fontSize: 17,
+              fontWeight: D.weightMedium,
+              color: D.cookingText,
+              lineHeight: 1.2,
+            }}
+          >
+            上一步
+          </Text>
+        </View>
+        <View
+          className="tap-scale"
           style={{
             flex: 1,
             height: 48,
             borderRadius: 999,
-            fontSize: 16,
-            fontWeight: D.weightSemibold,
-            backgroundColor: currentStep === 0 ? D.cookingSurface : D.cookingText,
-            color: currentStep === 0 ? D.cookingMuted : D.cookingBg,
-            opacity: currentStep === 0 ? 0.5 : 1,
-            border: 'none',
-          }}
-          onClick={() => currentStep > 0 && onStepChange(currentStep - 1)}
-          disabled={currentStep === 0}
-        >
-          上一步
-        </Button>
-        <Button
-          style={{
-            flex: 1.3,
-            height: 48,
-            borderRadius: 999,
-            fontSize: 16,
-            fontWeight: D.weightSemibold,
             backgroundColor: D.accent,
-            color: D.onAccent,
-            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
           onClick={() => {
             if (isLastStep) {
@@ -234,8 +267,17 @@ export function CookingMode({
             }
           }}
         >
-          {isLastStep ? '完成' : '下一步'}
-        </Button>
+          <Text
+            style={{
+              fontSize: 17,
+              fontWeight: D.weightSemibold,
+              color: D.onAccent,
+              lineHeight: 1.2,
+            }}
+          >
+            {isLastStep ? '完成' : '下一步'}
+          </Text>
+        </View>
       </View>
     </View>
   )

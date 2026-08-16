@@ -21,79 +21,74 @@ export function PreferencePanel({
 }: Props) {
   return (
     <>
-      <Text
-        style={{
-          fontSize: D.caption,
-          fontWeight: D.weightSemibold,
-          color: D.labelSecondary,
-          letterSpacing: '0.14em',
-          textTransform: 'uppercase' as const,
-          marginBottom: 10,
-        }}
-      >
-        偏好
-      </Text>
-
       <View
         style={{
           backgroundColor: D.bgElevated,
           borderRadius: D.radiusM,
-          padding: 16,
+          padding: '12px 14px',
           marginBottom: 10,
           border: `0.5px solid ${D.separatorLight}`,
         }}
       >
-        <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
-          推荐场景
-        </Text>
-        <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.5 }}>
-          AI 出菜时会按这个场景调整语气、步骤和营养侧重
-        </Text>
-        <View style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-          {sceneOptions.map(({ key, label }) => (
-            <View
-              key={key}
-              className="tap-scale"
-              style={{
-                padding: '6px 14px',
-                borderRadius: 999,
-                backgroundColor: recipeScene === key ? D.label : D.bg,
-                border: recipeScene === key ? 'none' : `0.5px solid ${D.separator}`,
-              }}
-              onClick={() => onSceneChange(key)}
-            >
-              <Text
-                style={{
-                  fontSize: D.footnote,
-                  fontWeight: D.weightSemibold,
-                  color: recipeScene === key ? D.bgElevated : D.labelSecondary,
-                }}
-              >
-                {label}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      <View
-        style={{
-          backgroundColor: D.bgElevated,
-          borderRadius: D.radiusM,
-          padding: 16,
-          marginBottom: 10,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          border: `0.5px solid ${D.separatorLight}`,
-        }}
-      >
-        <View style={{ flex: 1, minWidth: 0 }}>
+        <View
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}
+        >
           <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
-            默认就餐人数
+            推荐
           </Text>
-          <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4 }}>份量推荐时的参考值</Text>
+          <View style={{ display: 'flex', flexDirection: 'row', gap: 6 }}>
+            {sceneOptions.map(({ key, label }) => (
+              <View
+                key={key}
+                className="tap-scale"
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: 999,
+                  backgroundColor: recipeScene === key ? D.label : D.bg,
+                  border: recipeScene === key ? 'none' : `0.5px solid ${D.separator}`,
+                }}
+                onClick={() => onSceneChange(key)}
+              >
+                <Text
+                  style={{
+                    fontSize: D.footnote,
+                    fontWeight: D.weightSemibold,
+                    color: recipeScene === key ? D.bgElevated : D.labelSecondary,
+                  }}
+                >
+                  {label}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
+
+        <View
+          style={{
+            height: 0.5,
+            backgroundColor: D.separatorLight,
+            marginTop: 12,
+            marginBottom: 12,
+          }}
+        />
+
+        <View
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+        <Text style={{ flex: 1, fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
+          就餐人数
+        </Text>
         <View style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <View
             className="tap-scale"
@@ -137,6 +132,7 @@ export function PreferencePanel({
           >
             <Text style={{ fontSize: 18, color: D.onAccent }}>+</Text>
           </View>
+        </View>
         </View>
       </View>
     </>

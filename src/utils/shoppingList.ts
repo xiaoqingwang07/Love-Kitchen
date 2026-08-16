@@ -34,7 +34,7 @@ export function generateShoppingList(
  * 将购物清单复制为文本格式，方便分享给家人
  */
 export function formatShoppingListText(items: ShoppingItem[]): string {
-  const lines = ['🛒 采购清单', '']
+  const lines = ['🛒 待买清单', '']
   const missing = items.filter((i) => !i.haveIt)
   const available = items.filter((i) => i.haveIt)
 

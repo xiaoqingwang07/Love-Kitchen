@@ -40,8 +40,8 @@ export function PantryBottomBar({ pad, onReceiptIntake, onIngredientsIntake, onP
         bottom: 0,
         left: 0,
         width: '100%',
-        padding: `12px ${pad}px`,
-        paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
+        padding: `8px ${pad}px`,
+        paddingBottom: 'calc(8px + env(safe-area-inset-bottom))',
         backgroundColor: D.bgGlassHeavy,
         backdropFilter: 'blur(20px)',
         borderTop: `0.5px solid ${D.separatorLight}`,
@@ -51,7 +51,7 @@ export function PantryBottomBar({ pad, onReceiptIntake, onIngredientsIntake, onP
       <View
         className="tap-scale"
         style={{
-          height: 48,
+          height: 40,
           borderRadius: D.radiusS,
           backgroundColor: D.accent,
           display: 'flex',

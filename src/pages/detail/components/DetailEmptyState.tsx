@@ -1,4 +1,4 @@
-import { View, Text, Button } from '@tarojs/components'
+import { View, Text } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { D } from '../../../theme/designTokens'
 
@@ -28,17 +28,23 @@ export function DetailEmptyState({ variant }: Props) {
       <Text style={{ fontSize: D.body, color: D.labelSecondary, textAlign: 'center', lineHeight: 1.55 }}>
         {message}
       </Text>
-      <Button
+      <View
+        className="tap-scale"
         style={{
+          height: 44,
+          padding: '0 28px',
           backgroundColor: D.accent,
-          color: D.onAccent,
           borderRadius: 999,
-          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
         onClick={() => Taro.switchTab({ url: '/pages/index/index' })}
       >
-        回首页
-      </Button>
+        <Text style={{ fontSize: 16, fontWeight: D.weightSemibold, color: D.onAccent, lineHeight: 1.2 }}>
+          回首页
+        </Text>
+      </View>
     </View>
   )
 }

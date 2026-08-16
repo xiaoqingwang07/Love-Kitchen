@@ -1,4 +1,5 @@
 import { View, Text } from '@tarojs/components'
+import { SubpageHeader } from '../../../components/SubpageHeader'
 import { D } from '../../../theme/designTokens'
 
 type Props = {
@@ -9,30 +10,7 @@ type Props = {
 export function AboutPage({ onBack, onLogoTap }: Props) {
   return (
     <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
-      <View
-        style={{
-          padding: '20px 22px',
-          backgroundColor: D.bgElevated,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          borderBottom: `0.5px solid ${D.separatorLight}`,
-        }}
-      >
-        <Text style={{ fontSize: D.body, color: D.accentDeep }} onClick={onBack}>
-          ← 返回
-        </Text>
-        <Text
-          style={{
-            fontSize: D.headline,
-            fontWeight: D.weightBold,
-            color: D.label,
-            letterSpacing: '-0.02em',
-          }}
-        >
-          关于
-        </Text>
-      </View>
+      <SubpageHeader title="关于" onBack={onBack} />
       <View
         style={{
           padding: '48px 24px',

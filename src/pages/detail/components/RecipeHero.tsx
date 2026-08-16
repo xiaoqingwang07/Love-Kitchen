@@ -139,6 +139,7 @@ export function RecipeHero({
                 backgroundColor: D.bg,
                 padding: '5px 10px',
                 borderRadius: 999,
+                lineHeight: 1.2,
               }}
             >
               {recipe.time} 分钟
@@ -152,6 +153,7 @@ export function RecipeHero({
                 backgroundColor: D.bg,
                 padding: '5px 10px',
                 borderRadius: 999,
+                lineHeight: 1.2,
               }}
             >
               {recipe.difficulty}
@@ -166,6 +168,7 @@ export function RecipeHero({
                 backgroundColor: D.accentMuted,
                 padding: '5px 10px',
                 borderRadius: 999,
+                lineHeight: 1.2,
               }}
             >
               {tag}

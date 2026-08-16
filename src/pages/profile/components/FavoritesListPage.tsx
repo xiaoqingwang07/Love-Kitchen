@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, Image } from '@tarojs/components'
-import { D } from '../../../theme/designTokens'
+import { SubpageHeader } from '../../../components/SubpageHeader'
+import { D, mediaRowTextCol } from '../../../theme/designTokens'
 import { enrichRecipeMedia } from '../../../utils/enrichRecipeMedia'
 import type { Recipe } from '../../../types/recipe'
 
@@ -15,30 +16,7 @@ export function FavoritesListPage({ items, onBack, onOpenRecipe, onUnfavorite }:
 
   return (
     <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
-      <View
-        style={{
-          padding: '20px 22px',
-          backgroundColor: D.bgElevated,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          borderBottom: `0.5px solid ${D.separatorLight}`,
-        }}
-      >
-        <Text style={{ fontSize: D.body, color: D.accentDeep }} onClick={onBack}>
-          ← 返回
-        </Text>
-        <Text
-          style={{
-            fontSize: D.headline,
-            fontWeight: D.weightBold,
-            color: D.label,
-            letterSpacing: '-0.02em',
-          }}
-        >
-          收藏
-        </Text>
-      </View>
+      <SubpageHeader title="收藏" onBack={onBack} />
       <ScrollView scrollY style={{ padding: '16px 22px 40px' }}>
         {isEmpty ? (
           <View
@@ -110,7 +88,7 @@ export function FavoritesListPage({ items, onBack, onOpenRecipe, onUnfavorite }:
                     <Text style={{ fontSize: 28 }}>{r.emoji || '🥘'}</Text>
                   )}
                 </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={mediaRowTextCol}>
                   <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
                     {r.title}
                   </Text>

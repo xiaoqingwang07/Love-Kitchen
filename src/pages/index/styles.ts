@@ -9,7 +9,7 @@ export const pageStyle: CSSProperties = {
   minHeight: '100vh',
   backgroundColor: D.bg,
   paddingBottom: 96,
-  paddingTop: D.pagePadTop,
+  paddingTop: 10,
 }
 
 // 首页头部（大标题 / 日期 / 收藏入口）已全部移除，相关样式随之删除
@@ -17,7 +17,7 @@ export const pageStyle: CSSProperties = {
 // ================= 统一搜索框（Google 式） =================
 
 /** 首页各区块统一的纵向节奏，避免每块各留各的边距导致疏密不匀 */
-const BLOCK_GAP = 24
+const BLOCK_GAP = 14
 
 export const searchSectionStyle: CSSProperties = {
   padding: `${BLOCK_GAP}px ${D.pagePadH}px 0`,
@@ -143,13 +143,10 @@ export const historyTagStyle: CSSProperties = {
 
 export const urgentCardStyle: CSSProperties = {
   margin: `0 ${D.pagePadH}px`,
-  padding: '16px 18px',
+  padding: '12px 16px',
   borderRadius: D.radiusL,
   background: `linear-gradient(135deg, ${D.accentWarmMuted} 0%, ${D.accentMuted} 100%)`,
   border: `0.5px solid ${D.accentLine}`,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 10,
 }
 
 export const urgentTitleStyle: CSSProperties = {
@@ -196,22 +193,30 @@ export const recipesSectionStyle: CSSProperties = {
   padding: `0 ${D.pagePadH}px 24px`,
 }
 
-/** 推荐区头部：一行搞定——左侧说明推荐依据，右侧两个轻动作 */
+/** 推荐区头部：左边是标题，右边是轻动作 */
 export const sectionHeaderStyle: CSSProperties = {
   display: 'flex',
   flexDirection: 'row',
-  alignItems: 'baseline',
+  alignItems: 'center',
   justifyContent: 'space-between',
   gap: 12,
-  marginTop: BLOCK_GAP,
-  marginBottom: 12,
+  marginTop: 18,
+  marginBottom: 10,
+}
+
+export const sectionTitleStyle: CSSProperties = {
+  fontSize: D.headline,
+  fontWeight: D.weightSemibold,
+  color: D.label,
+  letterSpacing: '-0.022em',
+  lineHeight: 1.2,
 }
 
 export const sectionLeadStyle: CSSProperties = {
-  fontSize: D.footnote,
-  color: D.labelSecondary,
-  flex: 1,
-  minWidth: 0,
+  fontSize: D.caption,
+  color: D.labelTertiary,
+  marginTop: 3,
+  lineHeight: 1.3,
 }
 
 export const sectionActionsStyle: CSSProperties = {
@@ -240,11 +245,11 @@ export const sectionActionStyle: CSSProperties = {
   flexShrink: 0,
 }
 
-// 推荐列表：竖向排列的横向紧凑卡（图在左、字在右）
+/** 一组 inset 列表：一张面板、行间细线，避免四张白盒子并排 */
 export const recommendListStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 10,
+  backgroundColor: D.bgElevated,
+  borderRadius: D.radiusM,
+  overflow: 'hidden',
 }
 
 export const recommendCardStyle: CSSProperties = {
@@ -252,16 +257,20 @@ export const recommendCardStyle: CSSProperties = {
   flexDirection: 'row',
   alignItems: 'center',
   gap: 14,
-  backgroundColor: D.bgElevated,
-  borderRadius: D.radiusM,
-  padding: 14,
+  padding: '12px 14px',
+}
+
+export const recommendDividerStyle: CSSProperties = {
+  height: 0.5,
+  marginLeft: 116,
+  backgroundColor: D.separatorLight,
 }
 
 export const recommendThumbStyle: CSSProperties = {
-  width: 74,
-  height: 74,
+  width: 88,
+  height: 88,
   flexShrink: 0,
-  borderRadius: D.radiusS,
+  borderRadius: 12,
   backgroundColor: D.bgGrouped,
   overflow: 'hidden',
   display: 'flex',
@@ -270,30 +279,30 @@ export const recommendThumbStyle: CSSProperties = {
 }
 
 export const recommendTitleStyle: CSSProperties = {
-  fontSize: D.headline,
+  fontSize: 17,
   fontWeight: D.weightSemibold,
   color: D.label,
-  lineHeight: 1.3,
-  letterSpacing: '-0.015em',
+  lineHeight: 1.25,
+  letterSpacing: '-0.022em',
 }
 
 export const recommendMetaStyle: CSSProperties = {
   fontSize: D.footnote,
-  color: D.labelSecondary,
-  marginTop: 5,
+  color: D.labelTertiary,
+  marginTop: 4,
+  lineHeight: 1.3,
 }
 
-/** 推荐卡右侧的库存提示：把原本空着的一大片补成决策信息 */
 export const recommendStockRowStyle: CSSProperties = {
   display: 'flex',
   flexDirection: 'row',
-  gap: 10,
-  marginTop: 7,
+  gap: 8,
+  marginTop: 6,
 }
 
 export const recommendStockHaveStyle: CSSProperties = {
   fontSize: D.caption,
-  color: D.labelSecondary,
+  color: D.labelTertiary,
 }
 
 export const recommendStockMissStyle: CSSProperties = {
@@ -304,5 +313,4 @@ export const recommendStockMissStyle: CSSProperties = {
 export const recommendStockReadyStyle: CSSProperties = {
   fontSize: D.caption,
   color: D.green,
-  fontWeight: D.weightSemibold,
 }

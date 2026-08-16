@@ -85,8 +85,10 @@ if (exists('.env.local')) {
   warn('未检测到 .env.local；请在发布机确认 TARO_APP_LLM_PROXY_URL / TARO_APP_CATALOG_BASE_URL 等构建变量')
 }
 
-const indexPage = exists('src/pages/index/index.tsx') ? fs.readFileSync(path.join(root, 'src/pages/index/index.tsx'), 'utf8') : ''
-if (!indexPage.includes('拍小票建冰箱')) {
+const homePantryBanner = exists('src/pages/index/components/HomePantryBanner.tsx')
+  ? fs.readFileSync(path.join(root, 'src/pages/index/components/HomePantryBanner.tsx'), 'utf8')
+  : ''
+if (!homePantryBanner.includes('拍小票建冰箱')) {
   warn('首页空冰箱引导应包含「拍小票建冰箱」主动作')
 }
 if (!appConfig.includes("text: '今晚'")) {

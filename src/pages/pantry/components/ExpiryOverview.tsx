@@ -20,6 +20,9 @@ type Props = {
   onClearExpired: () => void
   presetName: string
   onOpenLayoutSettings: () => void
+  shoppingCount: number
+  shoppingOpen: boolean
+  onToggleShopping: () => void
 }
 
 function expiringText(days: number | null): string {
@@ -55,9 +58,10 @@ export function ExpiryOverview({
   onClearExpired,
   presetName,
   onOpenLayoutSettings,
+  shoppingCount,
+  shoppingOpen,
+  onToggleShopping,
 }: Props) {
-  if (totalCount === 0) return null
-
   const chips = [
     { k: 'all' as HighlightMode, t: '全部', n: totalCount, tone: D.label },
     { k: 'expiring' as HighlightMode, t: '临期', n: expiringCount, tone: D.accentWarm },
@@ -90,10 +94,11 @@ export function ExpiryOverview({
         style={{
           display: 'flex',
           flexDirection: 'row',
+          flexWrap: 'wrap',
           alignItems: 'center',
-          gap: 8,
+          gap: 6,
           padding: `0 ${pad}px`,
-          marginBottom: detail ? 10 : 16,
+          marginBottom: detail ? 8 : 10,
         }}
       >
         {chips.map(({ k, t, n, tone }) => {
@@ -103,9 +108,9 @@ export function ExpiryOverview({
               key={k}
               className="tap-scale"
               style={{
-                paddingLeft: 13,
-                paddingRight: 13,
-                height: 32,
+                paddingLeft: 10,
+                paddingRight: 10,
+                height: 28,
                 borderRadius: D.radiusPill,
                 backgroundColor: on ? D.label : D.bgElevated,
                 border: on ? 'none' : `0.5px solid ${D.separator}`,
@@ -138,15 +143,52 @@ export function ExpiryOverview({
           )
         })}
 
-        {/* 柜型切换：同属视图控件，并入本行 */}
+        <View
+          className="tap-scale"
+          onClick={onToggleShopping}
+          style={{
+            paddingLeft: 10,
+            paddingRight: 10,
+            height: 28,
+            borderRadius: D.radiusPill,
+            backgroundColor: shoppingOpen ? D.accent : D.bgElevated,
+            border: shoppingOpen ? 'none' : `0.5px solid ${D.separator}`,
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 5,
+          }}
+        >
+            <Text
+              style={{
+                fontSize: D.footnote,
+                fontWeight: D.weightSemibold,
+                color: shoppingOpen ? D.onAccent : D.labelSecondary,
+                lineHeight: 1.2,
+              }}
+            >
+              待买
+            </Text>
+            <Text
+              style={{
+                fontSize: D.footnote,
+                fontWeight: D.weightSemibold,
+                color: shoppingOpen ? D.onAccent : D.accentDeep,
+                lineHeight: 1.2,
+              }}
+            >
+              {shoppingCount}
+            </Text>
+        </View>
+
         <View
           className="tap-scale"
           onClick={onOpenLayoutSettings}
           style={{
             marginLeft: 'auto',
-            paddingLeft: 12,
-            paddingRight: 12,
-            height: 32,
+            paddingLeft: 10,
+            paddingRight: 10,
+            height: 28,
             borderRadius: D.radiusPill,
             backgroundColor: D.bgElevated,
             border: `0.5px solid ${D.separator}`,

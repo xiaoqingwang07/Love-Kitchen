@@ -20,6 +20,7 @@ import { MealPlanActions } from './components/MealPlanActions'
 import { RecipeResultCard } from './components/RecipeResultCard'
 import type { MealConstraint, MealPlan } from '../../types/mealPlan'
 import { setSelectedRecipeForDetail, setPantryOpenShopping } from '../../utils/navigationPayload'
+import { PageNavBar } from '../../components/PageNavBar'
 import { ResultPageHeader } from './components/ResultPageHeader'
 import { ResultNoticeBar } from './components/ResultNoticeBar'
 import { ReminderMealEmptyBar } from './components/ReminderMealEmptyBar'
@@ -200,12 +201,12 @@ function Result() {
     }
     householdStore.addShoppingItems(plan.missingItems)
     Taro.showToast({
-      title: `已加 ${plan.missingItems.length} 样到采购清单`,
+      title: `已加 ${plan.missingItems.length} 样到待买`,
       icon: 'success',
     })
     setTimeout(() => {
       Taro.showModal({
-        title: '去冰箱采购清单？',
+        title: '去冰箱待买清单？',
         content: '买完可勾选，直接放入冰箱。',
         confirmText: '去冰箱',
         cancelText: '稍后',
@@ -240,7 +241,9 @@ function Result() {
   const activeMealPlan = mealPlans[selectedPlanIndex] ?? null
 
   return (
-    <View style={S.page}>
+    <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
+      <PageNavBar title="爱心厨房" />
+      <View style={S.page}>
       <ResultPageHeader
         title={mealTitle}
         subtitle={headerSubtitle}
@@ -334,6 +337,7 @@ function Result() {
           ) : null}
         </View>
       )}
+      </View>
     </View>
   )
 }

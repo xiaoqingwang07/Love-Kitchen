@@ -1,6 +1,6 @@
 export default {
   navigationStyle: 'custom',
-  navigationBarTitleText: '菜谱详情',
+  navigationBarTitleText: '爱心厨房',
   navigationBarBackgroundColor: '#FDFCFB',
   navigationBarTextStyle: 'black',
 }

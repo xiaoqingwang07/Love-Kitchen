@@ -21,7 +21,7 @@ type Props = {
  */
 export function ProfileStatsHeader({ stats, achievements, onStatClick }: Props) {
   return (
-    <View style={{ padding: '16px 22px 20px' }}>
+    <View style={{ padding: '12px 22px 8px' }}>
       {/* 三张大卡片收敛为一行可点小字：这里是次要信息，不该占掉三分之一屏 */}
       <View style={{ display: 'flex', flexDirection: 'row', gap: 20, paddingLeft: 2 }}>
         {stats.map((s) => (

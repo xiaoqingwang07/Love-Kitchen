@@ -1,5 +1,5 @@
 import { View, Text } from '@tarojs/components'
-import { D } from '../../../theme/designTokens'
+import { D, mediaRowTextCol } from '../../../theme/designTokens'
 import { findPantryItemForRecipeIngredient } from '../../../utils/ingredientMatch'
 import type { Ingredient } from '../../../types/recipe'
 import type { PantryItem } from '../../../types/pantry'
@@ -39,7 +39,7 @@ export function IngredientGrid({ ingredients, pantryItems, onOpenShopping }: Pro
           style={{ fontSize: D.footnote, color: D.accentDeep, fontWeight: D.weightSemibold }}
           onClick={onOpenShopping}
         >
-          采购清单 →
+          待买清单 →
         </Text>
       </View>
       <View style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -59,11 +59,11 @@ export function IngredientGrid({ ingredients, pantryItems, onOpenShopping }: Pro
                 gap: 6,
               }}
             >
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={{ fontSize: D.subheadline, color: D.label, fontWeight: D.weightMedium }}>
+              <View style={mediaRowTextCol}>
+                <Text className="lk-block" style={{ fontSize: D.subheadline, color: D.label, fontWeight: D.weightMedium, lineHeight: 1.25 }}>
                   {ing.name}
                 </Text>
-                <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>{ing.amount}</Text>
+                <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 3, lineHeight: 1.25 }}>{ing.amount}</Text>
               </View>
               {hasIt ? (
                 <Text

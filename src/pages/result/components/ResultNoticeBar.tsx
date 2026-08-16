@@ -9,8 +9,8 @@ type Props = {
 export function ResultNoticeBar({ notice }: Props) {
   return (
     <View style={noticeBoxStyle(notice.tone)}>
-      <Text style={{ fontSize: 16, lineHeight: 1.2, marginTop: 1 }}>
-        {notice.tone === 'warn' ? '⚠️' : '✦'}
+      <Text style={{ fontSize: 15, lineHeight: 1 }}>
+        {notice.tone === 'warn' ? '!' : '·'}
       </Text>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text className="lk-block" style={noticeTitleStyle(notice.tone)}>

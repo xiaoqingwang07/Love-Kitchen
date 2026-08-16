@@ -22,6 +22,9 @@ import type { HouseholdShoppingItem } from '../../../types/household'
 
 type Props = {
   forceExpand?: boolean
+  /** 折叠头已并入筛选行，这里只渲染清单本身 */
+  embedded?: boolean
+  open?: boolean
 }
 
 function ShoppingRow({
@@ -62,7 +65,7 @@ function ShoppingRow({
         >
           {item.name}
         </Text>
-        <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>
+        <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 3, lineHeight: 1.25 }}>
           {item.amount}
           {householdApiConfigured() && item.addedBy ? ` · ${item.addedBy}添加` : ''}
         </Text>
@@ -132,8 +135,17 @@ function RemindDateRow({
       }}
     >
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontSize: D.caption, fontWeight: D.weightSemibold, color: D.accentDeep }}>
-          {remindYmd ? `购买提醒 · ${formatRemindLabel(remindYmd)}` : '设置购买日提醒'}
+        <Text
+          className="lk-block"
+          style={{
+            fontSize: D.caption,
+            fontWeight: D.weightSemibold,
+            color: D.accentDeep,
+            lineHeight: 1.25,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {remindYmd ? `购买提醒 · ${formatRemindLabel(remindYmd)}` : '设置购买提醒'}
         </Text>
         <Text className="lk-block" style={{ fontSize: 11, color: D.labelTertiary, marginTop: 4 }}>
           写入手机日历（带闹钟）。微信不能直接建系统待办，日历是能提醒你去超市的方式。
@@ -172,10 +184,10 @@ function RemindDateRow({
   )
 }
 
-function ShoppingListPanelInner({ forceExpand }: Props) {
+function ShoppingListPanelInner({ forceExpand, embedded, open }: Props) {
   const householdStore = useHouseholdStore()
   const pantryStore = usePantryStore()
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(!embedded)
   const [draftName, setDraftName] = useState('')
   const [remindYmd, setRemindYmd] = useState(() => {
     const saved = loadShoppingRemindDate()
@@ -188,6 +200,13 @@ function ShoppingListPanelInner({ forceExpand }: Props) {
   useEffect(() => {
     if (forceExpand) setExpanded(true)
   }, [forceExpand])
+
+  useEffect(() => {
+    if (typeof open === 'boolean') setExpanded(open)
+  }, [open])
+
+  const visible = embedded ? Boolean(open ?? expanded) : expanded
+  if (embedded && !visible) return null
 
   const cardStyle = {
     backgroundColor: D.bgElevated,
@@ -266,7 +285,21 @@ function ShoppingListPanelInner({ forceExpand }: Props) {
   }
 
   return (
-    <View id="shopping-panel" style={cardStyle}>
+    <View
+      id="shopping-panel"
+      style={
+        embedded
+          ? {
+              backgroundColor: D.bgElevated,
+              borderRadius: D.radiusS,
+              padding: '10px 12px',
+              margin: `0 ${D.pagePadH}px 12px`,
+              border: `0.5px solid ${D.separatorLight}`,
+            }
+          : cardStyle
+      }
+    >
+      {embedded ? null : (
       <View
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
         onClick={() => setExpanded((v) => !v)}
@@ -283,7 +316,7 @@ function ShoppingListPanelInner({ forceExpand }: Props) {
           <AppIcon name="cart" size={16} color={D.accent} backgroundColor={D.accentMuted} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
-              采购清单
+              待买清单
             </Text>
             <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4 }}>
               {pending.length > 0
@@ -296,9 +329,10 @@ function ShoppingListPanelInner({ forceExpand }: Props) {
         </View>
         <ExpandChevron expanded={expanded} />
       </View>
+      )}
 
-      {expanded ? (
-        <View style={{ marginTop: 14 }}>
+      {visible ? (
+        <View style={{ marginTop: embedded ? 0 : 14 }}>
           {householdSyncOn && householdStore.lastUpdatedLabel ? (
             <Text
               style={{

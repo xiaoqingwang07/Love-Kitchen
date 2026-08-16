@@ -97,7 +97,7 @@ function collectMissing(
   for (const recipe of recipes) {
     for (const ing of recipe.ingredients || []) {
       const key = ing.name.trim()
-      if (!key || seen.has(key)) continue
+      if (!key || seen.has(key) || isStapleIngredient(key)) continue
       const hit = pantryNames.some((p) => ingredientsLikelyMatch(p, key))
       if (!hit) {
         seen.add(key)

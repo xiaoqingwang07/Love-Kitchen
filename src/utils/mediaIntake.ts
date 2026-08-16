@@ -92,7 +92,7 @@ export function navigateToPantryAction(action: 'receipt' | 'ingredients' | 'past
 export async function startReceiptIntakeFromHome(): Promise<boolean> {
   try {
     const res = await Taro.showActionSheet({
-      itemList: ['拍照小票', '从相册选小票', '粘贴购物清单'],
+      itemList: ['拍照小票', '从相册选小票', '粘贴待买清单'],
     })
     if (res.tapIndex === 2) {
       navigateToPantryAction('paste')

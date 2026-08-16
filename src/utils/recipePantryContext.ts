@@ -2,6 +2,7 @@ import type { Recipe } from '../types/recipe'
 import type { PantryItem } from '../types/pantry'
 import { findPantryItemForRecipeIngredient } from './ingredientMatch'
 import { getFreshnessStatus } from '../types/pantry'
+import { isStapleIngredient } from './recipeIngredientFilter'
 
 export interface RecipePantryContext {
   hits: PantryItem[]
@@ -23,7 +24,7 @@ export function getRecipePantryContext(
     if (hit && !seenPantry.has(hit.id)) {
       seenPantry.add(hit.id)
       hits.push(hit)
-    } else if (!hit) {
+    } else if (!hit && !isStapleIngredient(ing.name)) {
       missing.push({ name: ing.name, amount: ing.amount || '适量' })
     }
   }

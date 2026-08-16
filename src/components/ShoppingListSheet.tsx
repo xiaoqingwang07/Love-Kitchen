@@ -4,20 +4,24 @@ import { useEffect, useState } from 'react'
 import { D } from '../theme/designTokens'
 import type { ShoppingItem } from '../utils/shoppingList'
 import { formatShoppingListText } from '../utils/shoppingList'
+import { isStapleIngredient } from '../utils/recipeIngredientFilter'
 import { primeShoppingShare } from '../utils/shareLinks'
-import { householdApiConfigured } from '../api/household'
+import {
+  PrimaryButton,
+  SheetBody,
+  SheetHeading,
+  SheetOverlay,
+  SheetPanel,
+  TwoLine,
+} from './SheetChrome'
 
 type Props = {
   visible: boolean
   items: ShoppingItem[]
   onClose: () => void
-  /** 将勾选的缺失项加入本地采购清单 */
   onAddToList?: (items: { name: string; amount: string }[]) => void
 }
 
-/**
- * 采购清单底部 Sheet：默认把「缺少」项勾上，允许用户改动后复制 / 分享
- */
 export function ShoppingListSheet({ visible, items, onClose, onAddToList }: Props) {
   const [checked, setChecked] = useState<Record<string, boolean>>({})
 
@@ -25,11 +29,10 @@ export function ShoppingListSheet({ visible, items, onClose, onAddToList }: Prop
     if (!visible) return
     const next: Record<string, boolean> = {}
     items.forEach((i) => {
-      next[i.name] = !i.haveIt
+      next[i.name] = !i.haveIt && !isStapleIngredient(i.name)
     })
     setChecked(next)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible])
+  }, [visible, items])
 
   if (!visible) return null
 
@@ -65,78 +68,14 @@ export function ShoppingListSheet({ visible, items, onClose, onAddToList }: Prop
       return
     }
     onAddToList?.(missing)
-    Taro.showToast({ title: '已加入采购清单', icon: 'success' })
+    Taro.showToast({ title: '已加入待买', icon: 'success' })
   }
 
   return (
-    <View
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(18,17,15,0.55)',
-        zIndex: 400,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'flex-end',
-      }}
-      onClick={onClose}
-    >
-      <View
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: D.bgElevated,
-          borderTopLeftRadius: D.radiusXL,
-          borderTopRightRadius: D.radiusXL,
-          padding: `16px ${D.pagePadH}px`,
-          paddingBottom: 'calc(24px + env(safe-area-inset-bottom))',
-          maxHeight: '82vh',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: D.shadowLift,
-        }}
-      >
-        <View
-          style={{
-            alignSelf: 'center',
-            width: 36,
-            height: 4,
-            borderRadius: 2,
-            backgroundColor: D.separator,
-            margin: '0 auto 16px',
-          }}
-        />
-        <View
-          style={{
-            display: 'flex',
-            alignItems: 'baseline',
-            justifyContent: 'space-between',
-            marginBottom: 12,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: D.headline,
-              fontWeight: D.weightBold,
-              color: D.label,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            采购清单
-          </Text>
-          <Text style={{ fontSize: D.caption, color: D.labelTertiary }}>
-            勾选要买的；已取消勾的视为已有
-          </Text>
-        </View>
-
-        <View
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            WebkitOverflowScrolling: 'touch',
-            margin: '0 -4px',
-            padding: '0 4px',
-          }}
-        >
+    <SheetOverlay onClose={onClose}>
+      <SheetPanel maxHeight="82vh">
+        <SheetHeading title="待买清单" subtitle="勾选要买的；取消勾选视为已有" />
+        <SheetBody>
           {items.map((item) => {
             const on = !!checked[item.name]
             return (
@@ -150,10 +89,9 @@ export function ShoppingListSheet({ visible, items, onClose, onAddToList }: Prop
                   display: 'flex',
                   alignItems: 'center',
                   gap: 12,
-                  padding: '12px 10px',
-                  borderRadius: D.radiusM,
+                  padding: '10px 8px',
+                  borderRadius: D.radiusS,
                   backgroundColor: on ? D.accentMuted : 'transparent',
-                  marginBottom: 4,
                 }}
               >
                 <View
@@ -182,85 +120,55 @@ export function ShoppingListSheet({ visible, items, onClose, onAddToList }: Prop
                     />
                   ) : null}
                 </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text
-                    style={{
-                      fontSize: D.body,
-                      fontWeight: D.weightMedium,
-                      color: D.label,
-                      textDecoration: !on && !item.haveIt ? 'none' : 'none',
-                    }}
-                  >
-                    {item.name}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: D.caption,
-                      color: D.labelTertiary,
-                      marginTop: 2,
-                    }}
-                  >
-                    {item.amount}
-                    {item.haveIt ? ' · 冰箱里有' : ''}
-                  </Text>
-                </View>
+                <TwoLine
+                  title={item.name}
+                  detail={`${item.amount}${item.haveIt ? ' · 冰箱里有' : ''}`}
+                />
               </View>
             )
           })}
           {items.length === 0 ? (
             <Text
+              className="lk-block"
               style={{
                 fontSize: D.footnote,
                 color: D.labelTertiary,
                 textAlign: 'center',
-                padding: '24px 0',
+                padding: '20px 0',
+                lineHeight: 1.35,
               }}
             >
               这道菜没有记录用料
             </Text>
           ) : null}
-        </View>
+        </SheetBody>
 
-        {/* 操作区：一个主按钮通栏，次要动作退为一行文字链。
-            原先四个按钮并排挤在一行，「加入采购清单」被压到换行，
-            深色主按钮旁边还有个橙色按钮抢重点，主次全乱。 */}
-        <View style={{ marginTop: 18 }}>
-          <View
-            className="tap-scale"
-            style={{
-              height: 48,
-              borderRadius: D.radiusS,
-              backgroundColor: D.accent,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+        <View style={{ marginTop: 14 }}>
+          <PrimaryButton
+            label={
+              onAddToList
+                ? `加入待买${selectedCount ? ` · ${selectedCount} 项` : ''}`
+                : `复制清单${selectedCount ? ` · ${selectedCount} 项` : ''}`
+            }
             onClick={onAddToList ? addToList : copy}
-          >
-            <Text style={{ fontSize: D.body, fontWeight: D.weightSemibold, color: D.onAccent }}>
-              {onAddToList
-                ? `加入采购清单${selectedCount ? ` · ${selectedCount} 项` : ''}`
-                : `复制清单${selectedCount ? ` · ${selectedCount} 项` : ''}`}
-            </Text>
-          </View>
-
+          />
           <View
             style={{
               display: 'flex',
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 28,
-              marginTop: 14,
+              gap: 24,
+              marginTop: 8,
             }}
           >
             {onAddToList ? (
               <Text
                 className="tap-scale"
-                style={{ fontSize: D.footnote, color: D.labelSecondary, padding: '6px 4px' }}
+                style={{ fontSize: D.footnote, color: D.labelSecondary, padding: '10px 4px', lineHeight: 1.2 }}
                 onClick={copy}
               >
-                复制清单
+                复制
               </Text>
             ) : null}
             <Button
@@ -269,24 +177,26 @@ export function ShoppingListSheet({ visible, items, onClose, onAddToList }: Prop
               style={{
                 background: 'transparent',
                 border: 'none',
-                padding: '6px 4px',
-                lineHeight: 'normal',
+                padding: '10px 4px',
+                margin: 0,
+                lineHeight: 1.2,
                 fontSize: D.footnote,
                 color: D.labelSecondary,
+                height: 40,
               }}
             >
               分享
             </Button>
             <Text
               className="tap-scale"
-              style={{ fontSize: D.footnote, color: D.labelSecondary, padding: '6px 4px' }}
+              style={{ fontSize: D.footnote, color: D.labelSecondary, padding: '10px 4px', lineHeight: 1.2 }}
               onClick={onClose}
             >
               关闭
             </Text>
           </View>
         </View>
-      </View>
-    </View>
+      </SheetPanel>
+    </SheetOverlay>
   )
 }

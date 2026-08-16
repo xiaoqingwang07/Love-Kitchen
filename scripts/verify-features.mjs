@@ -418,6 +418,20 @@ ok(
   '结果页主 CTA 应使用 Button 或明确 loading 状态',
   mealPlanActionsSrc.includes('Button') && mealPlanActionsSrc.includes('开始做主菜')
 )
+ok(
+  '方案操作不应上下堆叠两颗等权按钮',
+  mealPlanActionsSrc.includes("flexDirection: 'row'") && !mealPlanActionsSrc.includes("flexDirection: 'column'")
+)
+ok('烹饪模式退出不应使用纯文本箭头', !detailCookSrc.includes('← 退出') && detailCookSrc.includes('BackChevron'))
+const deductSheetSrc = fs.readFileSync(path.join(root, 'src/pages/detail/components/DeductConfirmSheet.tsx'), 'utf8')
+ok('扣减弹层不应 flex:1 撑出空白', deductSheetSrc.includes('SheetBody') && !deductSheetSrc.includes('flex: 1,'))
+ok('扣减弹层应使用一主一次操作', deductSheetSrc.includes('SheetActions'))
+ok(
+  '个人中心子页不应使用「← 返回」文案',
+  !fs.readFileSync(path.join(root, 'src/pages/profile/components/AboutPage.tsx'), 'utf8').includes('← 返回') &&
+    !fs.readFileSync(path.join(root, 'src/pages/profile/components/FavoritesListPage.tsx'), 'utf8').includes('← 返回') &&
+    !fs.readFileSync(path.join(root, 'src/pages/profile/components/CookedHistoryPage.tsx'), 'utf8').includes('← 返回')
+)
 const mealPlanCardSrc = fs.readFileSync(path.join(root, 'src/pages/result/components/MealPlanCard.tsx'), 'utf8')
 ok(
   'MealPlanCard 图片应有 onError fallback',
@@ -458,6 +472,22 @@ ok('结果页源码含 meal 模式', resultLoaderSrc.includes("from === 'meal'")
 
 const profileSrc = fs.readFileSync(path.join(root, 'src/pages/profile/index.tsx'), 'utf8')
 ok('冰箱页源码含采购清单面板', pantryPageSrc.includes('ShoppingListPanel'))
+ok(
+  '采购入口并入筛选行',
+  pantryPageSrc.includes('onToggleShopping') &&
+    pantryPageSrc.includes('embedded') &&
+    fs.readFileSync(path.join(root, 'src/pages/pantry/components/ExpiryOverview.tsx'), 'utf8').includes('待买')
+)
+ok(
+  '精确封面覆盖变体菜名',
+  fs.readFileSync(path.join(root, 'src/data/dishImages.ts'), 'utf8').includes('pickExactDishCover') &&
+    fs.readFileSync(path.join(root, 'src/utils/enrichRecipeMedia.ts'), 'utf8').includes('pickExactDishCover')
+)
+ok(
+  '图文行文字列统一居中',
+  fs.readFileSync(path.join(root, 'src/theme/designTokens.ts'), 'utf8').includes('mediaRowTextCol') &&
+    fs.readFileSync(path.join(root, 'src/pages/index/components/HomeRecommendSection.tsx'), 'utf8').includes('mediaRowTextCol')
+)
 ok('我的页不再承载采购清单', !profileSrc.includes('ShoppingListPanel'))
 ok('采购清单可写入系统日历提醒', fs.readFileSync(path.join(root, 'src/utils/shoppingRemind.ts'), 'utf8').includes('addPhoneCalendar'))
 

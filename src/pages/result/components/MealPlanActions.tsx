@@ -1,4 +1,4 @@
-import { View, Button } from '@tarojs/components'
+import { View, Text, Button } from '@tarojs/components'
 import { D } from '../../../theme/designTokens'
 import type { MealPlan } from '../../../types/mealPlan'
 
@@ -16,21 +16,32 @@ export function MealPlanActions({ plan, loading, disabled, onStartMain, onShare 
   if (!main) return null
 
   return (
-    <View style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+    <View
+      style={{
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        marginTop: 8,
+      }}
+    >
       <Button
         className="tap-scale"
         loading={loading}
         disabled={disabled || loading}
         onClick={onStartMain}
         style={{
+          flex: 1,
           height: 48,
           borderRadius: 999,
           backgroundColor: D.accent,
           color: D.onAccent,
-          fontSize: D.subheadline,
+          fontSize: D.body,
           fontWeight: D.weightSemibold,
           border: 'none',
           lineHeight: '48px',
+          padding: 0,
+          margin: 0,
         }}
       >
         开始做主菜
@@ -39,16 +50,19 @@ export function MealPlanActions({ plan, loading, disabled, onStartMain, onShare 
         openType="share"
         onClick={onShare}
         style={{
-          height: 44,
-          borderRadius: 999,
-          backgroundColor: D.accentMuted,
+          flexShrink: 0,
+          height: 48,
+          padding: '0 4px',
+          margin: 0,
+          backgroundColor: 'transparent',
           color: D.accentDeep,
           fontSize: D.subheadline,
-          fontWeight: D.weightSemibold,
+          fontWeight: D.weightMedium,
           border: 'none',
+          lineHeight: '48px',
         }}
       >
-        分享搭配方案
+        分享
       </Button>
     </View>
   )

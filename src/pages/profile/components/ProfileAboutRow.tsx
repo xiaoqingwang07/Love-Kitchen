@@ -12,7 +12,7 @@ export function ProfileAboutRow({ onOpen }: Props) {
       style={{
         backgroundColor: D.bgElevated,
         borderRadius: D.radiusM,
-        padding: 16,
+        padding: '12px 14px',
         marginBottom: 10,
         display: 'flex',
         alignItems: 'center',

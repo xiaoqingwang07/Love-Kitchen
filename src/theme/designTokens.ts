@@ -101,3 +101,12 @@ export const D = {
   weightBold: '600',
   weightHeavy: '700',
 } as const
+
+/** 图左字右：文字列在缩略图高度内垂直居中，禁止只写 flex:1 导致字贴顶。 */
+export const mediaRowTextCol = {
+  flex: 1,
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+} as const

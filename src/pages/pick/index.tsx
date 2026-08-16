@@ -149,16 +149,17 @@ function Pick() {
             border: `0.5px solid ${D.accentLine}`,
           }}
         >
-          <Text style={{ fontSize: 14, fontWeight: '600', color: D.label, marginBottom: 6 }}>冰箱还是空的</Text>
+          <Text className="lk-block" style={{ fontSize: 14, fontWeight: '600', color: D.label, marginBottom: 6, lineHeight: 1.25 }}>冰箱还是空的</Text>
           <Text className="lk-block" style={{ fontSize: 12, color: D.labelSecondary, lineHeight: 1.5, marginBottom: 12 }}>
             先去「冰箱」录入食材，临期会在这里高亮；或在本页直接勾选/输入食材也能匹配。首页搜索不依赖冰箱。
           </Text>
-          <View style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
+          <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 14 }}>
             <View
+              className="tap-scale"
               style={{
-                flex: 1,
-                height: 42,
-                borderRadius: D.radiusS,
+                height: 36,
+                padding: '0 14px',
+                borderRadius: D.radiusPill,
                 backgroundColor: D.accent,
                 display: 'flex',
                 alignItems: 'center',
@@ -166,23 +167,15 @@ function Pick() {
               }}
               onClick={() => Taro.switchTab({ url: '/pages/pantry/index' })}
             >
-              <Text style={{ fontSize: D.body, fontWeight: D.weightSemibold, color: D.onAccent }}>去录入食材</Text>
+              <Text style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: D.onAccent }}>去录入食材</Text>
             </View>
-            <View
-              style={{
-                flex: 1,
-                height: 42,
-                borderRadius: D.radiusS,
-                backgroundColor: D.bgElevated,
-                border: `0.5px solid ${D.separator}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+            <Text
+              className="tap-scale"
+              style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: D.accentDeep, lineHeight: 1.2 }}
               onClick={() => Taro.switchTab({ url: '/pages/index/index' })}
             >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: D.label }}>回首页搜索</Text>
-            </View>
+              回首页搜索
+            </Text>
           </View>
         </View>
       ) : null}
@@ -198,7 +191,7 @@ function Pick() {
             <Text style={{ fontSize: 11, color: D.labelTertiary }} onClick={handleImportPantry}>导入冰箱</Text>
           </View>
         </View>
-        <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginBottom: 10 }}>已选 {selected.length} 种</Text>
+        <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginBottom: 10, lineHeight: 1.2 }}>已选 {selected.length} 种</Text>
 
         {expiringNames.length > 0 && (
           <>
@@ -253,7 +246,7 @@ function Pick() {
           </>
         )}
 
-        <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginBottom: 8 }}>手动输入</Text>
+        <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginBottom: 8, lineHeight: 1.2 }}>手动输入</Text>
         <View style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Input
             style={{ flex: 1, height: '44px', backgroundColor: D.bg, borderRadius: D.radiusS, padding: '0 16px', fontSize: '15px', border: `0.5px solid ${D.separatorLight}` }}

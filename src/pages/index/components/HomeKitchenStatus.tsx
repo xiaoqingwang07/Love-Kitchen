@@ -7,7 +7,6 @@ import { getFreshnessStatus } from '../../../types/pantry'
 import { setPantryOpenShopping } from '../../../utils/navigationPayload'
 import type { PantryItem } from '../../../types/pantry'
 
-/** 跳转今晚方案页，携带冰箱食材与临期列表 */
 export function buildMealResultPath(items: PantryItem[], source: string): string {
   const names = items.map((i) => i.name)
   const expiring = items.filter((i) => getFreshnessStatus(i) === 'expiring').map((i) => i.name)
@@ -22,7 +21,7 @@ type Props = {
   onTonightMeal: () => void
 }
 
-/** 厨房状态面板：首屏展示「家里有什么、快过期什么、缺什么」 */
+/** 一行：冰箱/采购状态 + 文字主操作，不再单独占一颗通栏按钮。 */
 export function HomeKitchenStatus({ expiringCount, onTonightMeal }: Props) {
   const pantryStore = usePantryStore()
   const householdStore = useHouseholdStore()
@@ -33,57 +32,50 @@ export function HomeKitchenStatus({ expiringCount, onTonightMeal }: Props) {
   if (pantryCount === 0) return null
 
   return (
-    <View style={{ margin: `24px ${D.pagePadH}px 0` }}>
-      {/* 全页唯一实心按钮：主操作独占重量，不与其他元素抢 */}
-      <View
+    <View
+      style={{
+        margin: `6px ${D.pagePadH}px 0`,
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+      }}
+    >
+      <Text style={{ fontSize: D.footnote, color: D.labelSecondary, lineHeight: 1.2 }}>
+        冰箱 <Text style={{ color: D.label, fontWeight: D.weightSemibold }}>{pantryCount}</Text>
+      </Text>
+      <Text
+        className="tap-scale"
+        style={{ fontSize: D.footnote, color: D.labelSecondary, lineHeight: 1.2 }}
+        onClick={() => {
+          trackEvent('home_shopping_entry', { shoppingCount })
+          setPantryOpenShopping()
+          Taro.switchTab({ url: '/pages/pantry/index' })
+        }}
+      >
+        待买 <Text style={{ color: D.label, fontWeight: D.weightSemibold }}>{shoppingCount}</Text>
+      </Text>
+      <View style={{ flex: 1 }} />
+      <Text
         className="tap-scale"
         style={{
-          height: 48,
-          borderRadius: D.radiusS,
-          backgroundColor: D.accent,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          fontSize: D.footnote,
+          fontWeight: D.weightSemibold,
+          color: D.accentDeep,
+          lineHeight: 1.2,
+          padding: '6px 0',
         }}
         onClick={() => {
           trackEvent('home_kitchen_cta', { pantryCount, expiringCount })
           onTonightMeal()
         }}
       >
-        <Text
-          style={{
-            fontSize: D.body,
-            fontWeight: D.weightSemibold,
-            color: D.onAccent,
-            letterSpacing: '0.02em',
-          }}
-        >
-          帮我搭配
-        </Text>
-      </View>
-
-      {/* 背景信息降级为一行小字：临期已在顶部提醒条呈现，此处不重复 */}
-      <View style={{ display: 'flex', flexDirection: 'row', gap: 20, marginTop: 18, paddingLeft: 4 }}>
-        <Text style={{ fontSize: D.footnote, color: D.labelSecondary }}>
-          冰箱 <Text style={{ color: D.label, fontWeight: D.weightSemibold }}>{pantryCount} 样</Text>
-        </Text>
-        <Text
-          className="tap-scale"
-          style={{ fontSize: D.footnote, color: D.labelSecondary }}
-          onClick={() => {
-            trackEvent('home_shopping_entry', { shoppingCount })
-            setPantryOpenShopping()
-            Taro.switchTab({ url: '/pages/pantry/index' })
-          }}
-        >
-          待采购 <Text style={{ color: D.label, fontWeight: D.weightSemibold }}>{shoppingCount}</Text>
-        </Text>
-      </View>
+        帮我搭配
+      </Text>
     </View>
   )
 }
 
-/** 加载示例冰箱并跳转今晚方案 */
 export function loadDemoPantryAndGoMeal(pantryStore: {
   loadDemoPantry: () => PantryItem[]
 }) {

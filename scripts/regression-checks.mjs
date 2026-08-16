@@ -163,6 +163,64 @@ expect(
 
 expect('冰箱页应包含采购清单入口', read('src/pages/pantry/index.tsx').includes('ShoppingListPanel'))
 expect(
+  '采购入口应并入筛选行，不再单独占一张大卡',
+  read('src/pages/pantry/components/ExpiryOverview.tsx').includes('onToggleShopping') &&
+    read('src/pages/pantry/components/ExpiryOverview.tsx').includes('待买') &&
+    read('src/pages/pantry/components/ShoppingListPanel.tsx').includes('embedded') &&
+    pantryPage.includes('embedded')
+)
+expect(
+  '精确封面须覆盖变体菜名，不能只改「辣椒炒肉」这一条',
+  read('src/data/dishImages.ts').includes('pickExactDishCover') &&
+    read('src/utils/enrichRecipeMedia.ts').includes('pickExactDishCover') &&
+    read('src/utils/enrichRecipeMedia.ts').includes('exactCover || inlineCover')
+)
+expect(
+  '图左字右的文字列须统一垂直居中',
+  read('src/theme/designTokens.ts').includes('mediaRowTextCol') &&
+    read('src/pages/index/components/HomeRecommendSection.tsx').includes('mediaRowTextCol') &&
+    read('src/pages/result/components/RecipeResultCard.tsx').includes('mediaRowTextCol') &&
+    read('src/pages/result/components/MealPlanCard.tsx').includes('mediaRowTextCol') &&
+    read('src/pages/profile/components/FavoritesListPage.tsx').includes('mediaRowTextCol') &&
+    read('src/pages/profile/components/CookedHistoryPage.tsx').includes('mediaRowTextCol')
+)
+expect(
+  '入库预览列表不得 flex:1 撑出空白',
+  !read('src/pages/pantry/components/IntakeSheet.tsx').includes('maxHeight: 280, marginTop: 14, flex: 1')
+)
+expect(
+  '方案「还缺」须排除常备调味，不能把生抽葱姜蒜当成要买的',
+  read('src/utils/mealPlanBuilder.ts').includes('isStapleIngredient(key)') &&
+    read('src/utils/recipePantryContext.ts').includes('isStapleIngredient') &&
+    read('src/utils/recipeIngredientFilter.ts').includes('葱花')
+)
+expect(
+  '常备调味子串不得误伤油麦菜/洋葱',
+  read('src/utils/recipeIngredientFilter.ts').includes('STAPLE_FALSE_FRIENDS') &&
+    read('src/utils/recipeIngredientFilter.ts').includes('油麦菜') &&
+    read('src/utils/recipeIngredientFilter.ts').includes('s.length >= 2') &&
+    read('src/utils/recipeIngredientFilter.ts').includes('红辣椒')
+)
+expect(
+  '冰箱搁板须等高，不能按内容撑出大小不一',
+  read('src/pages/pantry/components/FridgeCabinet.tsx').includes('SLOT_MIN') &&
+    read('src/pages/pantry/components/FridgeCabinet.tsx').includes('flex: 1')
+)
+expect(
+  '待买入口用「待买」而不是公文腔「采购」',
+  read('src/pages/pantry/components/ExpiryOverview.tsx').includes('待买') &&
+    read('src/pages/index/components/HomeKitchenStatus.tsx').includes('待买')
+)
+expect(
+  '待买提醒标题不得被挤成单字断行',
+  read('src/pages/pantry/components/ShoppingListPanel.tsx').includes("whiteSpace: 'nowrap'") &&
+    read('src/pages/pantry/components/ShoppingListPanel.tsx').includes('设置购买提醒')
+)
+expect(
+  '详情待买清单默认不勾选常备调味',
+  read('src/components/ShoppingListSheet.tsx').includes('isStapleIngredient')
+)
+expect(
   '我的页不应再承载采购清单',
   !read('src/pages/profile/index.tsx').includes('ShoppingListPanel') &&
     !fs.existsSync(path.join(root, 'src/pages/profile/components/ShoppingListPanel.tsx'))
@@ -377,7 +435,7 @@ expect(
   pantryStore.includes('previewDeduction') && pantryStore.includes('removeItemsByIds')
 )
 expect(
-  '首页「待采购」应直达冰箱页采购清单',
+  '首页「待买」应直达冰箱页待买清单',
   homeKitchenStatus.includes('setPantryOpenShopping') &&
     pantryPage.includes('consumePantryOpenShopping') &&
     pantryPage.includes('shopping-panel')

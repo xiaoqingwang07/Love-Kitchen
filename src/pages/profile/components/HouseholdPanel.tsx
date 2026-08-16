@@ -51,13 +51,13 @@ function HouseholdPanelInner() {
         >
           <AppIcon name="home" size={16} color={D.accent} backgroundColor={D.accentMuted} />
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
+            <Text className="lk-block" style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label, lineHeight: 1.25 }}>
               家庭厨房
             </Text>
-            <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4 }}>
+            <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, lineHeight: 1.25 }}>
               {householdStore.inHousehold
-                ? householdStore.lastUpdatedLabel || '与家人共享冰箱和采购清单'
-                : '创建家庭，同步冰箱与购物清单'}
+                ? householdStore.lastUpdatedLabel || '与家人共享冰箱和待买清单'
+                : '创建家庭，同步冰箱与待买清单'}
             </Text>
           </View>
         </View>
@@ -66,7 +66,7 @@ function HouseholdPanelInner() {
 
       {expanded ? (
         <View style={{ marginTop: 14 }}>
-          <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginBottom: 6 }}>我的称呼</Text>
+          <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginBottom: 6, lineHeight: 1.2 }}>我的称呼</Text>
           <Input
             style={{
               height: 40,
@@ -105,7 +105,7 @@ function HouseholdPanelInner() {
                 >
                   {householdStore.inviteCode}
                 </Text>
-                <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 6 }}>
+                <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 6, lineHeight: 1.25 }}>
                   {householdStore.household?.members?.length ?? 1} 位成员 ·{' '}
                   {householdStore.syncStatus === 'error'
                     ? `同步异常：${householdStore.lastSyncError}`
@@ -158,34 +158,31 @@ function HouseholdPanelInner() {
                   </View>
                 </Button>
               </View>
-              <Button
+              <View
                 style={{
-                  marginTop: 8,
-                  height: 40,
-                  borderRadius: 999,
-                  backgroundColor: D.bg,
-                  color: D.label,
-                  fontSize: D.caption,
-                  border: `0.5px solid ${D.separator}`,
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 28,
+                  marginTop: 10,
                 }}
-                onClick={() => void householdStore.pullRemote()}
               >
-                刷新同步
-              </Button>
-              <Button
-                style={{
-                  marginTop: 8,
-                  height: 40,
-                  borderRadius: 999,
-                  backgroundColor: 'transparent',
-                  color: D.red,
-                  fontSize: D.caption,
-                  border: 'none',
-                }}
-                onClick={() => householdStore.leaveHousehold()}
-              >
-                退出家庭
-              </Button>
+                <Text
+                  className="tap-scale"
+                  style={{ fontSize: D.footnote, color: D.labelSecondary, padding: '8px 4px', lineHeight: 1.2 }}
+                  onClick={() => void householdStore.pullRemote()}
+                >
+                  刷新同步
+                </Text>
+                <Text
+                  className="tap-scale"
+                  style={{ fontSize: D.footnote, color: D.red, padding: '8px 4px', lineHeight: 1.2 }}
+                  onClick={() => householdStore.leaveHousehold()}
+                >
+                  退出家庭
+                </Text>
+              </View>
             </>
           ) : (
             <>
@@ -204,7 +201,7 @@ function HouseholdPanelInner() {
               >
                 创建家庭厨房
               </Button>
-              <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginBottom: 6 }}>
+              <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginBottom: 6, lineHeight: 1.2 }}>
                 有邀请码？输入后加入
               </Text>
               <View style={{ display: 'flex', gap: 8 }}>

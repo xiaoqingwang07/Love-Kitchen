@@ -1,4 +1,4 @@
-import { pickRealDishImage } from '../data/dishImages'
+import { pickExactDishCover, pickRealDishImage } from '../data/dishImages'
 import { EXACT_DISH_IMAGE_OVERRIDES } from '../data/exactDishImages'
 import { getStepImages } from '../data/stepImages'
 import { recipeImageUrl, isRenderableRecipeImage } from './recipeImageUrl'
@@ -36,12 +36,16 @@ function sanitizeImage(url?: string): string | undefined {
 export function enrichRecipeMedia(recipe: Recipe): Recipe {
   const trustInline = shouldTrustInlineStepImages(recipe)
 
+  const exactCover = sanitizeImage(
+    pickExactDishCover(recipe.title, recipe.displayTitle, recipe.originalTitle)
+  )
   const inlineCover = sanitizeImage(recipe.image)
   const legacyCover =
     !trustInline && canUseLegacyCover(recipe)
       ? sanitizeImage(pickRealDishImage(recipe.title, []))
       : undefined
-  const image = inlineCover || legacyCover
+  // 精确封面优先：catalog 内嵌图曾把「辣椒炒肉」配成几乎看不见辣椒的褐肉特写
+  const image = exactCover || inlineCover || legacyCover
 
   if (!recipe.steps?.length) {
     return { ...recipe, image: image || undefined }

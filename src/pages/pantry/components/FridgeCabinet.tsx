@@ -8,9 +8,8 @@ import { getFreshnessStatus, getDaysLeft } from '../../../types/pantry'
 
 export type FridgeHighlightMode = 'all' | 'expiring' | 'expired'
 
-const SLOT_PULL_MIN = 56
-const SLOT_DRAWER_MIN = 62
-const SLOT_STACK_GAP = 5
+const SLOT_MIN = 56
+const SLOT_STACK_GAP = 4
 
 type Props = {
   layout: FridgeLayoutConfig
@@ -105,7 +104,7 @@ export function FridgeCabinet({
       slotList.some((i) =>
         getFreshnessStatus(i) === (highlight === 'expiring' ? 'expiring' : 'expired')
       )
-    const minH = kind === 'pull' ? SLOT_PULL_MIN : SLOT_DRAWER_MIN
+    const minH = SLOT_MIN
     const isFz = side === 'freezer'
     const summary = slotList.length === 0 ? '空' : slotList.map((i) => i.name).join('、')
 
@@ -130,22 +129,22 @@ export function FridgeCabinet({
         key={`${side}-${index}`}
         style={{
           minHeight: minH,
+          height: '100%',
           width: '100%',
+          flex: 1,
           borderRadius: 12,
           backgroundColor: 'rgba(255,255,255,0.72)',
           border: ring
             ? `1.5px solid ${highlight === 'expiring' ? D.accentWarm : D.red}`
             : '0.5px solid rgba(255,255,255,0.9)',
           boxShadow: '0 1px 8px rgba(18,17,15,0.04), inset 0 1px 0 rgba(255,255,255,0.9)',
-          padding: '8px 9px',
+          padding: '6px 8px',
           opacity: dim ? 0.35 : 1,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'flex-start',
+          justifyContent: 'center',
           alignItems: 'stretch',
           boxSizing: 'border-box',
-          flex: 1,
-          alignSelf: 'stretch',
           position: 'relative',
         }}
         onClick={() => onSlotClick(side, index)}
@@ -262,7 +261,7 @@ export function FridgeCabinet({
         </View>
         <View style={{ display: 'flex', flexDirection: 'column', gap: SLOT_STACK_GAP, flex: 1 }}>
           {indices.map((idx) => (
-            <View key={`${side}-${idx}`} style={{ display: 'flex', flex: 1 }}>
+            <View key={`${side}-${idx}`} style={{ display: 'flex', flex: 1, minHeight: 0 }}>
               {renderSlot(side, idx)}
             </View>
           ))}

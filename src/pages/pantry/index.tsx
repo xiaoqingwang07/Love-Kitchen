@@ -43,8 +43,8 @@ function saveFridgeLayout(layout: FridgeLayoutConfig): void {
 
 const pad = D.pagePadH
 const DAY_MS = 24 * 60 * 60 * 1000
-// 底部条由两行 5 个按钮收敛为单个「添加食材」，高度 48 + 上下 12 内边距
-const PANTRY_BOTTOM_RESERVE = 'calc(96px + env(safe-area-inset-bottom))'
+// 底部条：40 高按钮 + 上下 8 内边距，再留一点滚动余量
+const PANTRY_BOTTOM_RESERVE = 'calc(72px + env(safe-area-inset-bottom))'
 
 function FridgePantry() {
   const store = usePantryStore()
@@ -61,6 +61,7 @@ function FridgePantry() {
   const [showLayoutSettings, setShowLayoutSettings] = useState(false)
   const [quickFill, setQuickFill] = useState<string[]>([])
   const [focusShopping, setFocusShopping] = useState(false)
+  const [shoppingOpen, setShoppingOpen] = useState(false)
   const [scrollInto, setScrollInto] = useState('')
 
   const intake = usePantryIntake(store, layout)
@@ -121,6 +122,7 @@ function FridgePantry() {
 
     if (consumePantryOpenShopping()) {
       setFocusShopping(true)
+      setShoppingOpen(true)
       setScrollInto('shopping-panel')
       setTimeout(() => setScrollInto(''), 800)
     }
@@ -286,10 +288,6 @@ function FridgePantry() {
             页面名归原生导航栏，柜型切换并入下方筛选行 */}
         <View style={{ height: 8 }} />
 
-        <View style={{ padding: `0 ${pad}px` }}>
-          <ShoppingListPanel forceExpand={focusShopping} />
-        </View>
-
         {/* 「超市查冰箱」搜索框已移除：本页把每格食材名都摊开显示了，
             十几二十样一眼扫完，再放一个搜索框属于重复。
             组件保留在 components/ 下，日后食材量大到需要检索时可直接接回。 */}
@@ -323,6 +321,9 @@ function FridgePantry() {
           onHighlightChange={setHighlight}
           presetName={currentPreset.name}
           onOpenLayoutSettings={() => setShowLayoutSettings(true)}
+          shoppingCount={householdStore.shoppingList.filter((i) => !i.checked).length}
+          shoppingOpen={shoppingOpen}
+          onToggleShopping={() => setShoppingOpen((v) => !v)}
           onClearExpired={() => {
             Taro.showModal({
               title: '清理过期',
@@ -338,10 +339,16 @@ function FridgePantry() {
           }}
         />
 
+        <ShoppingListPanel
+          embedded
+          open={shoppingOpen}
+          forceExpand={focusShopping}
+        />
+
         {store.totalCount === 0 ? <PantryEmptyHint pad={pad} /> : null}
 
         {/* 冰箱本体 */}
-        <View style={{ padding: `0 ${pad}px 28px` }}>
+        <View style={{ padding: `0 ${pad}px 16px` }}>
           <View style={fridgeCabinet}>
             <FridgeCabinet
               layout={layout}

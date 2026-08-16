@@ -80,15 +80,16 @@ export function RecipeStepsList({ steps, timers, failedImages, onStepImageError 
               {step.tip ? (
                 <View
                   style={{
-                    fontSize: D.footnote,
-                    color: D.accentWarm,
                     backgroundColor: D.accentWarmMuted,
                     padding: '8px 12px',
                     borderRadius: D.radiusS,
                     marginTop: 10,
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: D.footnote, color: D.accentWarm }}>💡 {step.tip}</Text>
+                  <Text style={{ fontSize: D.footnote, color: D.accentWarm, lineHeight: 1.4 }}>{step.tip}</Text>
                 </View>
               ) : null}
               {step.time && step.time > 0 ? (

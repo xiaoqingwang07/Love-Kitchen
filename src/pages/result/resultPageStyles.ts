@@ -3,7 +3,6 @@ import { D } from '../../theme/designTokens'
 
 export const resultPageStyles = {
   page: {
-    minHeight: '100vh',
     backgroundColor: D.bg,
     padding: `${D.pagePadTop}px ${D.pagePadH}px 40px`,
   } as CSSProperties,
@@ -34,13 +33,13 @@ export const resultPageStyles = {
 export function noticeBoxStyle(tone: 'info' | 'warn'): CSSProperties {
   return {
     display: 'flex',
-    alignItems: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
-    backgroundColor: tone === 'warn' ? D.errorBg : D.accentMuted,
-    borderRadius: D.radiusM,
-    padding: '12px 14px',
-    marginBottom: 16,
-    borderLeft: `3px solid ${tone === 'warn' ? D.errorAccent : D.accent}`,
+    backgroundColor: tone === 'warn' ? D.errorBg : D.bgGrouped,
+    borderRadius: D.radiusS,
+    padding: '10px 12px',
+    marginBottom: 14,
   }
 }
 
@@ -56,5 +55,5 @@ export function noticeTitleStyle(tone: 'info' | 'warn'): CSSProperties {
 export const noticeDetailStyle: CSSProperties = {
   fontSize: D.caption,
   color: D.labelSecondary,
-  lineHeight: 1.5,
+  lineHeight: 1.35,
 }

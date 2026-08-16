@@ -1,6 +1,7 @@
-import { View, Text, Button, Image, Textarea, ScrollView } from '@tarojs/components'
+import { View, Text, Image, Textarea, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { D } from '../../../theme/designTokens'
+import { SheetActions } from '../../../components/SheetChrome'
 import { slotShortLabel } from '../../../utils/slotLabel'
 import { describeExisting } from '../../../utils/duplicateGuard'
 import { AppIcon } from '../../../components/AppIcon'
@@ -47,7 +48,7 @@ export function IntakeSheet({
       ? '小票 / 采购入库'
       : intakeScene === 'ingredients'
         ? '食材识别入库'
-        : '采购清单'
+        : '待买清单'
 
   return (
     <View
@@ -80,13 +81,16 @@ export function IntakeSheet({
           boxShadow: D.shadowLift,
         }}
       >
-        <Text style={{ fontSize: D.headline, fontWeight: D.weightBold, color: D.label }}>{title}</Text>
+        <Text className="lk-title" style={{ fontSize: D.headline, fontWeight: D.weightSemibold, color: D.label }}>
+          {title}
+        </Text>
         <Text
+          className="lk-block"
           style={{
-            fontSize: D.caption,
-            color: D.labelTertiary,
+            fontSize: D.footnote,
+            color: D.labelSecondary,
             marginTop: 6,
-            lineHeight: 1.5,
+            lineHeight: 1.35,
           }}
         >
           {visionLoading
@@ -157,7 +161,7 @@ export function IntakeSheet({
               <Text style={{ fontSize: D.footnote, color: D.label, fontWeight: D.weightSemibold }}>
                 语音备忘
               </Text>
-              <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>
+              <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2, lineHeight: 1.25 }}>
                 约 {Math.round((intakeDraft.durationMs ?? 0) / 1000)} 秒 · 边听边写
               </Text>
             </View>
@@ -206,7 +210,7 @@ export function IntakeSheet({
         ) : null}
 
         {receiptPreview ? (
-          <ScrollView scrollY style={{ maxHeight: 280, marginTop: 14, flex: 1 }}>
+          <ScrollView scrollY style={{ maxHeight: 280, marginTop: 14 }}>
             {receiptPreview.map((row, i) => (
               <View
                 key={i}
@@ -234,16 +238,18 @@ export function IntakeSheet({
                     {row.amount}
                   </Text>
                 </Text>
-                <Text style={{ fontSize: D.caption, color: D.accentDeep, marginTop: 4 }}>
+                <Text className="lk-block" style={{ fontSize: D.caption, color: D.accentDeep, marginTop: 4, lineHeight: 1.25 }}>
                   推荐 {slotShortLabel(row.side, row.slotIndex)}
                 </Text>
                 {row.duplicateOf.length > 0 ? (
                   <Text
+                    className="lk-block"
                     style={{
                       fontSize: D.caption,
                       color: D.orange,
                       marginTop: 4,
                       fontWeight: D.weightMedium,
+                      lineHeight: 1.25,
                     }}
                   >
                     ⚠ 冰箱里已有 · {describeExisting(row.duplicateOf[0])}
@@ -254,72 +260,18 @@ export function IntakeSheet({
           </ScrollView>
         ) : null}
 
-        <View style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-          {!receiptPreview ? (
-            <>
-              <Button
-                style={{
-                  flex: 1,
-                  height: 48,
-                  borderRadius: 999,
-                  backgroundColor: D.bg,
-                  color: D.label,
-                  border: 'none',
-                  fontSize: D.footnote,
-                }}
-                onClick={onClose}
-              >
-                取消
-              </Button>
-              <Button
-                style={{
-                  flex: 1.4,
-                  height: 48,
-                  borderRadius: 999,
-                  backgroundColor: D.accent,
-                  color: D.onAccent,
-                  border: 'none',
-                  fontSize: D.footnote,
-                  fontWeight: D.weightSemibold,
-                }}
-                onClick={onParse}
-              >
-                解析并预览
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                style={{
-                  flex: 1,
-                  height: 48,
-                  borderRadius: 999,
-                  backgroundColor: D.bg,
-                  border: 'none',
-                  fontSize: D.footnote,
-                }}
-                onClick={onClearPreview}
-              >
-                返回编辑
-              </Button>
-              <Button
-                style={{
-                  flex: 1.4,
-                  height: 48,
-                  borderRadius: 999,
-                  backgroundColor: D.accent,
-                  color: D.onAccent,
-                  border: 'none',
-                  fontSize: D.footnote,
-                  fontWeight: D.weightSemibold,
-                }}
-                onClick={onCommit}
-              >
-                确认入库
-              </Button>
-            </>
-          )}
-        </View>
+        <SheetActions
+          secondary={
+            !receiptPreview
+              ? { label: '取消', onClick: onClose }
+              : { label: '返回编辑', onClick: onClearPreview }
+          }
+          primary={
+            !receiptPreview
+              ? { label: '解析并预览', onClick: onParse }
+              : { label: '确认入库', onClick: onCommit }
+          }
+        />
       </View>
     </View>
   )

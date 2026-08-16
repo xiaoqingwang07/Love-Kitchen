@@ -21,6 +21,7 @@ import { reportEvent, EVENTS } from '../../utils/analyticsExport'
 import { recordMealSolved } from '../../utils/mealSolvedTracker'
 import { resolvePrimedShare, getPendingShare } from '../../utils/shareLinks'
 import { consumeSelectedRecipeForDetail, setSharedRecipeSnapshot, peekSharedRecipeSnapshot } from '../../utils/navigationPayload'
+import { PageNavBar } from '../../components/PageNavBar'
 import { CookingMode } from './components/CookingMode'
 import { DeductConfirmSheet, type DeductMatch } from './components/DeductConfirmSheet'
 import { RecipeHero } from './components/RecipeHero'
@@ -317,13 +318,19 @@ function Detail() {
 
   // ============ 空状态 ============
   if (!recipe) {
-    return <DetailEmptyState variant={shareMiss ? 'share-miss' : 'not-found'} />
+    return (
+      <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
+        <PageNavBar title="菜谱详情" />
+        <DetailEmptyState variant={shareMiss ? 'share-miss' : 'not-found'} />
+      </View>
+    )
   }
 
   const steps = (recipe.steps as Step[]) || []
 
   return (
     <View style={{ minHeight: '100vh', backgroundColor: D.bg, paddingBottom: 110 }}>
+      <PageNavBar title="菜谱详情" />
       <RecipeHero
         recipe={recipe}
         isFavorite={isFavState}

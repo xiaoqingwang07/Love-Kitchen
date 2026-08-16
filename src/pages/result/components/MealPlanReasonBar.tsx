@@ -1,5 +1,5 @@
 import { View, Text } from '@tarojs/components'
-import { D } from '../../../theme/designTokens'
+import { D, mediaRowTextCol } from '../../../theme/designTokens'
 import type { MealPlan } from '../../../types/mealPlan'
 
 type Props = {
@@ -7,42 +7,63 @@ type Props = {
   expiringNames?: string[]
 }
 
-/** 解释推荐依据：用了哪些冰箱食材、临期优先、缺货情况 */
+/** 一行说明，不再做成第二张色块卡。 */
 export function MealPlanReasonBar({ plan, expiringNames = [] }: Props) {
   const used = plan.usedPantryItems.slice(0, 6)
   const expiringHit = expiringNames.filter((n) =>
     plan.recipes.some((s) => s.expiringUsed.includes(n))
   )
 
+  const lead =
+    expiringHit.length > 0
+      ? `先用掉 ${expiringHit.join('、')}`
+      : used.length > 0
+        ? `已用冰箱：${used.join('、')}${plan.usedPantryItems.length > used.length ? ' 等' : ''}`
+        : '按家常搭配给出方案'
+
+  const detail =
+    plan.missingItems.length > 0
+      ? `还缺 ${plan.missingItems.length} 样主料，可加入待买`
+      : used.length > 0 && expiringHit.length > 0
+        ? `已用冰箱：${used.join('、')}`
+        : '冰箱食材基本够用，可以直接开做'
+
   return (
     <View
       style={{
-        margin: `0 ${D.pagePadH}px 12px`,
-        padding: 14,
-        borderRadius: D.radiusM,
-        backgroundColor: D.accentMuted,
-        border: `0.5px solid ${D.separatorLight}`,
+        marginBottom: 14,
+        padding: '10px 12px',
+        borderRadius: D.radiusS,
+        backgroundColor: D.bgGrouped,
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
       }}
     >
-      <Text className="lk-block" style={{ fontSize: D.caption, fontWeight: D.weightSemibold, color: D.accentDeep }}>
-        为什么推荐这些？
-      </Text>
-      {used.length > 0 ? (
-        <Text className="lk-block" style={{ fontSize: D.footnote, color: D.labelSecondary, marginTop: 8, lineHeight: 1.5 }}>
-          已用冰箱：{used.join('、')}
-          {plan.usedPantryItems.length > used.length ? ' 等' : ''}
+      <View
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: 3,
+          backgroundColor: expiringHit.length > 0 ? D.accentWarm : D.green,
+          flexShrink: 0,
+        }}
+      />
+      <View style={mediaRowTextCol}>
+        <Text
+          className="lk-block"
+          style={{ fontSize: D.footnote, fontWeight: D.weightMedium, color: D.label, lineHeight: 1.35 }}
+        >
+          {lead}
         </Text>
-      ) : null}
-      {expiringHit.length > 0 ? (
-        <Text className="lk-block" style={{ fontSize: D.footnote, color: D.accentWarm, marginTop: 6, lineHeight: 1.5 }}>
-          优先消耗临期：{expiringHit.join('、')}
+        <Text
+          className="lk-block"
+          style={{ fontSize: D.caption, color: D.labelSecondary, marginTop: 3, lineHeight: 1.35 }}
+        >
+          {detail}
         </Text>
-      ) : null}
-      <Text className="lk-block" style={{ fontSize: D.footnote, color: D.labelSecondary, marginTop: 6, lineHeight: 1.5 }}>
-        {plan.missingItems.length > 0
-          ? `还缺 ${plan.missingItems.length} 样可加入采购清单`
-          : '冰箱食材基本够用，可以直接开做'}
-      </Text>
+      </View>
     </View>
   )
 }

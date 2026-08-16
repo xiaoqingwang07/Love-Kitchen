@@ -1,9 +1,11 @@
 import { View, Text, Image } from '@tarojs/components'
 import { useState } from 'react'
 import { enrichRecipeMedia } from '../../../utils/enrichRecipeMedia'
+import { isStapleIngredient } from '../../../utils/recipeIngredientFilter'
 import { recipePlaceholderEmoji } from '../../../utils/recipePlaceholderEmoji'
 import { isRenderableRecipeImage } from '../../../utils/recipeImageUrl'
 import type { Recipe } from '../../../types/recipe'
+import { mediaRowTextCol } from '../../../theme/designTokens'
 import * as S from '../styles'
 
 type Props = {
@@ -18,6 +20,30 @@ type Props = {
   onCardClick: (item: Recipe) => void
 }
 
+function sectionCopy(
+  reason: string,
+  weather: { temperature: number } | null
+): { title: string; caption: string } {
+  if (weather) {
+    return { title: '适合今天', caption: `${weather.temperature}°C · 按实时天气` }
+  }
+  if (reason.includes('口味')) {
+    return { title: '猜你想吃', caption: '按你常做的口味' }
+  }
+  return { title: '今日家常', caption: '高分、好做' }
+}
+
+function stockHint(recipe: Recipe, pantryNames: string[]): { kind: 'ready' | 'have'; text: string } | null {
+  const names = (recipe.ingredients ?? [])
+    .map((i) => i.name)
+    .filter((n) => n && !isStapleIngredient(n))
+  if (names.length === 0) return null
+  const have = names.filter((n) => pantryNames.some((p) => p.includes(n) || n.includes(p)))
+  if (have.length === 0) return null
+  if (have.length >= names.length) return { kind: 'ready', text: '食材齐了' }
+  return { kind: 'have', text: `能用上 ${have.length} 样` }
+}
+
 export function HomeRecommendSection({
   recipes,
   pantryNames,
@@ -29,17 +55,19 @@ export function HomeRecommendSection({
   onCardClick,
 }: Props) {
   const [failedIds, setFailedIds] = useState<Record<string, true>>({})
+  const { title, caption } = sectionCopy(reason, weather)
 
   return (
     <View style={S.recipesSectionStyle}>
-      {/* 头部收敛为一行：原有「今日推荐」标签与 reason 文案是同一件事说两遍，
-          下面还跟一句长解释，属于低价值重复，已合并。 */}
       <View style={S.sectionHeaderStyle}>
-        <Text style={S.sectionLeadStyle}>
-          {weather ? `${weather.temperature}°C · 按实时天气挑的` : reason}
-        </Text>
-        {/* 动作用 View 包一层撑出可点区域：原先是裸 Text，真机上命中区只有
-            文字本身那几十像素，手指点不中，表现为「点了没反应」 */}
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text className="lk-block" style={S.sectionTitleStyle}>
+            {title}
+          </Text>
+          <Text className="lk-block" style={S.sectionLeadStyle}>
+            {caption}
+          </Text>
+        </View>
         <View style={S.sectionActionsStyle}>
           {!weather ? (
             <View className="tap-scale" style={S.sectionActionHitStyle} onClick={onEnableWeather}>
@@ -52,62 +80,51 @@ export function HomeRecommendSection({
         </View>
       </View>
 
-      {/* 竖向列表 + 横向紧凑卡：图在左、字在右。
-          原为横向滚动的竖卡片，单张占屏高且需要横划才能看全。 */}
       <View style={S.recommendListStyle}>
         {recipes.map((raw, idx) => {
           const item = enrichRecipeMedia({ ...raw, source: raw.source ?? 'local' })
           const displayTitle = item.displayTitle || item.title
           const failKey = `${String(item.id)}-${idx}`
           const imageSrc = isRenderableRecipeImage(item.image) ? item.image : undefined
+          const stock = stockHint(item, pantryNames)
           return (
-            <View
-              key={`rec-${failKey}`}
-              className="tap-scale"
-              style={S.recommendCardStyle}
-              onClick={() => onCardClick(item)}
-            >
-              {/* 无真实照片时回退 emoji，优先用菜谱自带的那个：它是按菜品人工标注的
-                  （红烧蹄髈 = 🍖），比按标签反推准确得多（按「猪肉」标签会算出 🥩 生牛排） */}
-              <View style={S.recommendThumbStyle}>
-                {imageSrc && !failedIds[failKey] ? (
-                  <Image
-                    src={imageSrc}
-                    mode="aspectFill"
-                    style={{ width: '100%', height: '100%' }}
-                    onError={() => setFailedIds((prev) => ({ ...prev, [failKey]: true }))}
-                  />
-                ) : (
-                  <Text style={{ fontSize: 32 }}>
-                    {item.emoji || recipePlaceholderEmoji(displayTitle, item.tags)}
+            <View key={`rec-${failKey}`}>
+              {idx > 0 ? <View style={S.recommendDividerStyle} /> : null}
+              <View className="tap-scale" style={S.recommendCardStyle} onClick={() => onCardClick(item)}>
+                <View style={S.recommendThumbStyle}>
+                  {imageSrc && !failedIds[failKey] ? (
+                    <Image
+                      src={imageSrc}
+                      mode="aspectFill"
+                      style={{ width: '100%', height: '100%' }}
+                      onError={() => setFailedIds((prev) => ({ ...prev, [failKey]: true }))}
+                    />
+                  ) : (
+                    <Text style={{ fontSize: 36 }}>
+                      {item.emoji || recipePlaceholderEmoji(displayTitle, item.tags)}
+                    </Text>
+                  )}
+                </View>
+                <View style={mediaRowTextCol}>
+                  <Text className="lk-block" style={S.recommendTitleStyle} numberOfLines={1}>
+                    {displayTitle}
                   </Text>
-                )}
-              </View>
-              {/* 右侧原本只有菜名 + 时长两行，留下大片空白。
-                  补上「冰箱里有几样 / 还缺几样」——这正是用户决定做不做这道菜的依据 */}
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text className="lk-block" style={S.recommendTitleStyle}>
-                  {displayTitle}
-                </Text>
-                <Text className="lk-block" style={S.recommendMetaStyle}>
-                  {item.time ? `${item.time} 分钟` : '家常'} · {item.difficulty || '简单'}
-                </Text>
-                {(() => {
-                  const names = (item.ingredients ?? []).map((i) => i.name).filter(Boolean)
-                  if (names.length === 0) return null
-                  const have = names.filter((n) => pantryNames.some((p) => p.includes(n) || n.includes(p)))
-                  const missing = names.length - have.length
-                  return (
+                  <Text className="lk-block" style={S.recommendMetaStyle}>
+                    {item.time ? `${item.time} 分钟` : '家常'}
+                    {item.difficulty ? ` · ${item.difficulty}` : ''}
+                  </Text>
+                  {stock ? (
                     <View style={S.recommendStockRowStyle}>
-                      <Text style={S.recommendStockHaveStyle}>冰箱有 {have.length} 样</Text>
-                      {missing > 0 ? (
-                        <Text style={S.recommendStockMissStyle}>还缺 {missing} 样</Text>
-                      ) : (
-                        <Text style={S.recommendStockReadyStyle}>食材齐了</Text>
-                      )}
+                      <Text
+                        style={
+                          stock.kind === 'ready' ? S.recommendStockReadyStyle : S.recommendStockHaveStyle
+                        }
+                      >
+                        {stock.text}
+                      </Text>
                     </View>
-                  )
-                })()}
+                  ) : null}
+                </View>
               </View>
             </View>
           )

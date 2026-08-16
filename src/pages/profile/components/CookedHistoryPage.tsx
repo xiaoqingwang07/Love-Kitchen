@@ -1,5 +1,6 @@
 import { View, Text, ScrollView } from '@tarojs/components'
-import { D } from '../../../theme/designTokens'
+import { SubpageHeader } from '../../../components/SubpageHeader'
+import { D, mediaRowTextCol } from '../../../theme/designTokens'
 import type { Recipe } from '../../../types/recipe'
 
 type CookedRecipe = Recipe & { cookedAt: number }
@@ -13,30 +14,7 @@ type Props = {
 export function CookedHistoryPage({ items, onBack, onOpenRecipe }: Props) {
   return (
     <View style={{ minHeight: '100vh', backgroundColor: D.bg }}>
-      <View
-        style={{
-          padding: '20px 22px',
-          backgroundColor: D.bgElevated,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          borderBottom: `0.5px solid ${D.separatorLight}`,
-        }}
-      >
-        <Text style={{ fontSize: D.body, color: D.accentDeep }} onClick={onBack}>
-          ← 返回
-        </Text>
-        <Text
-          style={{
-            fontSize: D.headline,
-            fontWeight: D.weightBold,
-            color: D.label,
-            letterSpacing: '-0.02em',
-          }}
-        >
-          做过的菜
-        </Text>
-      </View>
+      <SubpageHeader title="做过的菜" onBack={onBack} />
       <ScrollView scrollY style={{ padding: '16px 22px 40px' }}>
         {items.length === 0 ? (
           <View
@@ -68,11 +46,11 @@ export function CookedHistoryPage({ items, onBack, onOpenRecipe }: Props) {
               onClick={() => onOpenRecipe(item)}
             >
               <Text style={{ fontSize: 30 }}>{item.emoji || '🥘'}</Text>
-              <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={mediaRowTextCol}>
                 <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
                   {item.title}
                 </Text>
-                <Text style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2 }}>
+                <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 3, lineHeight: 1.25 }}>
                   {new Date(item.cookedAt).toLocaleDateString('zh-CN')} 做过
                 </Text>
               </View>

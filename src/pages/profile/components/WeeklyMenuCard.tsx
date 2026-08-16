@@ -21,7 +21,7 @@ export function WeeklyMenuCard({ pantryItems }: Props) {
       style={{
         backgroundColor: D.bgElevated,
         borderRadius: D.radiusM,
-        padding: 16,
+        padding: '12px 14px',
         marginBottom: 10,
         border: `0.5px solid ${D.separatorLight}`,
       }}
@@ -29,8 +29,8 @@ export function WeeklyMenuCard({ pantryItems }: Props) {
       <Text style={{ fontSize: D.subheadline, fontWeight: D.weightSemibold, color: D.label }}>
         本周晚饭建议
       </Text>
-      <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 4, marginBottom: 12 }}>
-        按你冰箱里的食材，稳定推荐 5 个工作日
+      <Text className="lk-block" style={{ fontSize: D.caption, color: D.labelTertiary, marginTop: 2, marginBottom: 8 }}>
+        按冰箱食材排 5 个工作日
       </Text>
       {days.map((d) => (
         <View
@@ -52,16 +52,14 @@ export function WeeklyMenuCard({ pantryItems }: Props) {
           </Text>
         </View>
       ))}
-      <View
-        className="tap-scale"
+      <Text
+        className="lk-block tap-scale"
         style={{
-          marginTop: 12,
-          height: 40,
-          borderRadius: 999,
-          backgroundColor: D.accentMuted,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          marginTop: 10,
+          fontSize: D.footnote,
+          fontWeight: D.weightSemibold,
+          color: D.accentDeep,
+          lineHeight: 1.2,
         }}
         onClick={() => {
           trackEvent('weekly_menu_cta', { pantryCount: pantryNames.length })
@@ -69,10 +67,8 @@ export function WeeklyMenuCard({ pantryItems }: Props) {
           Taro.navigateTo({ url: `/pages/result/index?from=meal&ingredients=${ing}&source=weekly` })
         }}
       >
-        <Text style={{ fontSize: D.footnote, fontWeight: D.weightSemibold, color: D.accentDeep }}>
-          按本周建议做今晚
-        </Text>
-      </View>
+        按本周建议做今晚
+      </Text>
     </View>
   )
 }

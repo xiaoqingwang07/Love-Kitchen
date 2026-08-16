@@ -225,7 +225,7 @@ export function useResultLoader(
       }
 
       if (fromReminder) {
-        // 临期召回场景保留「诚实空态」：空结果时展示延长保存/标记用完/列入采购的操作条
+        // 临期召回场景保留「诚实空态」：空结果时展示延长保存/标记用完/加入待买的操作条
         void buildMealPlansWithAiFallback(buildOpts).then((plans) => {
           if (cancelled) return
           trackEvent('meal_plan_view', { count: plans.length, source: 'reminder' })
@@ -236,7 +236,7 @@ export function useResultLoader(
               ? {
                   tone: 'warn',
                   title: '临期食材暂无搭配方案',
-                  detail: '建议尽快清掉、延长保存，或列入采购后再做。',
+                  detail: '建议尽快清掉、延长保存，或加入待买后再做。',
                 }
               : // 方案正常时不再弹提示条：它说的「优先消耗临期 xxx」与下方
                 // 「为什么推荐这些」卡片完全重复，属于同一句话说两遍
@@ -278,11 +278,8 @@ export function useResultLoader(
                 : plans[0].reason,
           })
         } else {
-          setNotice({
-            tone: 'info',
-            title: expiringList.length > 0 ? '优先消耗临期食材' : '这一顿的方案',
-            detail: plans[0].reason,
-          })
+          // 成功方案的依据由 MealPlanReasonBar 一句话说完，不再叠一张色块卡
+          setNotice(null)
         }
       })
       return cleanup
