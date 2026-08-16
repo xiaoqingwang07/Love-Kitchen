@@ -27,13 +27,15 @@ export function matchRecipes(
   selectedIngredients: string[],
   limit: number = 6,
   expiringIngredients: string[] = [],
+  opts?: { minSelectedHits?: number }
 ): MatchResult[] {
   if (selectedIngredients.length === 0) return []
 
   const selectedArr = selectedIngredients.map((s) => s.trim()).filter(Boolean)
   const expiringArr = expiringIngredients.map((s) => s.trim()).filter(Boolean)
   const minSelectedHits =
-    selectedArr.length <= 1 ? 1 : Math.min(2, selectedArr.length)
+    opts?.minSelectedHits ??
+    (selectedArr.length <= 1 ? 1 : Math.min(2, selectedArr.length))
 
   const results: MatchResult[] = getCatalogRecipes()
     .filter(isRecommendable)
