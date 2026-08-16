@@ -65,7 +65,30 @@ const config = {
     cache: {
         enable: false // Webpack5 cache
     },
+    // 默认不编译 node_modules。zod/mobx 的 ESM 含 ?. ( 微信上传压缩会报 Unexpected token: punc (
+    compile: {
+        include: [
+            (modulePath) => /node_modules[\\/](zod|mobx|use-sync-external-store)[\\/]/.test(modulePath)
+        ]
+    },
     mini: {
+        compile: {
+            include: [
+                (modulePath) => /node_modules[\\/](zod|mobx|use-sync-external-store)[\\/]/.test(modulePath)
+            ]
+        },
+        webpackChain(chain) {
+            // Taro 默认 exclude 掉整个 node_modules；必须放行 zod，否则 ?. ( 会原样打进 vendors.js
+            chain.module
+                .rule('script')
+                .exclude
+                .clear()
+                .add((filename) => {
+                    if (/css-loader/.test(filename)) return true
+                    if (/node_modules[\\/](zod|mobx|use-sync-external-store)[\\/]/.test(filename)) return false
+                    return /node_modules/.test(filename) && !/taro/.test(filename)
+                })
+        },
         optimizeMainPackage: {
             enable: true,
         },

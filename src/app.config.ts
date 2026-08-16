@@ -17,6 +17,7 @@ export default defineAppConfig({
   // 页面自定义组件渲染不出来，就只剩原生 tabBar 四个字。
   renderer: 'webview',
   componentFramework: 'exparser',
+  lazyCodeLoading: 'requiredComponents',
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#FDFCFB',

@@ -168,7 +168,13 @@ expect('微信须强制 webview 渲染，避免 Skyline 只剩 tabBar',
 expect('微信基础库不得锁死在 2.14（Taro 3 页面会空白）',
   read('project.config.json').includes('"libVersion": "2.33.0"') &&
     read('project.config.json').includes('"es6": false') &&
-    read('project.config.json').includes('"minified": false')
+    read('project.config.json').includes('"minified": true')
+)
+expect('zod/mobx 须编进 ES5，否则上传压缩 vendors.js 失败',
+  read('config/index.js').includes('zod|mobx|use-sync-external-store')
+)
+expect('须启用组件按需注入',
+  read('src/app.config.ts').includes("lazyCodeLoading: 'requiredComponents'")
 )
 expect(
   '采购入口应并入筛选行，不再单独占一张大卡',

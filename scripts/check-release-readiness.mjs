@@ -50,7 +50,7 @@ if (!appConfig.includes("plugins:") || !appConfig.includes("WechatSI")) {
 
 const setting = projectConfig.setting || {}
 if (setting.urlCheck !== true) fail('project.config.json: setting.urlCheck 应为 true，避免上传前漏配合法域名')
-if (setting.minified !== false) fail('project.config.json: setting.minified 应为 false。Taro 已压缩，微信再压 vendors.js 会报 Unexpected token')
+if (setting.minified !== true) fail('project.config.json: setting.minified 应为 true；zod 等须先编成 ES5 再交给微信压缩')
 if (setting.uploadWithSourceMap !== false) fail('project.config.json: setting.uploadWithSourceMap 应为 false')
 
 if (!npmrc.includes('registry=https://registry.npmjs.org/')) {
