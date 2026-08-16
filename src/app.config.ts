@@ -13,6 +13,10 @@ export default defineAppConfig({
   // plugins: {
   //   WechatSI: { version: '0.3.5', provider: 'wx069ba97219f66d99' },
   // },
+  // Taro 3 必须走 webview + 旧组件框架。新版开发者工具默认 Skyline/glass-easel 时，
+  // 页面自定义组件渲染不出来，就只剩原生 tabBar 四个字。
+  renderer: 'webview',
+  componentFramework: 'exparser',
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#FDFCFB',

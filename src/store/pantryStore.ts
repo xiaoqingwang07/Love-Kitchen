@@ -1,3 +1,4 @@
+import './configureMobx'
 import { makeAutoObservable, autorun } from 'mobx'
 import Taro from '@tarojs/taro'
 import type { PantryItem, FoodCategory } from '../types/pantry'

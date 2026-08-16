@@ -161,7 +161,15 @@ expect(
     fs.existsSync(path.join(root, 'src/types/household.ts'))
 )
 
-expect('冰箱页应包含采购清单入口', read('src/pages/pantry/index.tsx').includes('ShoppingListPanel'))
+expect('微信须强制 webview 渲染，避免 Skyline 只剩 tabBar',
+  read('src/app.config.ts').includes("renderer: 'webview'") &&
+    read('src/app.config.ts').includes("componentFramework: 'exparser'")
+)
+expect('微信基础库不得锁死在 2.14（Taro 3 页面会空白）',
+  read('project.config.json').includes('"libVersion": "2.33.0"') &&
+    read('project.config.json').includes('"es6": false') &&
+    read('project.config.json').includes('"minified": false')
+)
 expect(
   '采购入口应并入筛选行，不再单独占一张大卡',
   read('src/pages/pantry/components/ExpiryOverview.tsx').includes('onToggleShopping') &&

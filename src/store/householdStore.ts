@@ -1,3 +1,4 @@
+import './configureMobx'
 import { makeAutoObservable, reaction } from 'mobx'
 import Taro from '@tarojs/taro'
 import type { Household, HouseholdMember, HouseholdShoppingItem, HouseholdSyncMode } from '../types/household'
