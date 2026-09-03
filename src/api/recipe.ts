@@ -72,6 +72,15 @@ function proxyUrl(): string {
   return TARO_APP_LLM_PROXY_URL.trim()
 }
 
+function taroFailMessage(e: unknown): string {
+  const err = e as { errMsg?: string; message?: string }
+  return String(err?.errMsg || err?.message || '').trim()
+}
+
+function isWeappLocalRequestBlocked(msg: string): boolean {
+  return /url not in domain list|合法域名|网络错误|request:fail|ERR_CONNECTION|timeout/i.test(msg)
+}
+
 /** 已配置构建期 LLM 中转 URL（生产环境应优先使用，避免 Key 进包） */
 export function usesLlmProxy(): boolean {
   return proxyUrl().length > 0
@@ -327,8 +336,16 @@ export const checkApiKey = async (): Promise<{ valid: boolean; error?: string }>
     const errObj = d?.error as { message?: string } | undefined
     const hint = errObj?.message || (typeof d?.message === 'string' ? d.message : '')
     return { valid: false, error: hint ? `${statusCode}: ${hint}` : `错误: ${statusCode}` }
-  } catch (e: any) {
-    return { valid: false, error: e.message || '网络错误' }
+  } catch (e: unknown) {
+    const raw = taroFailMessage(e)
+    if (!raw || isWeappLocalRequestBlocked(raw)) {
+      return {
+        valid: false,
+        error:
+          '开发者工具拦截了本地 AI 地址。请打开：详情 → 本地设置 → 勾选「不校验合法域名、web-view、TLS 以及 HTTPS 证书」，然后重新编译。真机预览无法访问本机 127.0.0.1。',
+      }
+    }
+    return { valid: false, error: raw }
   }
 }
 

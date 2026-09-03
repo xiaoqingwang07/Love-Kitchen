@@ -34,5 +34,5 @@
     }
   ],
   "installCommand": "echo skip-install",
-  "buildCommand": "echo skip-build"
+  "buildCommand": "mkdir -p public && (if [ -L public/catalog ] || [ -e public/catalog ]; then rm -rf public/catalog; fi) && cp -R catalog-cdn public/catalog"
 }

@@ -58,6 +58,10 @@ expect(
   '客户端 AI 请求必须依赖 TARO_APP_LLM_PROXY_URL，不允许回退直连 Key',
   recipeApi.includes('TARO_APP_LLM_PROXY_URL') && !recipeApi.includes('TARO_APP_MINIMAX_API_KEY')
 )
+expect(
+  '检测 AI 失败时应读取微信 errMsg，并提示不校验合法域名（本地 127.0.0.1 会被拦截成「网络错误」）',
+  recipeApi.includes('errMsg') && recipeApi.includes('不校验合法域名')
+)
 
 expect(
   'LLM 代理必须限制模型、消息长度和请求速率',
@@ -595,8 +599,9 @@ expect(
     !read('src/pages/pick/index.tsx').includes('titleLarge')
 )
 expect(
-  '首页推荐区不应因存在临期食材而整体隐藏（会留下大片空白）',
-  indexPage.includes('const showGenericRecommend = !emptyPantry') &&
+  '首页推荐区应常驻，不因临期或空冰箱而隐藏（否则首屏大片空白）',
+  indexPage.includes('<HomeRecommendSection') &&
+    !indexPage.includes('showGenericRecommend') &&
     !indexPage.includes('expiringItems.length === 0')
 )
 expect(

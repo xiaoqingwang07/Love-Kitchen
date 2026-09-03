@@ -40,8 +40,8 @@ const HOME_RECOMMEND_COUNT = 4
  * 2. 默认不虚构天气——用户主动点「开启天气」才会去定位+叠加推荐维度；
  * 3. 临期提醒置顶于搜索框之前：临期是有时效的坏消息，晚看一天就浪费；
  *    冰箱无临期时该条整体不渲染，首屏更干净；
- * 4. 推荐区常驻：原先「有临期就不显示推荐」会让首屏留下大片空白，
- *    而推荐图正是首页最有价值的内容；
+ * 4. 推荐区常驻：空冰箱、有临期都不该把推荐藏掉，否则搜索框下面只剩空白；
+ *    推荐图正是首页最有价值的内容；
  * 5. 不再展示「场景 chip」，场景偏好改由「我的」一次性设定。
  */
 function Index() {
@@ -223,8 +223,6 @@ function Index() {
   }
 
   const emptyPantry = pantryStore.totalCount === 0
-  // 推荐区常驻（冰箱为空时除外）：原先「有临期就不显示」会让首屏空一大片
-  const showGenericRecommend = !emptyPantry
 
   const goTonightMeal = () => {
     Taro.navigateTo({ url: buildMealResultPath(pantryStore.items, 'home-status') })
@@ -261,18 +259,16 @@ function Index() {
 
       <HomeKitchenStatus expiringCount={expiringItems.length} onTonightMeal={goTonightMeal} />
 
-      {showGenericRecommend ? (
-        <HomeRecommendSection
-          recipes={recommendation.recipes}
-          pantryNames={pantryStore.items.map((i) => i.name)}
-          reason={recommendation.reason}
-          weather={weather}
-          weatherLoading={weatherLoading}
-          onEnableWeather={enableWeather}
-          onRefresh={() => setListVariant((v) => v + 1)}
-          onCardClick={(item) => void openRecipeDetail(item)}
-        />
-      ) : null}
+      <HomeRecommendSection
+        recipes={recommendation.recipes}
+        pantryNames={pantryStore.items.map((i) => i.name)}
+        reason={recommendation.reason}
+        weather={weather}
+        weatherLoading={weatherLoading}
+        onEnableWeather={enableWeather}
+        onRefresh={() => setListVariant((v) => v + 1)}
+        onCardClick={(item) => void openRecipeDetail(item)}
+      />
 
       <VoiceRecorderSheet
         visible={showVoice}
